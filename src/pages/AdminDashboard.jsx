@@ -5,7 +5,7 @@ import {
     Plus, Search, Clock, CheckCircle2, Truck, X, Edit3, Trash2, Sun, Moon,
     User, Phone, MapPin, Mail, ChevronDown, ChevronUp, Eye, Bell, MoreHorizontal,
     CreditCard, Users, ArrowUpRight, TrendingUp, Filter, Download, MessageSquare,
-    ChevronRight, ArrowLeft, MoreVertical, Shield, Menu
+    ChevronRight, ArrowLeft, MoreVertical, Menu
 } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
@@ -59,13 +59,8 @@ const AdminDashboard = () => {
                 style={{ background: isDark ? '#000000' : '#0F1115', borderRight: '1px solid var(--divider)' }}
             >
                 {/* Brand */}
-                <div className="p-8 flex items-center justify-between lg:justify-start gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#F18B24] flex items-center justify-center">
-                            <Shield className="text-white" size={18} />
-                        </div>
-                        <span className="text-white font-black text-sm tracking-tighter uppercase">SELLOUT</span>
-                    </div>
+                <div className="p-8 flex items-center justify-between lg:justify-start gap-4">
+                    <img src="/images/logo_nobg.png" alt="Logo" className="h-16 lg:h-20 w-auto brightness-0 invert" />
                     <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
                         <X size={20} />
                     </button>
@@ -106,12 +101,16 @@ const AdminDashboard = () => {
             {/* ════ MAIN CONTENT ════ */}
             <main className="flex-1 flex flex-col min-w-0 transition-colors duration-500" style={{ background: 'var(--bg-secondary)' }}>
                 {/* Topbar */}
-                <header className="h-20 flex items-center justify-between px-6 lg:px-10 shrink-0">
+                <header className="h-24 flex items-center justify-between px-6 lg:px-10 shrink-0 border-b" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
+                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
                             <Menu size={20} />
                         </button>
-                        <h1 className="text-xl lg:text-3xl font-black font-heading tracking-tight capitalize">{activeTab}</h1>
+                        <div className="flex items-center gap-3">
+                            <img src="/images/logo_nobg.png" alt="Logo" className="h-14 lg:h-16 w-auto hidden sm:block dark:brightness-0 dark:invert" />
+                            <div className="h-10 w-[1px] bg-[var(--divider)] hidden sm:block" />
+                            <h1 className="text-xl lg:text-3xl font-black font-heading tracking-tight capitalize">{activeTab}</h1>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3 lg:gap-6">

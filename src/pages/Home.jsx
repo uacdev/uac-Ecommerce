@@ -49,6 +49,7 @@ const Home = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="overflow-x-hidden"
         >
             {/* ═══════════════════════════════════════════ */}
             {/* HERO SECTION — Inspired by sneaker store's bold typography */}
@@ -197,12 +198,12 @@ const Home = () => {
                                 New Arrivals
                             </motion.h2>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide max-w-full">
                             {CATEGORIES.map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all ${activeCategory === cat
+                                    className={`px-5 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all shrink-0 ${activeCategory === cat
                                             ? 'bg-[#F18B24] text-white'
                                             : ''
                                         }`}

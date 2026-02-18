@@ -7,7 +7,7 @@ const Footer = () => {
             <div className="container">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
                     <div className="lg:col-span-1">
-                        <img src="/images/logo_nobg.png" alt="Logo" className="h-14 lg:h-16 w-auto mb-8 brightness-0 invert" />
+                        <img src="/images/logo_nobg.png" alt="Logo" className="h-20 lg:h-28 w-auto mb-8 brightness-0 invert" />
                         <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-xs">
                             The premium transaction gateway and logistics partner for Instagram sellers.
                         </p>
