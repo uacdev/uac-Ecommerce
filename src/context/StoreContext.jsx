@@ -1,0 +1,279 @@
+import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products'
+
+const StoreContext = createContext()
+
+export const useStore = () => useContext(StoreContext)
+
+export const StoreProvider = ({ children }) => {
+    const [products, setProducts] = useState([])
+    const [orders, setOrders] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    // Initial Fetch
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true)
+            
+            // Avoid DNS errors if Supabase is not configured
+            if (supabase.supabaseUrl.includes('placeholder')) {
+                console.warn('Supabase not configured. Using local data.');
+                setProducts(INITIAL_PRODUCTS);
+                setLoading(false);
+                return;
+            }
+
+            try {
+                // Fetch Products
+                const { data: dbProducts, error: pError } = await supabase
+                    .from('products')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+
+                if (pError) throw pError
+                
+                if (dbProducts && dbProducts.length > 0) {
+                    setProducts(dbProducts.map(p => {
+                        const initial = INITIAL_PRODUCTS.find(i => i.id === p.id);
+                        return {
+                            ...p,
+                            image: (p.id === 'prod-002' || p.id === 'prod-006') ? initial.image : p.image,
+                            sellerPrice: p.seller_price,
+                            sellerName: p.seller_name,
+                            isReserved: p.is_reserved
+                        };
+                    }))
+                } else {
+                    setProducts(INITIAL_PRODUCTS)
+                }
+
+                // Fetch Orders
+                const { data: dbOrders, error: oError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .order('date', { ascending: false })
+
+                if (oError) throw oError
+                setOrders((dbOrders || []).map(o => ({
+                    ...o,
+                    productId: o.product_id,
+                    productName: o.product_name,
+                    productImage: o.product_image,
+                    sellerName: o.seller_name,
+                    buyerName: o.buyer_name,
+                    buyerEmail: o.buyer_email,
+                    buyerPhone: o.buyer_phone,
+                    buyerAddress: o.buyer_address,
+                    paymentMethod: o.payment_method,
+                    deliveryMethod: o.delivery_method,
+                    sellerAgreedPrice: o.seller_agreed_price
+                })))
+
+            } catch (err) {
+                console.error('Supabase fetch error:', err)
+                // Fallback to localStorage if Supabase fails
+                const savedProducts = localStorage.getItem('sr_products')
+                const savedOrders = localStorage.getItem('sr_orders')
+                if (savedProducts) {
+                    const local = JSON.parse(savedProducts)
+                    setProducts(local.map(p => {
+                        const initial = INITIAL_PRODUCTS.find(i => i.id === p.id);
+                        return (p.id === 'prod-002' || p.id === 'prod-006') ? { ...p, image: initial.image } : p;
+                    }))
+                }
+                else setProducts(INITIAL_PRODUCTS)
+                if (savedOrders) setOrders(JSON.parse(savedOrders))
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    // Persistence Fallback for Offline Mode
+    useEffect(() => {
+        if (products.length > 0) localStorage.setItem('sr_products', JSON.stringify(products))
+    }, [products])
+
+    useEffect(() => {
+        if (orders.length > 0) localStorage.setItem('sr_orders', JSON.stringify(orders))
+    }, [orders])
+
+    // ─── Product Actions ───
+    const addProduct = async (product) => {
+        const newProduct = { 
+            name: product.name,
+            price: product.price,
+            seller_price: product.sellerPrice || null,
+            seller_name: product.sellerName || null,
+            description: product.description || '',
+            location: product.location || '',
+            category: product.category || 'Furniture',
+            image: product.image,
+            images: product.images || [],
+            status: 'available',
+            is_reserved: false
+        }
+
+        try {
+            const { data, error } = await supabase.from('products').insert([newProduct]).select()
+            if (error) throw error
+            if (data) {
+                const addedResponse = {
+                    ...data[0],
+                    sellerPrice: data[0].seller_price,
+                    sellerName: data[0].seller_name,
+                    isReserved: data[0].is_reserved
+                }
+                setProducts([addedResponse, ...products])
+            }
+        } catch (err) {
+            console.error('Add product error:', err)
+            const localProd = { ...newProduct, id: `prod-${Date.now()}`, sellerPrice: newProduct.seller_price, sellerName: newProduct.seller_name }
+            setProducts([localProd, ...products])
+        }
+    }
+
+    const updateProduct = async (id, updates) => {
+        try {
+            const { error } = await supabase.from('products').update(updates).eq('id', id)
+            if (error) throw error
+            setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p))
+        } catch (err) {
+            console.error('Update product error:', err)
+            setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p))
+        }
+    }
+
+    const removeProduct = async (id) => {
+        try {
+            const { error } = await supabase.from('products').delete().eq('id', id)
+            if (error) throw error
+            setProducts(products.filter(p => p.id !== id))
+        } catch (err) {
+            console.error('Remove product error:', err)
+            setProducts(products.filter(p => p.id !== id))
+        }
+    }
+
+    const markProductReserved = (id) => updateProduct(id, { is_reserved: true, status: 'reserved' })
+    const markProductSold = (id) => updateProduct(id, { is_reserved: false, status: 'sold' })
+    const markProductAvailable = (id) => updateProduct(id, { is_reserved: false, status: 'available' })
+
+    // ─── Order Actions ───
+    const addOrder = async (orderData) => {
+        const orderId = `SR-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`
+        const newOrderDb = {
+            id: orderId,
+            product_id: orderData.productId,
+            product_name: orderData.productName,
+            product_image: orderData.productImage,
+            seller_name: orderData.sellerName,
+            amount: orderData.amount,
+            buyer_name: orderData.buyerName,
+            buyer_email: orderData.buyerEmail,
+            buyer_phone: orderData.buyerPhone,
+            buyer_address: orderData.buyerAddress,
+            payment_method: orderData.paymentMethod,
+            delivery_method: null,
+            status: 'pending',
+            seller_agreed_price: orderData.amount * 0.9,
+            commission: orderData.amount * 0.1,
+            date: new Date().toISOString()
+        }
+
+        const uiOrder = {
+            ...newOrderDb,
+            productId: newOrderDb.product_id,
+            productName: newOrderDb.product_name,
+            productImage: newOrderDb.product_image,
+            sellerName: newOrderDb.seller_name,
+            buyerName: newOrderDb.buyer_name,
+            buyerEmail: newOrderDb.buyer_email,
+            buyerPhone: newOrderDb.buyer_phone,
+            buyerAddress: newOrderDb.buyer_address,
+            paymentMethod: newOrderDb.payment_method,
+            deliveryMethod: newOrderDb.delivery_method,
+            sellerAgreedPrice: newOrderDb.seller_agreed_price
+        }
+
+        try {
+            const { error } = await supabase.from('orders').insert([newOrderDb])
+            if (error) throw error
+            setOrders([uiOrder, ...orders])
+            if (orderData.productId) markProductReserved(orderData.productId)
+            return uiOrder
+        } catch (err) {
+            console.error('Add order error:', err)
+            setOrders([uiOrder, ...orders])
+            if (orderData.productId) markProductReserved(orderData.productId)
+            return uiOrder
+        }
+    }
+
+    const updateOrderStatus = async (id, status) => {
+        try {
+            const { error } = await supabase.from('orders').update({ status }).eq('id', id)
+            if (error) throw error
+            
+            setOrders(orders.map(o => {
+                if (o.id !== id) return o
+                if (status === 'completed' && o.productId) {
+                    markProductSold(o.productId)
+                }
+                return { ...o, status }
+            }))
+        } catch (err) {
+            console.error('Update status error:', err)
+            setOrders(orders.map(o => o.id === id ? { ...o, status } : o))
+        }
+    }
+
+    const updateOrderDelivery = async (orderId, delivery_method) => {
+        try {
+            const { error } = await supabase.from('orders').update({ delivery_method }).eq('id', orderId)
+            if (error) throw error
+            setOrders(orders.map(o => o.id === orderId ? { ...o, deliveryMethod: delivery_method } : o))
+        } catch (err) {
+            console.error('Update delivery error:', err)
+            setOrders(orders.map(o => o.id === orderId ? { ...o, deliveryMethod: delivery_method } : o))
+        }
+    }
+
+    const getOrderById = (id) => orders.find(o => o.id === id)
+
+    // ─── Stats / Computed ───
+    const stats = {
+        totalProducts: products.length,
+        availableProducts: products.filter(p => !p.is_reserved && p.status !== 'sold').length,
+        totalOrders: orders.length,
+        pendingOrders: orders.filter(o => o.status === 'pending').length,
+        totalRevenue: orders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        platformIncome: orders
+            .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
+            .reduce((sum, o) => sum + (o.commission || Math.round((o.amount || 0) * 0.1)), 0),
+    }
+
+    return (
+        <StoreContext.Provider value={{
+            products,
+            orders,
+            stats,
+            loading,
+            addProduct,
+            updateProduct,
+            removeProduct,
+            markProductReserved,
+            markProductSold,
+            markProductAvailable,
+            addOrder,
+            updateOrderStatus,
+            updateOrderDelivery,
+            getOrderById,
+        }}>
+            {children}
+        </StoreContext.Provider>
+    )
+}
