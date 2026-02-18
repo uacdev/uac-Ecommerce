@@ -19,6 +19,7 @@ const AdminDashboard = () => {
     const [showNotifications, setShowNotifications] = useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
 
     const { isDark, toggleTheme } = useTheme()
     const { loading } = useStore()
@@ -101,37 +102,38 @@ const AdminDashboard = () => {
             {/* ════ MAIN CONTENT ════ */}
             <main className="flex-1 flex flex-col min-w-0 transition-colors duration-500" style={{ background: 'var(--bg-secondary)' }}>
                 {/* Topbar */}
-                <header className="h-24 flex items-center justify-between px-6 lg:px-10 shrink-0 border-b" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
+                <header className="h-20 lg:h-24 flex items-center justify-between px-4 lg:px-10 shrink-0 border-b gap-4" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
+                        <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
                             <Menu size={20} />
                         </button>
-                        <div className="flex items-center gap-3">
-                            <img src="/images/logo_nobg.png" alt="Logo" className="h-14 lg:h-16 w-auto hidden sm:block dark:brightness-0 dark:invert" />
-                            <div className="h-10 w-[1px] bg-[var(--divider)] hidden sm:block" />
-                            <h1 className="text-xl lg:text-3xl font-black font-heading tracking-tight capitalize">{activeTab}</h1>
-                        </div>
+                        <img src="/images/logo_nobg.png" alt="Logo" className="h-12 lg:h-16 w-auto hidden md:block dark:brightness-0 dark:invert" />
                     </div>
 
-                    <div className="flex items-center gap-3 lg:gap-6">
-                        <div className="relative group hidden xl:block">
+                    {/* Search Field - Middle */}
+                    <div className="flex-1 max-w-sm lg:max-w-md">
+                        <div className="relative group">
                             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#F18B24] transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search... (⌘+K)"
-                                className="w-48 bg-[var(--bg-primary)] border border-[var(--divider)] shadow-sm rounded-xl pl-12 pr-4 py-2.5 text-xs font-medium outline-none focus:ring-2 focus:ring-[#F18B2420] focus:border-[#F18B24] transition-all"
+                                placeholder="Search SR Cloud..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] shadow-sm rounded-xl pl-11 pr-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-[#F18B2420] focus:border-[#F18B24] transition-all"
                                 style={{ color: 'var(--text-primary)' }}
                             />
                         </div>
+                    </div>
 
+                    <div className="flex items-center gap-2 lg:gap-6">
                         <div className="relative">
                             <button 
                                 onClick={() => setShowNotifications(!showNotifications)}
-                                className="w-10 h-10 rounded-xl flex items-center justify-center relative transition-colors bg-[var(--bg-primary)] border border-[var(--divider)] hover:border-[#F18B2420]"
+                                className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center relative transition-colors bg-[var(--bg-secondary)] border border-[var(--divider)] hover:border-[#F18B2420]"
                                 style={{ color: 'var(--text-primary)' }}
                             >
                                 <Bell size={20} />
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-[#F18B24] rounded-full border-2 border-[var(--bg-primary)]" />
+                                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#F18B24] rounded-full border-2 border-[var(--bg-secondary)]" />
                             </button>
 
                             <AnimatePresence>
@@ -142,7 +144,7 @@ const AdminDashboard = () => {
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute right-0 mt-4 w-80 glass z-20 overflow-hidden"
+                                            className="absolute right-0 mt-4 w-80 glass z-[110] overflow-hidden"
                                         >
                                             <div className="p-4 border-b border-[var(--divider)] flex justify-between items-center bg-[var(--bg-primary)]">
                                                 <p className="text-xs font-black uppercase tracking-widest">Notifications</p>
@@ -180,9 +182,9 @@ const AdminDashboard = () => {
                             </AnimatePresence>
                         </div>
 
-                        <div className="flex items-center gap-4 pl-6" style={{ borderLeft: '1px solid var(--divider)' }}>
+                        <div className="hidden lg:flex items-center gap-4 pl-6 ml-2" style={{ borderLeft: '1px solid var(--divider)' }}>
                             <div className="text-right">
-                                <p className="text-xs font-black">Kristina Evans</p>
+                                <p className="text-xs font-black uppercase">SR Admin</p>
                                 <p className="text-[10px] font-bold text-[var(--text-muted)]">admin@sellout.ng</p>
                             </div>
                             <img src="https://i.pravatar.cc/100?u=admin" className="w-10 h-10 rounded-full border-2" style={{ borderColor: 'var(--bg-primary)', boxShadow: 'var(--card-shadow)' }} alt="" />
@@ -191,13 +193,17 @@ const AdminDashboard = () => {
                 </header>
 
                 <div className="flex-1 flex overflow-hidden">
-                    <div className="flex-1 overflow-y-auto px-10 pb-10 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto px-6 lg:px-10 pb-10 custom-scrollbar">
+                        <div className="py-8">
+                            <h2 className="text-2xl lg:text-4xl font-black font-heading tracking-tight capitalize">{activeTab}</h2>
+                            <p className="text-[var(--text-muted)] text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-1">SR-Cloud Management Portal</p>
+                        </div>
                         <AnimatePresence mode="wait">
                             {activeTab === 'overview' && <OverviewTab key="overview" />}
-                            {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} />}
-                            {activeTab === 'products' && <ProductsTab key="products" onEdit={setEditingProduct} onAdd={() => setShowAddProduct(true)} />}
-                            {activeTab === 'ledger' && <LedgerTab key="ledger" />}
-                            {activeTab === 'customers' && <CustomersTab key="customers" />}
+                            {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} searchTerm={searchTerm} />}
+                            {activeTab === 'products' && <ProductsTab key="products" onEdit={setEditingProduct} onAdd={() => setShowAddProduct(true)} searchTerm={searchTerm} />}
+                            {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} />}
+                            {activeTab === 'customers' && <CustomersTab key="customers" searchTerm={searchTerm} />}
                             {activeTab === 'stats' && <StatsTab key="stats" />}
                             {activeTab === 'settings' && <SettingsTab key="settings" />}
                         </AnimatePresence>
@@ -384,67 +390,124 @@ const ProgressRow = ({ label, value, percentage, color }) => (
     </div>
 )
 
-const OrdersTab = ({ onSelect, selectedId }) => {
+const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
     const { orders } = useStore()
+    const [statusFilter, setStatusFilter] = useState('all')
+
+    const filteredOrders = useMemo(() => {
+        return orders.filter(order => {
+            const matchesSearch = 
+                order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.productName.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesStatus = statusFilter === 'all' || order.status === statusFilter
+            return matchesSearch && matchesStatus
+        })
+    }, [orders, searchTerm, statusFilter])
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
-            <div className="p-8 border-b flex items-center justify-between" style={{ borderColor: 'var(--divider)' }}>
-                <div className="flex gap-4">
-                    <button className="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest" style={{ background: '#F18B2410', color: '#F18B24' }}>Active Orders</button>
-                    <button className="px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors" style={{ color: 'var(--text-muted)' }}>Archived</button>
-                </div>
-                <div className="flex gap-4">
-                    <button className="flex items-center gap-2 text-xs font-bold transition-colors" style={{ color: 'var(--text-muted)' }}>
-                        <Filter size={16} /> Filter
-                    </button>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--divider)] overflow-x-auto no-scrollbar">
+                    {['all', 'pending', 'paid', 'confirmed', 'shipped', 'delivered'].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${statusFilter === status 
+                                ? 'bg-[#F18B24] text-white shadow-lg shadow-orange-500/20' 
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                            {status}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[800px]">
-                    <thead className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-                    <tr>
-                        <th className="px-10 py-5">Order</th>
-                        <th className="px-10 py-5">Customer</th>
-                        <th className="px-10 py-5">Status</th>
-                        <th className="px-10 py-5">Total</th>
-                        <th className="px-10 py-5 text-right">Date</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
-                    {orders.map(order => (
-                        <motion.tr
-                            key={order.id}
-                            onClick={() => onSelect(order)}
-                            className={`group cursor-pointer transition-colors ${selectedId === order.id ? 'bg-[#F18B2408]' : ''}`}
-                            style={{ background: selectedId === order.id ? '#F18B2408' : 'transparent' }}
-                        >
-                            <td className="px-10 py-6">
-                                <span className="text-xs font-black">#{order.id.slice(-6)}</span>
-                            </td>
-                            <td className="px-10 py-6">
-                                <div className="flex items-center gap-3">
-                                    <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-9 h-9 rounded-full bg-gray-200" alt="" />
-                                    <span className="text-xs font-black truncate max-w-[120px]">{order.buyerName}</span>
+            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+                {/* Desktop View */}
+                <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full text-left min-w-[800px]">
+                        <thead className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+                            <tr>
+                                <th className="px-10 py-5">Order</th>
+                                <th className="px-10 py-5">Customer</th>
+                                <th className="px-10 py-5">Status</th>
+                                <th className="px-10 py-5">Total</th>
+                                <th className="px-10 py-5 text-right">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                            {filteredOrders.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="px-10 py-20 text-center text-xs font-bold text-[var(--text-muted)]">No orders match your current filters.</td>
+                                </tr>
+                            ) : (
+                                filteredOrders.map(order => (
+                                    <motion.tr
+                                        key={order.id}
+                                        onClick={() => onSelect(order)}
+                                        className={`group cursor-pointer transition-colors ${selectedId === order.id ? 'bg-[#F18B2408]' : 'hover:bg-[var(--bg-secondary)]'}`}
+                                    >
+                                        <td className="px-10 py-6">
+                                            <span className="text-xs font-black">#{order.id.slice(-6)}</span>
+                                        </td>
+                                        <td className="px-10 py-6">
+                                            <div className="flex items-center gap-3">
+                                                <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-9 h-9 rounded-full bg-gray-200" alt="" />
+                                                <span className="text-xs font-black truncate max-w-[120px]">{order.buyerName}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-10 py-6">
+                                            <StatusPill status={order.status} />
+                                        </td>
+                                        <td className="px-10 py-6">
+                                            <span className="text-xs font-black">₦{order.amount.toLocaleString()}</span>
+                                        </td>
+                                        <td className="px-10 py-6 text-right">
+                                            <div className="flex items-center justify-end gap-4">
+                                                <span className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{new Date(order.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                                <MoreHorizontal size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} />
+                                            </div>
+                                        </td>
+                                    </motion.tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile/Tablet Card Layout */}
+                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
+                    {filteredOrders.length === 0 ? (
+                        <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No orders found.</div>
+                    ) : (
+                        filteredOrders.map(order => (
+                            <div 
+                                key={order.id} 
+                                onClick={() => onSelect(order)}
+                                className="p-5 active:bg-[var(--bg-secondary)] transition-colors"
+                            >
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-10 h-10 rounded-full border" style={{ borderColor: 'var(--divider)' }} alt="" />
+                                        <div>
+                                            <p className="text-xs font-black">{order.buyerName}</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)]">#{order.id.slice(-8)}</p>
+                                        </div>
+                                    </div>
+                                    <StatusPill status={order.status} />
                                 </div>
-                            </td>
-                            <td className="px-10 py-6">
-                                <StatusPill status={order.status} />
-                            </td>
-                            <td className="px-10 py-6">
-                                <span className="text-xs font-black">₦{order.amount.toLocaleString()}</span>
-                            </td>
-                            <td className="px-10 py-6 text-right">
-                                <div className="flex items-center justify-end gap-4">
-                                    <span className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{new Date(order.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                                    <MoreHorizontal size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} />
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest mb-1">Total Amount</p>
+                                        <p className="text-sm font-black text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[var(--text-muted)]">{new Date(order.date).toLocaleDateString()}</span>
                                 </div>
-                            </td>
-                        </motion.tr>
-                    ))}
-                </tbody>
-            </table>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </motion.div>
     )
@@ -629,63 +692,111 @@ const SecondaryBtn = ({ label, full }) => (
     </button>
 )
 
-const ProductsTab = ({ onEdit, onAdd }) => {
+const ProductsTab = ({ onEdit, onAdd, searchTerm }) => {
     const { products, removeProduct } = useStore()
+    const [activeCategory, setActiveCategory] = useState('All')
+
+    const filteredProducts = useMemo(() => {
+        return products.filter(p => {
+            const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 p.location.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesCategory = activeCategory === 'All' || p.category === activeCategory
+            return matchesSearch && matchesCategory
+        })
+    }, [products, searchTerm, activeCategory])
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-black">All Products</h2>
-                    <p className="text-xs font-bold text-[var(--text-muted)]">Manage your active storefront inventory.</p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="flex gap-2 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--divider)] overflow-x-auto no-scrollbar">
+                    {['All', ...CATEGORIES.filter(c => c !== 'All')].map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat 
+                                ? 'bg-[#F18B24] text-white' 
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                            {cat}
+                        </button>
+                    ))}
                 </div>
-                <button onClick={onAdd} className="px-6 py-3 rounded-xl bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center gap-2 hover:scale-105 transition-transform active:scale-95">
-                    <Plus size={16} /> New Product
+                <button onClick={onAdd} className="lg:w-auto px-6 py-4 rounded-xl bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform active:scale-95">
+                    <Plus size={16} /> Add New Entry
                 </button>
             </div>
 
-            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500 overflow-x-auto" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
-                <table className="w-full text-left min-w-[800px]">
-                    <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
-                        <tr>
-                            <th className="px-10 py-5">Product Details</th>
-                            <th className="px-10 py-5">Category</th>
-                            <th className="px-10 py-5">Price</th>
-                            <th className="px-10 py-5">Status</th>
-                            <th className="px-10 py-5 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
-                        {products.map(product => (
-                            <tr key={product.id} className="group transition-colors hover:bg-[var(--bg-secondary)]">
-                                <td className="px-10 py-6">
-                                    <div className="flex items-center gap-6">
-                                        <img src={product.image} className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" alt="" />
-                                        <div>
-                                            <p className="text-sm font-black">{product.name}</p>
-                                            <p className="text-[10px] font-bold mt-1 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{product.location}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{product.category}</span>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <span className="text-xs font-black">₦{product.price.toLocaleString()}</span>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
-                                </td>
-                                <td className="px-10 py-6 text-right">
-                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
-                                        <button onClick={() => removeProduct(product.id)} className="p-2.5 rounded-lg text-red-500 transition-colors"><Trash2 size={16} /></button>
-                                    </div>
-                                </td>
+            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+                {/* Desktop view */}
+                <div className="hidden lg:block">
+                    <table className="w-full text-left">
+                        <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
+                            <tr>
+                                <th className="px-10 py-5">Product Details</th>
+                                <th className="px-10 py-5">Category</th>
+                                <th className="px-10 py-5">Price</th>
+                                <th className="px-10 py-5">Status</th>
+                                <th className="px-10 py-5 text-right">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                            {filteredProducts.map(product => (
+                                <tr key={product.id} className="group transition-colors hover:bg-[var(--bg-secondary)]">
+                                    <td className="px-10 py-6">
+                                        <div className="flex items-center gap-6">
+                                            <img src={product.image} className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" alt="" />
+                                            <div>
+                                                <p className="text-sm font-black">{product.name}</p>
+                                                <p className="text-[10px] font-bold mt-1 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{product.location}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-6">
+                                        <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{product.category}</span>
+                                    </td>
+                                    <td className="px-10 py-6">
+                                        <span className="text-xs font-black">₦{product.price.toLocaleString()}</span>
+                                    </td>
+                                    <td className="px-10 py-6">
+                                        <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
+                                    </td>
+                                    <td className="px-10 py-6 text-right">
+                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
+                                            <button onClick={() => removeProduct(product.id)} className="p-2.5 rounded-lg text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile view */}
+                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
+                    {filteredProducts.map(product => (
+                        <div key={product.id} className="p-6 space-y-4">
+                            <div className="flex gap-4">
+                                <img src={product.image} className="w-20 h-20 rounded-xl object-cover shrink-0 border" style={{ borderColor: 'var(--divider)' }} alt="" />
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start">
+                                        <p className="text-sm font-black truncate">{product.name}</p>
+                                        <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
+                                    </div>
+                                    <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[#F18B24]">{product.category}</p>
+                                    <p className="text-sm font-black mt-2">₦{product.price.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center gap-4">
+                                <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
+                                <div className="flex gap-2">
+                                    <button onClick={() => onEdit(product)} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[var(--text-muted)]"><Edit3 size={14} /></button>
+                                    <button onClick={() => removeProduct(product.id)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         </motion.div>
     )
@@ -701,9 +812,27 @@ const ProductPill = ({ status }) => {
     )
 }
 
-const LedgerTab = () => {
-    const { orders, stats } = useStore()
-    const confirmedOrders = orders.filter(o => ['paid', 'payment_confirmed', 'awaiting_delivery', 'in_transit', 'delivered', 'completed'].includes(o.status))
+const LedgerTab = ({ searchTerm }) => {
+    const { orders } = useStore()
+    const [ledgerFilter, setLedgerFilter] = useState('all')
+
+    const confirmedOrders = useMemo(() => {
+        let base = orders.filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
+        
+        if (ledgerFilter !== 'all') {
+            base = base.filter(o => o.status === ledgerFilter)
+        }
+
+        if (searchTerm) {
+            base = base.filter(o => 
+                o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                o.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (o.sellerName && o.sellerName.toLowerCase().includes(searchTerm.toLowerCase()))
+            )
+        }
+
+        return base
+    }, [orders, searchTerm, ledgerFilter])
 
     const totalVolume = confirmedOrders.reduce((sum, o) => sum + o.amount, 0)
     const platformIncome = confirmedOrders.reduce((sum, o) => {
@@ -742,77 +871,117 @@ const LedgerTab = () => {
     }
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-            <div className="flex justify-between items-end">
-                <div className="space-y-1">
-                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">Financial Ledger</h2>
-                    <p className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>TRANSACTION ARCHIVE & PROFIT TRACKING</p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+                <div className="flex bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--divider)] overflow-x-auto no-scrollbar">
+                    {['all', 'paid', 'confirmed', 'shipped', 'delivered', 'completed'].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setLedgerFilter(status)}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${ledgerFilter === status 
+                                ? 'bg-[#F18B24] text-white shadow-lg shadow-orange-500/20' 
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                            {status}
+                        </button>
+                    ))}
                 </div>
                 <button
                     onClick={exportToCSV}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#F18B24] rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
+                    className="flex items-center justify-center gap-2 px-6 py-4 bg-[#F18B24] rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
                 >
                     <Download size={14} /> Export CSV Report
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-6 rounded-3xl border transition-colors duration-500" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
-                    <p className="text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Total Volume (GMV)</p>
-                    <p className="text-2xl font-black">₦{totalVolume.toLocaleString()}</p>
-                </div>
-                <div className="p-6 rounded-3xl border transition-colors duration-500" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
-                    <p className="text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Platform Earnings</p>
-                    <p className="text-2xl font-black text-emerald-500">₦{platformIncome.toLocaleString()}</p>
-                </div>
-                <div className="p-6 rounded-3xl border transition-colors duration-500" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
-                    <p className="text-[10px] font-black uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Seller Payouts</p>
-                    <p className="text-2xl font-black text-indigo-500">₦{sellerPayouts.toLocaleString()}</p>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <FinancialCard title="Total Volume (GMV)" value={`₦${totalVolume.toLocaleString()}`} />
+                <FinancialCard title="Platform Earnings" value={`₦${platformIncome.toLocaleString()}`} isSuccess />
+                <FinancialCard title="Seller Payouts" value={`₦${sellerPayouts.toLocaleString()}`} isIndigo />
             </div>
 
-            <div className="rounded-3xl border overflow-hidden overflow-x-auto" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
-                <table className="w-full text-left border-collapse min-w-[900px]">
-                    <thead>
-                        <tr className="border-b" style={{ borderColor: 'var(--divider)', background: 'var(--bg-secondary)' }}>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Ref ID</th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Date</th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Transaction (Seller)</th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Volume</th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Commission</th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Payout</th>
-                            <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y" style={{ divideColor: 'var(--divider)' }}>
-                        {confirmedOrders.length === 0 ? (
-                            <tr>
-                                <td colSpan="7" className="px-6 py-20 text-center text-sm font-bold" style={{ color: 'var(--text-muted)' }}>No transactions recorded in this period.</td>
+            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+                {/* Desktop View */}
+                <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr className="border-b" style={{ borderColor: 'var(--divider)', background: 'var(--bg-secondary)' }}>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Ref ID</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Date</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Transaction (Seller)</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Volume</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Commission</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Payout</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Status</th>
                             </tr>
-                        ) : (
-                            confirmedOrders.map((order) => {
-                                const fee = order.commission || Math.round(order.amount * 0.1)
-                                const sellerPayout = order.amount - fee
-                                return (
-                                    <tr key={order.id} className="hover:bg-[var(--bg-secondary)] transition-colors group">
-                                        <td className="px-6 py-4 font-mono text-[10px]">{order.id.slice(0, 8)}</td>
-                                        <td className="px-6 py-4 text-[11px] font-bold">{new Date(order.date).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-xs font-black">{order.productName}</div>
-                                            <div className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{order.sellerName || 'S&R Seller'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 text-[11px] font-black">₦{order.amount.toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-[11px] font-black text-emerald-500">₦{fee.toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-[11px] font-black text-indigo-500">₦{sellerPayout.toLocaleString()}</td>
-                                        <td className="px-6 py-4">
-                                            <StatusPill status={order.status} />
-                                        </td>
-                                    </tr>
-                                )
-                            })
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                            {confirmedOrders.length === 0 ? (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-20 text-center text-sm font-bold" style={{ color: 'var(--text-muted)' }}>No transactions match the criteria.</td>
+                                </tr>
+                            ) : (
+                                confirmedOrders.map((order) => {
+                                    const fee = order.commission || Math.round(order.amount * 0.1)
+                                    const sellerPayout = order.amount - fee
+                                    return (
+                                        <tr key={order.id} className="hover:bg-[var(--bg-secondary)] transition-colors group">
+                                            <td className="px-6 py-4 font-mono text-[10px]">{order.id.slice(0, 8)}</td>
+                                            <td className="px-6 py-4 text-[11px] font-bold">{new Date(order.date).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-xs font-black">{order.productName}</div>
+                                                <div className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{order.sellerName || 'S&R Seller'}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-[11px] font-black">₦{order.amount.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-[11px] font-black text-emerald-500">₦{fee.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-[11px] font-black text-indigo-500">₦{sellerPayout.toLocaleString()}</td>
+                                            <td className="px-6 py-4">
+                                                <StatusPill status={order.status} />
+                                            </td>
+                                        </tr>
+                                    )
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile view */}
+                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
+                    {confirmedOrders.map(order => {
+                        const fee = order.commission || Math.round(order.amount * 0.1)
+                        const payout = order.amount - fee
+                        return (
+                            <div key={order.id} className="p-6 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-xs font-black">{order.productName}</p>
+                                        <p className="text-[10px] font-bold text-[var(--text-muted)]">#{order.id.slice(-8)}</p>
+                                    </div>
+                                    <StatusPill status={order.status} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Total Volume</p>
+                                        <p className="text-xs font-black">₦{order.amount.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black uppercase text-emerald-500 mb-1">Commission</p>
+                                        <p className="text-xs font-black text-emerald-500">₦{fee.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase text-indigo-500 mb-1">Seller Payout</p>
+                                        <p className="text-xs font-black text-indigo-500">₦{payout.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Date</p>
+                                        <p className="text-[10px] font-bold">{new Date(order.date).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
             </div>
 
             <div className="p-8 rounded-3xl border border-dashed text-center space-y-3" style={{ borderColor: 'var(--divider)' }}>
@@ -857,7 +1026,7 @@ const LogoutModal = ({ onConfirm, onCancel }) => (
     </motion.div>
 )
 
-const CustomersTab = () => {
+const CustomersTab = ({ searchTerm }) => {
     const { orders } = useStore()
     const customers = useMemo(() => {
         const unique = {}
@@ -874,51 +1043,92 @@ const CustomersTab = () => {
             unique[o.buyerEmail].orders += 1
             unique[o.buyerEmail].spend += o.amount
         })
-        return Object.values(unique)
-    }, [orders])
+        
+        let filtered = Object.values(unique)
+        if (searchTerm) {
+            filtered = filtered.filter(c => 
+                c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                c.phone.includes(searchTerm)
+            )
+        }
+        return filtered
+    }, [orders, searchTerm])
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-            <div>
-                <h2 className="text-2xl font-black">Community Directory</h2>
-                <p className="text-xs font-bold text-[var(--text-muted)]">Verified buyers across the SR ecosystem.</p>
-            </div>
-
-            <div className="rounded-[24px] shadow-sm overflow-hidden overflow-x-auto" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
-                <table className="w-full text-left min-w-[700px]">
-                    <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
-                        <tr>
-                            <th className="px-10 py-5">Customer</th>
-                            <th className="px-10 py-5">Contact Details</th>
-                            <th className="px-10 py-5">History</th>
-                            <th className="px-10 py-5 text-right">Total Life Value</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
-                        {customers.map((c, i) => (
-                            <tr key={i} className="group hover:bg-[var(--bg-secondary)]">
-                                <td className="px-10 py-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
-                                            {c.name.charAt(0)}
-                                        </div>
-                                        <span className="text-xs font-black">{c.name}</span>
-                                    </div>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <p className="text-xs font-bold">{c.email}</p>
-                                    <p className="text-[10px] text-[var(--text-muted)] mt-1">{c.phone}</p>
-                                </td>
-                                <td className="px-10 py-6">
-                                    <span className="text-[10px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-3 py-1 rounded-full">{c.orders} Orders</span>
-                                </td>
-                                <td className="px-10 py-6 text-right">
-                                    <span className="text-xs font-black">₦{c.spend.toLocaleString()}</span>
-                                </td>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+                {/* Desktop View */}
+                <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full text-left min-w-[700px]">
+                        <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
+                            <tr>
+                                <th className="px-10 py-5">Customer</th>
+                                <th className="px-10 py-5">Contact Details</th>
+                                <th className="px-10 py-5">History</th>
+                                <th className="px-10 py-5 text-right">Total Life Value</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                            {customers.map((c, i) => (
+                                <tr key={i} className="group hover:bg-[var(--bg-secondary)]">
+                                    <td className="px-10 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
+                                                {c.name.charAt(0)}
+                                            </div>
+                                            <span className="text-xs font-black">{c.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-10 py-6">
+                                        <p className="text-xs font-bold">{c.email}</p>
+                                        <p className="text-[10px] text-[var(--text-muted)] mt-1">{c.phone}</p>
+                                    </td>
+                                    <td className="px-10 py-6">
+                                        <span className="text-[10px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-3 py-1 rounded-full">{c.orders} Orders</span>
+                                    </td>
+                                    <td className="px-10 py-6 text-right">
+                                        <span className="text-xs font-black">₦{c.spend.toLocaleString()}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
+                    {customers.length === 0 ? (
+                        <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No customers found.</div>
+                    ) : (
+                        customers.map((c, i) => (
+                            <div key={i} className="p-6 space-y-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-sm font-black shrink-0">
+                                        {c.name.charAt(0)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-black truncate">{c.name}</p>
+                                        <p className="text-[10px] font-bold text-[var(--text-muted)] truncate">{c.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[9px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-2 py-1 rounded-full">{c.orders} Orders</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center pt-2">
+                                    <div>
+                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Phone Number</p>
+                                        <p className="text-xs font-bold">{c.phone}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Total Life Value</p>
+                                        <p className="text-sm font-black text-[#F18B24]">₦{c.spend.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </motion.div>
     )
