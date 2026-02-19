@@ -16,6 +16,7 @@ const AdminDashboard = () => {
     const [selectedOrder, setSelectedOrder] = useState(null)
     const [showAddProduct, setShowAddProduct] = useState(false)
     const [editingProduct, setEditingProduct] = useState(null)
+    const [productToDelete, setProductToDelete] = useState(null)
     const [showNotifications, setShowNotifications] = useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -201,7 +202,7 @@ const AdminDashboard = () => {
                         <AnimatePresence mode="wait">
                             {activeTab === 'overview' && <OverviewTab key="overview" />}
                             {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} searchTerm={searchTerm} />}
-                            {activeTab === 'products' && <ProductsTab key="products" onEdit={setEditingProduct} onAdd={() => setShowAddProduct(true)} searchTerm={searchTerm} />}
+                            {activeTab === 'products' && <ProductsTab key="products" onEdit={setEditingProduct} onAdd={() => setShowAddProduct(true)} onDelete={setProductToDelete} searchTerm={searchTerm} />}
                             {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} />}
                             {activeTab === 'customers' && <CustomersTab key="customers" searchTerm={searchTerm} />}
                             {activeTab === 'stats' && <StatsTab key="stats" />}
@@ -230,8 +231,31 @@ const AdminDashboard = () => {
             </AnimatePresence>
 
             <AnimatePresence>
+                {productToDelete && (
+                    <DeleteConfirmModal 
+                        product={productToDelete} 
+                        onConfirm={() => { setProductToDelete(null); }} 
+                        onCancel={() => setProductToDelete(null)} 
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
                 {showLogoutConfirm && (
                     <LogoutModal onConfirm={() => { window.location.href = '/'; }} onCancel={() => setShowLogoutConfirm(false)} />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {productToDelete && (
+                    <DeleteConfirmModal 
+                        product={productToDelete} 
+                        onConfirm={() => {
+                            removeProduct(productToDelete.id)
+                            setProductToDelete(null)
+                        }} 
+                        onCancel={() => setProductToDelete(null)} 
+                    />
                 )}
             </AnimatePresence>
         </div>
@@ -284,7 +308,7 @@ const OverviewTab = () => {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="xl:col-span-2 rounded-[24px] p-8 transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)', boxShadow: 'var(--card-shadow)' }}>
+                <div className="xl:col-span-2 rounded-[20px] p-8 transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)', boxShadow: 'var(--card-shadow)' }}>
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-xl font-black">Escrow Performance</h3>
@@ -322,7 +346,7 @@ const OverviewTab = () => {
                     </div>
                 </div>
 
-                <div className="rounded-[24px] p-8 transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)', boxShadow: 'var(--card-shadow)' }}>
+                <div className="rounded-[20px] p-8 transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)', boxShadow: 'var(--card-shadow)' }}>
                     <h3 className="text-xl font-black mb-8">Pipeline Tracking</h3>
                     <div className="space-y-8">
                         <div className="flex justify-between items-center">
@@ -365,7 +389,7 @@ const OverviewTab = () => {
 }
 
 const StatCard = ({ title, value, trend, isPositive, isOrange }) => (
-    <div className="rounded-[24px] p-6 shadow-sm transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+    <div className="rounded-[20px] p-6 shadow-sm transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">{title}</p>
         <p className={`text-2xl font-black font-heading ${isOrange ? 'text-[#F18B24]' : ''}`}>{value}</p>
         <div className={`mt-2 flex items-center gap-1 text-[10px] font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
@@ -423,7 +447,7 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
                 </div>
             </div>
 
-            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
                 {/* Desktop View */}
                 <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full text-left min-w-[800px]">
@@ -692,8 +716,8 @@ const SecondaryBtn = ({ label, full }) => (
     </button>
 )
 
-const ProductsTab = ({ onEdit, onAdd, searchTerm }) => {
-    const { products, removeProduct } = useStore()
+const ProductsTab = ({ onEdit, onAdd, onDelete, searchTerm }) => {
+    const { products } = useStore()
     const [activeCategory, setActiveCategory] = useState('All')
 
     const filteredProducts = useMemo(() => {
@@ -726,7 +750,7 @@ const ProductsTab = ({ onEdit, onAdd, searchTerm }) => {
                 </button>
             </div>
 
-            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
                 {/* Desktop view */}
                 <div className="hidden lg:block">
                     <table className="w-full text-left">
@@ -763,7 +787,7 @@ const ProductsTab = ({ onEdit, onAdd, searchTerm }) => {
                                     <td className="px-10 py-6 text-right">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
-                                            <button onClick={() => removeProduct(product.id)} className="p-2.5 rounded-lg text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                            <button onClick={() => onDelete(product)} className="p-2.5 rounded-lg text-red-500 transition-colors"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -791,7 +815,7 @@ const ProductsTab = ({ onEdit, onAdd, searchTerm }) => {
                                 <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
                                 <div className="flex gap-2">
                                     <button onClick={() => onEdit(product)} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[var(--text-muted)]"><Edit3 size={14} /></button>
-                                    <button onClick={() => removeProduct(product.id)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
+                                    <button onClick={() => onDelete(product)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
                                 </div>
                             </div>
                         </div>
@@ -900,7 +924,7 @@ const LedgerTab = ({ searchTerm }) => {
                 <FinancialCard title="Seller Payouts" value={`₦${sellerPayouts.toLocaleString()}`} isIndigo />
             </div>
 
-            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
                 {/* Desktop View */}
                 <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[900px]">
@@ -1010,7 +1034,7 @@ const NotificationItem = ({ title, desc, time, icon, color }) => (
 
 const LogoutModal = ({ onConfirm, onCancel }) => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[32px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)' }}>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)' }}>
             <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto">
                 <LogOut className="text-red-500" size={24} />
             </div>
@@ -1057,7 +1081,7 @@ const CustomersTab = ({ searchTerm }) => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            <div className="rounded-[24px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
+            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
                 {/* Desktop View */}
                 <div className="hidden lg:block overflow-x-auto">
                     <table className="w-full text-left min-w-[700px]">
@@ -1208,6 +1232,33 @@ const SettingsTab = () => {
     )
 }
 
+const DeleteConfirmModal = ({ product, onConfirm, onCancel }) => (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)' }}>
+            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto">
+                <Trash2 className="text-red-500" size={24} />
+            </div>
+            <div>
+                <h3 className="text-xl font-black mb-2">Delete Product?</h3>
+                <p className="text-xs font-bold text-[var(--text-muted)] leading-relaxed px-4">
+                    Are you sure you want to remove <span className="text-[var(--text-primary)]">"{product.name}"</span>? This action cannot be undone.
+                </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <button onClick={onCancel} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[var(--bg-secondary)]" style={{ color: 'var(--text-muted)' }}>Keep Item</button>
+                <button onClick={onConfirm} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-red-500 text-white shadow-lg shadow-red-500/20">Delete</button>
+            </div>
+        </motion.div>
+    </motion.div>
+)
+
+const FinancialCard = ({ title, value, isSuccess, isIndigo }) => (
+    <div className="p-8 rounded-[24px] border transition-colors duration-500" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">{title}</p>
+        <p className={`text-2xl font-black ${isSuccess ? 'text-emerald-500' : isIndigo ? 'text-indigo-500' : ''}`}>{value}</p>
+    </div>
+)
+
 const ProductModal = ({ product = null, onClose }) => {
     const { addProduct, updateProduct } = useStore()
     const isEdit = !!product
@@ -1237,7 +1288,7 @@ const ProductModal = ({ product = null, onClose }) => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-6 lg:p-12 rounded-[32px] w-full max-w-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar transition-colors duration-500" style={{ background: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-6 lg:p-12 rounded-[24px] w-full max-w-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar transition-colors duration-500" style={{ background: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-6 right-6 lg:top-8 lg:right-8 transition-colors" style={{ color: 'var(--text-muted)' }}>
                     <X size={24} />
                 </button>

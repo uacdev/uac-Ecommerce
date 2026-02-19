@@ -1,6 +1,6 @@
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, ShoppingBag, ShieldCheck, Zap, Truck, Filter, Star, ArrowUpRight, ChevronRight, Instagram, Mail } from 'lucide-react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES } from '../data/products'
 import { useStore } from '../context/StoreContext'
@@ -9,7 +9,14 @@ import ProductCard from '../components/ProductCard'
 
 const Home = () => {
     const [activeCategory, setActiveCategory] = useState("All")
+    const [flipped, setFlipped] = useState(false)
     const { products } = useStore()
+
+    useEffect(() => {
+        const interval = setInterval(() => setFlipped(prev => !prev), 3000)
+        return () => clearInterval(interval)
+    }, [])
+
     const { isDark } = useTheme()
     const heroRef = useRef(null)
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] })
@@ -54,7 +61,7 @@ const Home = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* HERO SECTION — Inspired by sneaker store's bold typography */}
             {/* ═══════════════════════════════════════════ */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-32 md:pt-40">
+            <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-20 md:pt-40">
                 {/* Background gradient elements */}
                 <div className="absolute top-20 right-[-5%] w-[600px] h-[600px] rounded-full" style={{ background: isDark ? '#F18B2412' : '#F18B2408', filter: 'blur(150px)' }} />
                 <div className="absolute bottom-0 left-[-10%] w-[500px] h-[500px] rounded-full" style={{ background: isDark ? '#F18B240A' : '#F18B2406', filter: 'blur(120px)' }} />
@@ -83,11 +90,38 @@ const Home = () => {
                             >
                                 SELL OUT
                                 <br />
-                                <span className="italic font-heading" style={{ color: '#F18B24' }}>FAST.</span>
-                                <br />
+                                <div className="h-[1.1em] overflow-hidden">
+                                    <AnimatePresence mode="wait">
+                                        <motion.span
+                                            key={flipped ? 'easy' : 'fast'}
+                                            initial={{ y: "-100%", opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: "100%", opacity: 0 }}
+                                            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                                            className="italic font-heading block"
+                                            style={{ color: '#F18B24' }}
+                                        >
+                                            {flipped ? 'EASY.' : 'FAST.'}
+                                        </motion.span>
+                                    </AnimatePresence>
+                                </div>
                                 RELOCATE
                                 <br />
-                                <span className="italic font-heading" style={{ color: '#F18B24' }}>EASY.</span>
+                                <div className="h-[1.1em] overflow-hidden">
+                                    <AnimatePresence mode="wait">
+                                        <motion.span
+                                            key={flipped ? 'fast' : 'easy'}
+                                            initial={{ y: "-100%", opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: "100%", opacity: 0 }}
+                                            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                                            className="italic font-heading block"
+                                            style={{ color: '#F18B24' }}
+                                        >
+                                            {flipped ? 'FAST.' : 'EASY.'}
+                                        </motion.span>
+                                    </AnimatePresence>
+                                </div>
                             </motion.h1>
 
                             <motion.p

@@ -9,10 +9,10 @@ const Navbar = () => {
     const { isDark, toggleTheme } = useTheme()
 
     return (
-        <nav className="fixed top-0 left-0 w-full z-50 px-6 py-6">
-            <div className="max-w-7xl mx-auto flex justify-between items-center glass px-8 py-6 transition-all duration-500" style={{ backgroundColor: 'var(--nav-bg)', borderRadius: '24px' }}>
+        <nav className="fixed top-0 left-0 w-full z-50 md:px-6 md:py-6">
+            <div className="max-w-7xl mx-auto flex justify-between items-center glass px-6 py-4 md:px-8 md:py-6 transition-all duration-500 rounded-none md:rounded-[24px]" style={{ backgroundColor: 'var(--nav-bg)' }}>
                 <Link to="/" className="flex items-center gap-2 group">
-                    <img src="/images/logo_nobg.png" alt="Logo" className="h-20 lg:h-28 w-auto group-hover:scale-105 transition-transform" />
+                    <img src="/images/logo_nobg.png" alt="Logo" className="h-16 md:h-28 w-auto group-hover:scale-105 transition-transform" />
                 </Link>
 
                 {/* Desktop Menu */}
@@ -54,7 +54,7 @@ const Navbar = () => {
                         className="p-2.5 rounded-xl transition-all"
                         style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
                     >
-                        {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-indigo-500" />}
+                        {isDark ? <Sun size={18} className="text-yellow-400" /> : <Moon size={18} className="text-black" />}
                     </button>
                     <button className="p-2" onClick={() => setIsOpen(!isOpen)} style={{ color: 'var(--text-primary)' }}>
                         {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -66,10 +66,11 @@ const Navbar = () => {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="absolute top-24 left-6 right-6 glass p-8 flex flex-col gap-6 md:hidden"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="absolute top-24 left-6 right-6 p-10 flex flex-col gap-8 md:hidden shadow-2xl border"
+                        style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)', borderRadius: '32px', zIndex: 100 }}
                     >
                         <Link to="/" onClick={() => setIsOpen(false)} className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Home</Link>
                         <Link to="/track-order" onClick={() => setIsOpen(false)} className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>Track Order</Link>
