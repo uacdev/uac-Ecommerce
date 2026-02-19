@@ -83,12 +83,17 @@ const ProductDetails = () => {
 
                 {/* Right: Product Info */}
                 <div className="flex flex-col">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full w-fit mb-4" style={{ background: 'var(--badge-bg)', border: '1px solid rgba(241, 139, 36, 0.2)' }}>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full w-fit mb-6" style={{ background: 'var(--badge-bg)', border: '1px solid var(--brand-orange)' }}>
                         <ShieldCheck size={14} className="text-[#F18B24]" />
-                        <span className="text-[10px] font-bold text-[#F18B24] uppercase tracking-wider">Delivered by Sellout & Relocate</span>
+                        <span className="text-[10px] font-black text-[#F18B24] uppercase tracking-[0.2em]">Verified Transaction Gateway</span>
                     </div>
 
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4 font-heading" style={{ color: 'var(--text-primary)' }}>{product.name}</h1>
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--divider)] rounded text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Delivered by Sellout & Relocate</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+
+                    <h1 className="text-4xl md:text-5xl font-black mb-4 font-heading tracking-tight" style={{ color: 'var(--text-primary)' }}>{product.name}</h1>
 
                     <div className="flex items-center gap-4 mb-6">
                         <p className="text-3xl font-extrabold text-[#F18B24]">₦{product.price.toLocaleString()}</p>
@@ -109,11 +114,11 @@ const ProductDetails = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-4 p-4 glass">
+                        <div className="flex items-start gap-4 p-5 rounded-2xl border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
                             <Info size={24} style={{ color: 'var(--text-muted)' }} className="mt-1" />
                             <div>
-                                <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Inspection Policy</h4>
-                                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Physical inspection is allowed before final payment release. Ask admin for details.</p>
+                                <h4 className="font-black text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--text-primary)' }}>Inspection & Trust</h4>
+                                <p className="text-xs font-bold leading-relaxed" style={{ color: 'var(--text-muted)' }}>This is a human-assisted transaction. Physical inspection is mandatory or optional based on location before final payment release to seller.</p>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { StoreProvider } from './context/StoreContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Home from './pages/Home'
 import ProductDetails from './pages/ProductDetails'
 import Checkout from './pages/Checkout'
@@ -9,10 +10,20 @@ import Success from './pages/Success'
 import DeliverySelection from './pages/DeliverySelection'
 import SuccessDelivery from './pages/SuccessDelivery'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminLogin from './pages/AdminLogin'
 import TrackOrder from './pages/TrackOrder'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
+
+const ProtectedRoute = ({ children }) => {
+  const { user, loading } = useAuth()
+  
+  if (loading) return null
+  if (!user) return <Navigate to="/admin/login" replace />
+  
+  return children
+}
 
 function Layout() {
   const location = useLocation()
@@ -31,7 +42,16 @@ function Layout() {
             <Route path="/deliver-selection" element={<DeliverySelection />} />
             <Route path="/success-delivery" element={<SuccessDelivery />} />
             <Route path="/track-order" element={<TrackOrder />} />
-            <Route path="/admin/*" element={<AdminDashboard />} />
+            
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route 
+              path="/admin/*" 
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </AnimatePresence>
       </main>
@@ -45,9 +65,11 @@ function App() {
     <Router>
       <ScrollToTop />
       <ThemeProvider>
-        <StoreProvider>
-          <Layout />
-        </StoreProvider>
+        <AuthProvider>
+          <StoreProvider>
+            <Layout />
+          </StoreProvider>
+        </AuthProvider>
       </ThemeProvider>
     </Router>
   )

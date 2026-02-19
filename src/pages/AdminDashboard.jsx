@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/AuthContext'
 import { CATEGORIES } from '../data/products'
 
 const AdminDashboard = () => {
@@ -17,6 +18,8 @@ const AdminDashboard = () => {
     const [showAddProduct, setShowAddProduct] = useState(false)
     const [editingProduct, setEditingProduct] = useState(null)
     const [productToDelete, setProductToDelete] = useState(null)
+    const [selectedProductInfo, setSelectedProductInfo] = useState(null)
+    const [selectedCustomerInfo, setSelectedCustomerInfo] = useState(null)
     const [showNotifications, setShowNotifications] = useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -24,6 +27,7 @@ const AdminDashboard = () => {
 
     const { isDark, toggleTheme } = useTheme()
     const { loading } = useStore()
+    const { signOut: logout } = useAuth()
 
     if (loading) {
         return (
@@ -202,9 +206,18 @@ const AdminDashboard = () => {
                         <AnimatePresence mode="wait">
                             {activeTab === 'overview' && <OverviewTab key="overview" />}
                             {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} searchTerm={searchTerm} />}
-                            {activeTab === 'products' && <ProductsTab key="products" onEdit={setEditingProduct} onAdd={() => setShowAddProduct(true)} onDelete={setProductToDelete} searchTerm={searchTerm} />}
-                            {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} />}
-                            {activeTab === 'customers' && <CustomersTab key="customers" searchTerm={searchTerm} />}
+                            {activeTab === 'products' && (
+                                <ProductsTab 
+                                    key="products" 
+                                    onEdit={setEditingProduct} 
+                                    onAdd={() => setShowAddProduct(true)} 
+                                    onDelete={setProductToDelete} 
+                                    onInfo={setSelectedProductInfo}
+                                    searchTerm={searchTerm} 
+                                />
+                            )}
+                            {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} onSelect={setSelectedOrder} />}
+                            {activeTab === 'customers' && <CustomersTab key="customers" searchTerm={searchTerm} onInfo={setSelectedCustomerInfo} />}
                             {activeTab === 'stats' && <StatsTab key="stats" />}
                             {activeTab === 'settings' && <SettingsTab key="settings" />}
                         </AnimatePresence>
@@ -212,7 +225,7 @@ const AdminDashboard = () => {
 
                     <AnimatePresence>
                         {selectedOrder && (
-                            <OrderDetailPanel
+                            <OrderInfoModal
                                 order={selectedOrder}
                                 onClose={() => setSelectedOrder(null)}
                             />
@@ -234,28 +247,37 @@ const AdminDashboard = () => {
                 {productToDelete && (
                     <DeleteConfirmModal 
                         product={productToDelete} 
-                        onConfirm={() => { setProductToDelete(null); }} 
-                        onCancel={() => setProductToDelete(null)} 
-                    />
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-                {showLogoutConfirm && (
-                    <LogoutModal onConfirm={() => { window.location.href = '/'; }} onCancel={() => setShowLogoutConfirm(false)} />
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-                {productToDelete && (
-                    <DeleteConfirmModal 
-                        product={productToDelete} 
                         onConfirm={() => {
                             removeProduct(productToDelete.id)
                             setProductToDelete(null)
                         }} 
                         onCancel={() => setProductToDelete(null)} 
                     />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {selectedProductInfo && (
+                    <ProductInfoModal 
+                        product={selectedProductInfo} 
+                        onClose={() => setSelectedProductInfo(null)}
+                        onEdit={setEditingProduct}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {selectedCustomerInfo && (
+                    <CustomerInfoModal 
+                        customer={selectedCustomerInfo} 
+                        onClose={() => setSelectedCustomerInfo(null)} 
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showLogoutConfirm && (
+                    <LogoutModal onConfirm={logout} onCancel={() => setShowLogoutConfirm(false)} />
                 )}
             </AnimatePresence>
         </div>
@@ -490,7 +512,7 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
                                         <td className="px-10 py-6 text-right">
                                             <div className="flex items-center justify-end gap-4">
                                                 <span className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{new Date(order.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                                                <MoreHorizontal size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} />
+                                                <MoreHorizontal size={14} className="transition-opacity" style={{ color: 'var(--text-muted)' }} />
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -565,7 +587,7 @@ const StatusPill = ({ status }) => {
     )
 }
 
-const OrderDetailPanel = ({ order, onClose }) => {
+const OrderInfoModal = ({ order, onClose }) => {
     const { updateOrderStatus } = useStore()
 
     const handleUpdateStatus = (newStatus) => {
@@ -573,124 +595,111 @@ const OrderDetailPanel = ({ order, onClose }) => {
     }
 
     return (
-        <motion.aside
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            className="fixed lg:static inset-y-0 right-0 w-full lg:w-[450px] shadow-2xl z-[102] lg:z-50 overflow-hidden flex flex-col transition-colors duration-500"
-            style={{ background: 'var(--bg-primary)', borderLeft: '1px solid var(--divider)' }}
+        <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={onClose}
         >
-            <div className="p-8 border-b flex items-center justify-between" style={{ borderColor: 'var(--divider)' }}>
-                <div className="flex items-center gap-3">
-                    <h3 className="text-xl font-black">Order ID</h3>
-                    <span className="text-xs font-mono bg-[var(--bg-secondary)] px-2 py-1 rounded border border-[var(--divider)]">{order.id}</span>
-                </div>
-                <button onClick={onClose} className="p-2 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}>
-                    <X size={20} />
-                </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-8 py-10 space-y-12 custom-scrollbar">
-                <div className="text-center">
-                    <img src={`https://i.pravatar.cc/300?u=${order.buyerName}`} className="w-24 h-24 rounded-full mx-auto mb-6 shadow-xl bg-gray-100" style={{ boxShadow: 'var(--card-shadow)' }} />
-                    <h4 className="text-2xl font-black mb-1">{order.buyerName}</h4>
-                    <p className="text-xs font-bold mb-8" style={{ color: 'var(--text-muted)' }}>{order.buyerEmail || 'Guest Customer'}</p>
-
-                    <div className="flex justify-center gap-3">
-                        <SocialAction icon={<Mail size={18} />} />
-                        <SocialAction icon={<Phone size={18} />} />
-                        <SocialAction icon={<MessageSquare size={18} />} />
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl transition-colors duration-500 custom-scrollbar relative"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="p-8 border-b flex items-center justify-between sticky top-0 z-10" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-xl font-black">Order Info</h3>
+                        <span className="text-xs font-mono bg-[var(--bg-secondary)] px-2 py-1 rounded border border-[var(--divider)]">#{order.id.slice(-8)}</span>
                     </div>
+                    <button onClick={onClose} className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-secondary)]" style={{ color: 'var(--text-muted)' }}>
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <div>
-                    <div className="flex items-center justify-between mb-6">
-                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>Transaction Items</h5>
-                        <StatusPill status={order.status} />
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-6 p-4 rounded-2xl border border-transparent transition-all group" style={{ background: 'var(--bg-secondary)' }}>
-                            <img src={order.productImage} className="w-16 h-16 rounded-xl object-cover shrink-0" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-black truncate">{order.productName}</p>
-                                <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
-                            </div>
+                <div className="p-8 lg:p-10 space-y-10">
+                    <div className="text-center">
+                        <img src={`https://i.pravatar.cc/300?u=${order.buyerName}`} className="w-24 h-24 rounded-full mx-auto mb-6 shadow-xl bg-gray-100 border-4 border-[var(--bg-secondary)]" />
+                        <h4 className="text-2xl font-black mb-1">{order.buyerName}</h4>
+                        <p className="text-xs font-bold mb-8 uppercase tracking-widest text-[#F18B24]">Verified Customer</p>
+
+                        <div className="flex justify-center gap-4">
+                            <SocialAction icon={<Mail size={18} />} label="Email" />
+                            <SocialAction icon={<Phone size={18} />} label="Call" />
+                            <SocialAction icon={<MessageSquare size={18} />} label="WhatsApp" />
                         </div>
                     </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-6">
-                    <LogisticsCard 
-                        label="Payment Source" 
-                        value={order.paymentMethod === 'bank' ? 'Direct Bank Transfer' : 'Paystack Online'} 
-                        icon={<CreditCard size={14} />} 
-                        color="text-[#F18B24]" 
-                    />
-                    <LogisticsCard 
-                        label="Delivery Route" 
-                        value={order.deliveryMethod === 'self' ? 'Self-Arranged' : 'SR-Assisted'} 
-                        icon={<Truck size={14} />} 
-                        color="text-indigo-500" 
-                    />
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--divider)]">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Item Details</p>
+                            <div className="flex items-center gap-4">
+                                <img src={order.productImage} className="w-12 h-12 rounded-lg object-cover" />
+                                <div>
+                                    <p className="text-sm font-black truncate">{order.productName}</p>
+                                    <p className="text-xs font-bold text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <div className="p-6 rounded-2xl border" style={{ borderColor: 'var(--divider)' }}>
-                    <div className="flex items-center gap-2 mb-4">
-                        <MapPin size={14} className="text-red-500" />
-                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Destination</p>
+                        <div className="p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--divider)]">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Order Status</p>
+                            <StatusPill status={order.status} />
+                        </div>
                     </div>
-                    <p className="text-xs font-bold leading-relaxed">{order.buyerAddress || 'Address not registered for this order.'}</p>
-                    <p className="text-[10px] font-bold mt-2" style={{ color: 'var(--text-muted)' }}>{order.buyerPhone}</p>
-                </div>
-            </div>
 
-            <div className="p-8 border-t space-y-4" style={{ borderColor: 'var(--divider)' }}>
-                <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Order Total</span>
-                    <span className="text-2xl font-black text-[#F18B24]">₦{order.amount.toLocaleString()}</span>
-                </div>
-
-                {/* Workflow Action Buttons — Aligned with PRD */}
-                {order.status === 'pending' && (
-                    <ActionBtn label="Confirm Payment Selection" full onClick={() => handleUpdateStatus('paid')} />
-                )}
-                {order.status === 'paid' && (
-                    <ActionBtn label="Verify & Confirm Funds" full color="bg-blue-600" onClick={() => handleUpdateStatus('confirmed')} />
-                )}
-                {order.status === 'confirmed' && (
-                    <ActionBtn label="Ready for Transit" full color="bg-indigo-600" onClick={() => handleUpdateStatus('shipped')} />
-                )}
-                {order.status === 'shipped' && (
-                    <ActionBtn label="Mark as Delivered" full color="bg-emerald-600" onClick={() => handleUpdateStatus('delivered')} />
-                )}
-                {order.status === 'delivered' && (
-                    <ActionBtn label="Settle Seller (Finalize)" full color="bg-green-600" onClick={() => handleUpdateStatus('completed')} />
-                )}
-                {order.status === 'completed' && (
-                    <div className="w-full py-4 rounded-xl text-center text-xs font-black uppercase tracking-widest bg-green-500/10 text-green-600 border border-green-500/20">
-                        ✓ Transaction Completed & Settled
+                    <div className="space-y-6">
+                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Order Management</h5>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {['pending', 'paid', 'confirmed', 'shipped', 'delivered', 'completed'].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => handleUpdateStatus(status)}
+                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${order.status === status 
+                                        ? 'bg-[#F18B24] text-white border-[#F18B24] shadow-lg shadow-orange-500/20' 
+                                        : 'border-[var(--divider)] text-[var(--text-muted)] hover:border-[#F18B24] hover:text-[#F18B24]'}`}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                )}
 
-                <div className="flex gap-4">
-                    <SecondaryBtn label="Print Invoice" full />
-                    {order.status !== 'completed' && order.status !== 'refunded' && (
-                        <button 
-                            onClick={() => handleUpdateStatus('refunded')} 
-                            className="w-full py-4 rounded-xl bg-red-500/5 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/10"
-                        >
-                            Issue Refund
-                        </button>
-                    )}
+                    <div className="grid grid-cols-2 gap-6">
+                        <LogisticsCard 
+                            label="Payment" 
+                            value={order.paymentMethod === 'bank' ? 'Bank Transfer' : 'Online'} 
+                            icon={<CreditCard size={14} />} 
+                            color="text-[#F18B24]" 
+                        />
+                        <LogisticsCard 
+                            label="Delivery" 
+                            value={order.deliveryMethod === 'self' ? 'Self-Pickup' : 'SR-Assisted'} 
+                            icon={<Truck size={14} />} 
+                            color="text-indigo-500" 
+                        />
+                    </div>
+
+                    <div className="p-6 rounded-2xl border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <MapPin size={14} className="text-red-500" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Shipping Address</p>
+                        </div>
+                        <p className="text-xs font-bold leading-relaxed">{order.buyerAddress || 'Address not registered for this order.'}</p>
+                    </div>
                 </div>
-            </div>
-        </motion.aside>
-    )
-}
+            </motion.div>
+        </motion.div>
+    );
+};
 
-const SocialAction = ({ icon }) => (
-    <button className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border border-transparent hover:border-[#F18B2420]" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
-        {icon}
-    </button>
-)
+const SocialAction = ({ icon, label }) => (
+    <div className="flex flex-col items-center gap-2">
+        <button className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border border-transparent hover:border-[#F18B2420] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[#F18B24] hover:bg-[var(--bg-primary)]">
+            {icon}
+        </button>
+        <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">{label}</span>
+    </div>
+);
 
 const LogisticsCard = ({ label, value, icon, color }) => (
     <div className="p-4 rounded-2xl space-y-2" style={{ background: 'var(--bg-secondary)' }}>
@@ -699,7 +708,7 @@ const LogisticsCard = ({ label, value, icon, color }) => (
         </div>
         <p className="text-xs font-black truncate">{value}</p>
     </div>
-)
+);
 
 const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[#F18B24]', onClick }) => (
     <button
@@ -708,15 +717,15 @@ const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[#F18B24]', onClick 
     >
         {label}
     </button>
-)
+);
 
 const SecondaryBtn = ({ label, full }) => (
     <button className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors`} style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
         {label}
     </button>
-)
+);
 
-const ProductsTab = ({ onEdit, onAdd, onDelete, searchTerm }) => {
+const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm }) => {
     const { products } = useStore()
     const [activeCategory, setActiveCategory] = useState('All')
 
@@ -765,7 +774,11 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, searchTerm }) => {
                         </thead>
                         <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
                             {filteredProducts.map(product => (
-                                <tr key={product.id} className="group transition-colors hover:bg-[var(--bg-secondary)]">
+                                <tr 
+                                    key={product.id} 
+                                    onClick={() => onInfo(product)}
+                                    className="group transition-colors hover:bg-[var(--bg-secondary)] cursor-pointer"
+                                >
                                     <td className="px-10 py-6">
                                         <div className="flex items-center gap-6">
                                             <img src={product.image} className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" alt="" />
@@ -784,10 +797,10 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, searchTerm }) => {
                                     <td className="px-10 py-6">
                                         <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
                                     </td>
-                                    <td className="px-10 py-6 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
-                                            <button onClick={() => onDelete(product)} className="p-2.5 rounded-lg text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                    <td className="px-10 py-6 text-right" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-end gap-2 transition-opacity">
+                                            <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors hover:bg-[var(--divider)]" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
+                                            <button onClick={() => onDelete(product)} className="p-2.5 rounded-lg text-red-500 transition-colors hover:bg-red-500/10"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -799,7 +812,11 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, searchTerm }) => {
                 {/* Mobile view */}
                 <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
                     {filteredProducts.map(product => (
-                        <div key={product.id} className="p-6 space-y-4">
+                        <div 
+                            key={product.id} 
+                            onClick={() => onInfo(product)}
+                            className="p-6 space-y-4 cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
+                        >
                             <div className="flex gap-4">
                                 <img src={product.image} className="w-20 h-20 rounded-xl object-cover shrink-0 border" style={{ borderColor: 'var(--divider)' }} alt="" />
                                 <div className="flex-1 min-w-0">
@@ -813,7 +830,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, searchTerm }) => {
                             </div>
                             <div className="flex justify-between items-center gap-4">
                                 <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                     <button onClick={() => onEdit(product)} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[var(--text-muted)]"><Edit3 size={14} /></button>
                                     <button onClick={() => onDelete(product)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
                                 </div>
@@ -834,9 +851,9 @@ const ProductPill = ({ status }) => {
             {status}
         </span>
     )
-}
+};
 
-const LedgerTab = ({ searchTerm }) => {
+const LedgerTab = ({ searchTerm, onSelect }) => {
     const { orders } = useStore()
     const [ledgerFilter, setLedgerFilter] = useState('all')
 
@@ -930,38 +947,36 @@ const LedgerTab = ({ searchTerm }) => {
                     <table className="w-full text-left border-collapse min-w-[900px]">
                         <thead>
                             <tr className="border-b" style={{ borderColor: 'var(--divider)', background: 'var(--bg-secondary)' }}>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Ref ID</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Date</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Transaction (Seller)</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Volume</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Commission</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Payout</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Order ID</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Product</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#F18B24]" style={{ color: 'var(--text-muted)' }}>Seller Payable</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-emerald-500" style={{ color: 'var(--text-muted)' }}>Platform Income</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Status</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-right" style={{ color: 'var(--text-muted)' }}>Date</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
                             {confirmedOrders.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-20 text-center text-sm font-bold" style={{ color: 'var(--text-muted)' }}>No transactions match the criteria.</td>
+                                    <td colSpan="6" className="px-6 py-20 text-center text-sm font-bold" style={{ color: 'var(--text-muted)' }}>No transactions match the criteria.</td>
                                 </tr>
                             ) : (
                                 confirmedOrders.map((order) => {
                                     const fee = order.commission || Math.round(order.amount * 0.1)
                                     const sellerPayout = order.amount - fee
                                     return (
-                                        <tr key={order.id} className="hover:bg-[var(--bg-secondary)] transition-colors group">
-                                            <td className="px-6 py-4 font-mono text-[10px]">{order.id.slice(0, 8)}</td>
-                                            <td className="px-6 py-4 text-[11px] font-bold">{new Date(order.date).toLocaleDateString()}</td>
+                                        <tr key={order.id} onClick={() => onSelect(order)} className="hover:bg-[var(--bg-secondary)] transition-colors group cursor-pointer">
+                                            <td className="px-6 py-4 font-mono text-[10px] font-bold">#{order.id.slice(-8)}</td>
                                             <td className="px-6 py-4">
                                                 <div className="text-xs font-black">{order.productName}</div>
                                                 <div className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{order.sellerName || 'S&R Seller'}</div>
                                             </td>
-                                            <td className="px-6 py-4 text-[11px] font-black">₦{order.amount.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-[11px] font-black text-[#F18B24]">₦{sellerPayout.toLocaleString()}</td>
                                             <td className="px-6 py-4 text-[11px] font-black text-emerald-500">₦{fee.toLocaleString()}</td>
-                                            <td className="px-6 py-4 text-[11px] font-black text-indigo-500">₦{sellerPayout.toLocaleString()}</td>
                                             <td className="px-6 py-4">
                                                 <StatusPill status={order.status} />
                                             </td>
+                                            <td className="px-6 py-4 text-[10px] font-bold text-right" style={{ color: 'var(--text-muted)' }}>{new Date(order.date).toLocaleDateString()}</td>
                                         </tr>
                                     )
                                 })
@@ -976,7 +991,7 @@ const LedgerTab = ({ searchTerm }) => {
                         const fee = order.commission || Math.round(order.amount * 0.1)
                         const payout = order.amount - fee
                         return (
-                            <div key={order.id} className="p-6 space-y-4">
+                            <div key={order.id} onClick={() => onSelect(order)} className="p-6 space-y-4 active:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-xs font-black">{order.productName}</p>
@@ -986,16 +1001,16 @@ const LedgerTab = ({ searchTerm }) => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 pt-2">
                                     <div>
-                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Total Volume</p>
-                                        <p className="text-xs font-black">₦{order.amount.toLocaleString()}</p>
+                                        <p className="text-[9px] font-black uppercase text-[#F18B24] mb-1">Seller Payable</p>
+                                        <p className="text-xs font-black text-[#F18B24]">₦{payout.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[9px] font-black uppercase text-emerald-500 mb-1">Commission</p>
+                                        <p className="text-[9px] font-black uppercase text-emerald-500 mb-1">Platform Income</p>
                                         <p className="text-xs font-black text-emerald-500">₦{fee.toLocaleString()}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[9px] font-black uppercase text-indigo-500 mb-1">Seller Payout</p>
-                                        <p className="text-xs font-black text-indigo-500">₦{payout.toLocaleString()}</p>
+                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Total Volume</p>
+                                        <p className="text-xs font-bold text-[var(--text-muted)]">₦{order.amount.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Date</p>
@@ -1009,10 +1024,10 @@ const LedgerTab = ({ searchTerm }) => {
             </div>
 
             <div className="p-8 rounded-3xl border border-dashed text-center space-y-3" style={{ borderColor: 'var(--divider)' }}>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F18B24]">Platform Disclosure</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F18B24]">Platform Disclosure & Compliance</p>
                 <p className="text-xs font-bold leading-relaxed max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
-                    All transactions recorded here represent verified buyer payments. Commissions are calculated based on the platform surcharge. 
-                    Sellers should be settled once delivery is confirmed by the operations team.
+                    Transactions are processed through verified gateways. Platform income facilitates 
+                    human-assisted inspection and verified delivery logistics.
                 </p>
             </div>
         </motion.div>
@@ -1034,7 +1049,7 @@ const NotificationItem = ({ title, desc, time, icon, color }) => (
 
 const LogoutModal = ({ onConfirm, onCancel }) => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)' }}>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
             <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto">
                 <LogOut className="text-red-500" size={24} />
             </div>
@@ -1050,7 +1065,7 @@ const LogoutModal = ({ onConfirm, onCancel }) => (
     </motion.div>
 )
 
-const CustomersTab = ({ searchTerm }) => {
+const CustomersTab = ({ searchTerm, onInfo }) => {
     const { orders } = useStore()
     const customers = useMemo(() => {
         const unique = {}
@@ -1095,7 +1110,7 @@ const CustomersTab = ({ searchTerm }) => {
                         </thead>
                         <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
                             {customers.map((c, i) => (
-                                <tr key={i} className="group hover:bg-[var(--bg-secondary)]">
+                                <tr key={i} onClick={() => onInfo(c)} className="group hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
                                     <td className="px-10 py-6">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
@@ -1126,7 +1141,7 @@ const CustomersTab = ({ searchTerm }) => {
                         <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No customers found.</div>
                     ) : (
                         customers.map((c, i) => (
-                            <div key={i} className="p-6 space-y-4">
+                            <div key={i} onClick={() => onInfo(c)} className="p-6 space-y-4 active:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-sm font-black shrink-0">
                                         {c.name.charAt(0)}
@@ -1234,7 +1249,7 @@ const SettingsTab = () => {
 
 const DeleteConfirmModal = ({ product, onConfirm, onCancel }) => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)' }}>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-sm text-center space-y-6" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
             <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto">
                 <Trash2 className="text-red-500" size={24} />
             </div>
@@ -1252,11 +1267,120 @@ const DeleteConfirmModal = ({ product, onConfirm, onCancel }) => (
     </motion.div>
 )
 
+const CustomerInfoModal = ({ customer, onClose }) => {
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={onClose}
+        >
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[32px] shadow-2xl transition-colors duration-500 custom-scrollbar relative"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="p-8 border-b flex items-center justify-between sticky top-0 z-10" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
+                            {customer.name.charAt(0)}
+                        </div>
+                        <h3 className="text-xl font-black">Customer Profile</h3>
+                    </div>
+                    <button onClick={onClose} className="p-2 rounded-lg transition-colors hover:bg-[var(--bg-secondary)]" style={{ color: 'var(--text-muted)' }}>
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="p-8 lg:p-10 space-y-10">
+                    <div className="text-center">
+                        <div className="w-24 h-24 rounded-full bg-[#F18B24] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-orange-500/20">
+                            {customer.name.charAt(0)}
+                        </div>
+                        <h4 className="text-2xl font-black mb-1">{customer.name}</h4>
+                        <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{customer.email}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--divider)]">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Total Activity</p>
+                            <p className="text-xl font-black text-[#F18B24]">{customer.orders} Orders</p>
+                        </div>
+                        <div className="p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--divider)]">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Customer Value</p>
+                            <p className="text-xl font-black text-emerald-500">₦{customer.spend.toLocaleString()}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Contact Information</h5>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-secondary)]">
+                                <Mail size={16} className="text-[#F18B24]" />
+                                <p className="text-sm font-bold">{customer.email}</p>
+                            </div>
+                            <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-secondary)]">
+                                <Phone size={16} className="text-[#F18B24]" />
+                                <p className="text-sm font-bold">{customer.phone}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 flex gap-4">
+                        <button className="flex-1 py-4 rounded-xl bg-black dark:bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-lg">View Order History</button>
+                        <button onClick={onClose} className="px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[var(--divider)]" style={{ color: 'var(--text-muted)' }}>Close</button>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    )
+}
+
 const FinancialCard = ({ title, value, isSuccess, isIndigo }) => (
     <div className="p-8 rounded-[24px] border transition-colors duration-500" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">{title}</p>
         <p className={`text-2xl font-black ${isSuccess ? 'text-emerald-500' : isIndigo ? 'text-indigo-500' : ''}`}>{value}</p>
     </div>
+);
+
+const ProductInfoModal = ({ product, onClose, onEdit }) => (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-xl relative overflow-hidden" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }} onClick={e => e.stopPropagation()}>
+            <button onClick={onClose} className="absolute top-6 right-6 text-[var(--text-muted)] hover:text-[#F18B24] transition-colors"><X size={20} /></button>
+            <div className="flex flex-col md:flex-row gap-8">
+                <img src={product.image} className="w-full md:w-48 h-48 rounded-2xl object-cover shadow-sm border" style={{ borderColor: 'var(--divider)' }} alt="" />
+                <div className="flex-1 space-y-4">
+                    <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#F18B24]">{product.category}</span>
+                        <h3 className="text-2xl font-black mt-1 leading-tight">{product.name}</h3>
+                        <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mt-2 flex items-center gap-2"><MapPin size={12} /> {product.location}</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border space-y-2" style={{ borderColor: 'var(--divider)' }}>
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+                            <span>Listing Price</span>
+                            <span className="text-[#F18B24]">₦{product.price.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
+                            <span>Seller Payout</span>
+                            <span>₦{product.sellerPrice?.toLocaleString() || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Description</p>
+                        <p className="text-xs font-bold leading-relaxed">{product.description || 'No description provided.'}</p>
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                        <button 
+                            onClick={() => { onEdit(product); onClose(); }}
+                            className="flex-1 py-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[10px] font-black uppercase tracking-widest hover:border-[#F18B2420] transition-all flex items-center justify-center gap-2"
+                        >
+                            <Edit3 size={14} /> Edit Listing
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    </motion.div>
 )
 
 const ProductModal = ({ product = null, onClose }) => {
@@ -1288,7 +1412,7 @@ const ProductModal = ({ product = null, onClose }) => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-6 lg:p-12 rounded-[24px] w-full max-w-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar transition-colors duration-500" style={{ background: 'var(--bg-primary)' }} onClick={e => e.stopPropagation()}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-6 lg:p-12 rounded-[24px] w-full max-w-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }} onClick={e => e.stopPropagation()}>
                 <button onClick={onClose} className="absolute top-6 right-6 lg:top-8 lg:right-8 transition-colors" style={{ color: 'var(--text-muted)' }}>
                     <X size={24} />
                 </button>

@@ -78,7 +78,7 @@ const Home = () => {
                                 style={{ background: 'var(--badge-bg)', border: '1px solid rgba(241,139,36,0.2)' }}
                             >
                                 <Zap size={14} className="text-[#F18B24]" />
-                                <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: 'var(--text-secondary)' }}>Secure · Verified · Delivered</span>
+                                <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: 'var(--text-secondary)' }}>Secure · Inspected · Delivered</span>
                             </motion.div>
 
                             <motion.h1
@@ -471,8 +471,8 @@ const Home = () => {
                             <TrustCard
                                 step="03"
                                 icon={<Truck className="text-[#F18B24]" size={28} />}
-                                title="Receive"
-                                description="Choose assisted delivery or self-arranged pickup. Inspect your item on arrival before payment is released."
+                                title="Inspected Delivery"
+                                description="Human-assisted validation for every item. Choose assisted delivery or self-arranged pickup with total peace of mind."
                             />
                         </motion.div>
                     </motion.div>
