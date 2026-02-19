@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
 
 const ProductDetails = () => {
@@ -11,6 +11,19 @@ const ProductDetails = () => {
     const { products, markProductReserved } = useStore()
 
     const product = products.find(p => p.id === id)
+
+    // Slideshow logic
+    const productImages = product ? (product.images || [product.image, product.image, product.image]) : []
+    
+    useEffect(() => {
+        if (!product || productImages.length <= 1) return;
+        
+        const interval = setInterval(() => {
+            setActiveImage((prev) => (prev + 1) % productImages.length);
+        }, 3000); // 3 seconds per image
+
+        return () => clearInterval(interval);
+    }, [product, productImages.length]);
 
     if (!product) {
         return (
@@ -28,17 +41,15 @@ const ProductDetails = () => {
         alert("Item reserved! Please contact us on WhatsApp to finalize.")
     }
 
-    const productImages = product.images || [product.image, product.image, product.image]
-
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="pt-32 pb-20 container"
+            className="pt-48 pb-20 container"
         >
             <button
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/')}
                 className="flex items-center gap-2 mb-8 transition-colors group"
                 style={{ color: 'var(--text-muted)' }}
             >
@@ -53,15 +64,18 @@ const ProductDetails = () => {
                         layoutId={`prod-img-${id}`}
                         className="aspect-square glass overflow-hidden rounded-3xl relative"
                     >
-                        <motion.img
-                            key={activeImage}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.4 }}
-                            src={productImages[activeImage]}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                        />
+                        <AnimatePresence mode="wait">
+                            <motion.img
+                                key={activeImage}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5, ease: "easeInOut" }}
+                                src={productImages[activeImage]}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                            />
+                        </AnimatePresence>
                     </motion.div>
 
                     <div className="grid grid-cols-3 gap-4">

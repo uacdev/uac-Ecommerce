@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Package, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Mail, Hash, ArrowLeft } from 'lucide-react'
+import { Search, Package, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Mail, Hash, ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../context/StoreContext'
 import { Link, useNavigate } from 'react-router-dom'
@@ -48,13 +48,13 @@ const TrackOrder = () => {
     }
 
     return (
-        <div className="pt-40 pb-20 container max-w-4xl min-h-screen">
+        <div className="pt-48 pb-20 container max-w-4xl min-h-screen">
             <button 
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-12 transition-colors"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] mb-12 transition-colors hover:text-[var(--brand-orange)]"
                 style={{ color: 'var(--text-muted)' }}
             >
-                <ArrowLeft size={16} /> Back
+                <ChevronLeft size={16} /> Back to Shop
             </button>
 
             <div className="text-center mb-16">

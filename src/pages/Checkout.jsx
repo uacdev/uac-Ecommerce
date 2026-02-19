@@ -21,14 +21,14 @@ const Checkout = () => {
     const product = products.find(p => p.id === id)
 
     if (!product) return (
-        <div className="pt-40 text-center container">
+        <div className="pt-48 text-center container">
             <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Product not found</h2>
             <button onClick={() => navigate('/')} className="text-[#F18B24] hover:underline">Return Home</button>
         </div>
     )
 
     if (product.status === 'sold') return (
-        <div className="pt-40 text-center container">
+        <div className="pt-48 text-center container">
             <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>This item has been sold</h2>
             <button onClick={() => navigate('/')} className="text-[#F18B24] hover:underline">Browse other items</button>
         </div>
@@ -77,14 +77,14 @@ const Checkout = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
-            className="pt-32 pb-20 container max-w-4xl"
+            className="pt-48 pb-20 container max-w-4xl"
         >
             <button 
-                onClick={() => navigate(-1)}
+                onClick={() => navigate('/')}
                 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-8 transition-colors"
                 style={{ color: 'var(--text-muted)', hover: { color: 'var(--text-primary)' } }}
             >
-                <ArrowLeft size={16} /> Back to Product
+                <ArrowLeft size={16} /> Back to Gallery
             </button>
 
             <div className="text-center mb-12">

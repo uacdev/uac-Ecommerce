@@ -9,10 +9,10 @@ const Navbar = () => {
     const { isDark, toggleTheme } = useTheme()
 
     return (
-        <nav className="fixed top-0 left-0 w-full z-50 md:px-6 md:py-6">
-            <div className="max-w-7xl mx-auto flex justify-between items-center glass px-6 py-4 md:px-8 md:py-6 transition-all duration-500 rounded-none md:rounded-[24px]" style={{ backgroundColor: 'var(--nav-bg)' }}>
+        <nav className="fixed top-0 left-0 w-full z-50 md:px-6 md:py-4">
+            <div className="max-w-7xl mx-auto flex justify-between items-center glass px-6 py-3 md:px-8 md:py-4 transition-all duration-500 rounded-none md:rounded-[24px]" style={{ backgroundColor: 'var(--nav-bg)' }}>
                 <Link to="/" className="flex items-center gap-2 group">
-                    <img src="/images/logo_nobg.png" alt="Logo" className="h-16 md:h-28 w-auto group-hover:scale-105 transition-transform" />
+                    <img src="/images/logo_nobg.png" alt="Logo" className="h-12 md:h-20 w-auto group-hover:scale-105 transition-transform" />
                 </Link>
 
                 {/* Desktop Menu */}

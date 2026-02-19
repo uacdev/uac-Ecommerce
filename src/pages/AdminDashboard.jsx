@@ -5,7 +5,7 @@ import {
     Plus, Search, Clock, CheckCircle2, Truck, X, Edit3, Trash2, Sun, Moon,
     User, Phone, MapPin, Mail, ChevronDown, ChevronUp, Eye, Bell, MoreHorizontal,
     CreditCard, Users, ArrowUpRight, TrendingUp, Filter, Download, MessageSquare,
-    ChevronRight, ArrowLeft, MoreVertical, Menu
+    ChevronRight, ArrowLeft, MoreVertical, Menu, Upload, Image as ImageIcon, Camera
 } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
@@ -24,9 +24,10 @@ const AdminDashboard = () => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
 
     const { isDark, toggleTheme } = useTheme()
-    const { loading } = useStore()
+    const { loading, removeProduct } = useStore()
     const { signOut: logout } = useAuth()
 
     if (loading) {
@@ -238,7 +239,26 @@ const AdminDashboard = () => {
                 {(showAddProduct || editingProduct) && (
                     <ProductModal
                         product={editingProduct}
-                        onClose={() => { setShowAddProduct(false); setEditingProduct(null); }}
+                        onClose={() => { 
+                            setShowAddProduct(false); 
+                            setEditingProduct(null); 
+                        }}
+                        onSuccess={() => {
+                            setShowAddProduct(false);
+                            setEditingProduct(null);
+                            setShowSuccessModal(true);
+                            setTimeout(() => setShowSuccessModal(false), 3000);
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showSuccessModal && (
+                    <SuccessMessage 
+                        title="Listing Published!" 
+                        subtitle="Your new entry is now live on the SR-Cloud Gateway." 
+                        onClose={() => setShowSuccessModal(false)} 
                     />
                 )}
             </AnimatePresence>
@@ -1383,7 +1403,7 @@ const ProductInfoModal = ({ product, onClose, onEdit }) => (
     </motion.div>
 )
 
-const ProductModal = ({ product = null, onClose }) => {
+const ProductModal = ({ product = null, onClose, onSuccess }) => {
     const { addProduct, updateProduct } = useStore()
     const isEdit = !!product
 
@@ -1399,15 +1419,41 @@ const ProductModal = ({ product = null, onClose }) => {
         images: product?.images || ['', '', '']
     })
 
-    const handleSubmit = (e) => {
+    const handleImageChange = (index, file) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const newImages = [...form.images];
+            newImages[index] = reader.result;
+            setForm({ ...form, images: newImages });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const removeImage = (index) => {
+        const newImages = [...form.images];
+        newImages[index] = '';
+        setForm({ ...form, images: newImages });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
         const primaryImage = form.images[0] || form.image
-        if (isEdit) {
-            updateProduct(product.id, { ...form, image: primaryImage, price: parseInt(form.price) })
-        } else {
-            addProduct({ ...form, image: primaryImage, price: parseInt(form.price) })
+        try {
+            if (isEdit) {
+                await updateProduct(product.id, { ...form, image: primaryImage, price: parseInt(form.price) })
+            } else {
+                await addProduct({ ...form, image: primaryImage, price: parseInt(form.price) })
+            }
+            if (!isEdit && onSuccess) {
+                onSuccess()
+            } else {
+                onClose()
+            }
+        } catch (err) {
+            console.error("Submit error:", err)
+            onClose()
         }
-        onClose()
     }
 
     return (
@@ -1450,22 +1496,50 @@ const ProductModal = ({ product = null, onClose }) => {
                             </select>
                         </div>
 
-                        <div className="md:col-span-2 space-y-3 lg:space-y-4">
-                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Product Images (Min 3 recommended)</label>
-                            {[0, 1, 2].map(i => (
-                                <input
-                                    key={i}
-                                    value={form.images[i]}
-                                    onChange={e => {
-                                        const newImages = [...form.images]
-                                        newImages[i] = e.target.value
-                                        setForm({ ...form, images: newImages })
-                                    }}
-                                    className="w-full rounded-xl px-4 lg:px-6 py-3 lg:py-4 outline-none text-[10px] font-mono transition-colors"
-                                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }}
-                                    placeholder={`Image URL ${i + 1} ${i === 0 ? '(Primary)' : ''}`}
-                                />
-                            ))}
+                        <div className="md:col-span-2 space-y-4">
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Product Images (3 slots max)</label>
+                            <div className="grid grid-cols-3 gap-4">
+                                {[0, 1, 2].map(i => (
+                                    <div key={i} className="relative group aspect-square">
+                                        {form.images[i] ? (
+                                            <div className="w-full h-full rounded-2xl overflow-hidden border-2 relative" style={{ borderColor: i === 0 ? '#F18B24' : 'var(--divider)' }}>
+                                                <img src={form.images[i]} alt="" className="w-full h-full object-cover" />
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => removeImage(i)}
+                                                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                                {i === 0 && (
+                                                    <div className="absolute top-2 left-2 bg-[#F18B24] text-white text-[8px] font-black px-2 py-1 rounded-full uppercase">Primary</div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label 
+                                                className="w-full h-full rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[#F18B24] transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer group-hover:bg-[var(--bg-secondary)]"
+                                                onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                                                onDrop={e => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                                        handleImageChange(i, e.dataTransfer.files[0]);
+                                                    }
+                                                }}
+                                            >
+                                                <Upload size={20} className="text-[var(--text-muted)] group-hover:text-[#F18B24] transition-colors" />
+                                                <span className="text-[10px] font-bold text-[var(--text-muted)]">Upload</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={e => handleImageChange(i, e.target.files[0])}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         <div className="md:col-span-2">
@@ -1487,5 +1561,29 @@ const ProductModal = ({ product = null, onClose }) => {
         </motion.div>
     )
 }
+
+const SuccessMessage = ({ title, subtitle, onClose }) => (
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center pointer-events-none">
+        <motion.div
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+            className="bg-[var(--bg-primary)] border border-[#F18B24] p-8 rounded-[32px] shadow-2xl flex flex-col items-center text-center max-w-sm mx-4 pointer-events-auto"
+            style={{ boxShadow: '0 20px 50px rgba(241, 139, 36, 0.15)' }}
+        >
+            <div className="w-20 h-20 bg-[#F18B2410] rounded-full flex items-center justify-center mb-6 border border-[#F18B2420]">
+                <CheckCircle2 size={40} className="text-[#F18B24]" />
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+            <p className="text-xs font-bold leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
+            <button 
+                onClick={onClose}
+                className="w-full py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-primary)] text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform"
+            >
+                Dismiss
+            </button>
+        </motion.div>
+    </div>
+)
 
 export default AdminDashboard

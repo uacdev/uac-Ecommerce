@@ -24,7 +24,7 @@ const DeliverySelection = () => {
         <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="pt-40 pb-20 container max-w-3xl"
+            className="pt-48 pb-20 container max-w-3xl"
         >
             <div className="text-center mb-12">
                 <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: 'var(--badge-bg)', border: '1px solid rgba(241,139,36,0.3)' }}>

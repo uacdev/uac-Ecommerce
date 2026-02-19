@@ -19,7 +19,7 @@ const Success = () => {
         <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="pt-40 pb-20 container max-w-2xl text-center"
+            className="pt-48 pb-20 container max-w-2xl text-center"
         >
             <div className="flex justify-center mb-8">
                 <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: 'var(--badge-bg)', border: '1px solid rgba(241,139,36,0.3)' }}>
