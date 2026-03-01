@@ -9,9 +9,29 @@ export const useStore = () => useContext(StoreContext)
 export const StoreProvider = ({ children }) => {
     const [products, setProducts] = useState([])
     const [orders, setOrders] = useState([])
+    const [cart, setCart] = useState([])
+    const [favorites, setFavorites] = useState([])
     const [loading, setLoading] = useState(true)
 
-    // Initial Fetch
+    // Persistence load for Cart & Favorites
+    useEffect(() => {
+        const savedCart = localStorage.getItem('sr_cart')
+        if (savedCart) setCart(JSON.parse(savedCart))
+        const savedFavs = localStorage.getItem('sr_favorites')
+        if (savedFavs) setFavorites(JSON.parse(savedFavs))
+    }, [])
+
+    // Persistence save for Cart
+    useEffect(() => {
+        localStorage.setItem('sr_cart', JSON.stringify(cart))
+    }, [cart])
+
+    // Persistence save for Favorites
+    useEffect(() => {
+        localStorage.setItem('sr_favorites', JSON.stringify(favorites))
+    }, [favorites])
+
+    // Initial Fetch (existing logic)...
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
@@ -92,7 +112,7 @@ export const StoreProvider = ({ children }) => {
         fetchData()
     }, [])
 
-    // Persistence Fallback for Offline Mode
+    // Persistence Fallback for Offline Mode (existing logic)...
     useEffect(() => {
         if (products.length > 0) localStorage.setItem('sr_products', JSON.stringify(products))
     }, [products])
@@ -100,6 +120,46 @@ export const StoreProvider = ({ children }) => {
     useEffect(() => {
         if (orders.length > 0) localStorage.setItem('sr_orders', JSON.stringify(orders))
     }, [orders])
+
+    // ─── Cart Actions ───
+    const addToCart = (product, quantity = 1) => {
+        setCart(prev => {
+            const existingItem = prev.find(item => item.id === product.id)
+            if (existingItem) {
+                return prev.map(item => 
+                    item.id === product.id 
+                    ? { ...item, quantity: item.quantity + quantity } 
+                    : item
+                )
+            }
+            return [...prev, { ...product, quantity }]
+        })
+    }
+
+    const removeFromCart = (productId) => {
+        setCart(prev => prev.filter(item => item.id !== productId))
+    }
+
+    const updateCartQuantity = (productId, quantity) => {
+        if (quantity < 1) return removeFromCart(productId)
+        setCart(prev => prev.map(item => 
+            item.id === productId ? { ...item, quantity } : item
+        ))
+    }
+
+    const clearCart = () => setCart([])
+
+    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+    // ─── Favorites Actions ───
+    const toggleFavorite = (product) => {
+        setFavorites(prev => {
+            const exists = prev.find(p => p.id === product.id)
+            return exists ? prev.filter(p => p.id !== product.id) : [product, ...prev]
+        })
+    }
+    const isFavorite = (productId) => favorites.some(p => p.id === productId)
 
     // ─── Product Actions ───
     const addProduct = async (product) => {
@@ -260,11 +320,20 @@ export const StoreProvider = ({ children }) => {
         <StoreContext.Provider value={{
             products,
             orders,
-            stats,
+            cart,
+            favorites,
+            cartTotal,
+            cartCount,
             loading,
+            toggleFavorite,
+            isFavorite,
             addProduct,
             updateProduct,
             removeProduct,
+            addToCart,
+            removeFromCart,
+            updateCartQuantity,
+            clearCart,
             markProductReserved,
             markProductSold,
             markProductAvailable,

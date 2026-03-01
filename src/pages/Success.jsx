@@ -59,7 +59,7 @@ const Success = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <a
-                        href="https://instagram.com"
+                        href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-3 py-4 glass transition-all font-bold group"

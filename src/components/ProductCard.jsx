@@ -1,10 +1,31 @@
 import { motion } from 'framer-motion'
-import { ShoppingCart, Heart, Shield } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useStore } from '../context/StoreContext'
+import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
     const isSold = product.status === 'sold'
     const isReserved = product.is_reserved || product.status === 'reserved'
+    const { toggleFavorite, isFavorite } = useStore()
+    const liked = isFavorite(product.id)
+
+    const handleFavorite = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        toggleFavorite(product)
+        toast(liked ? `Removed from favourites` : `Added to favourites ❤️`, {
+            icon: liked ? '💔' : '❤️',
+            style: {
+                background: 'var(--bg-primary, #fff)',
+                color: 'var(--text-primary, #111)',
+                border: '1px solid #F18B24',
+                fontWeight: 'bold',
+                borderRadius: '16px',
+                fontSize: '13px',
+            },
+        })
+    }
 
     return (
         <motion.div
@@ -16,7 +37,7 @@ const ProductCard = ({ product }) => {
             {/* Product Image Container */}
             <Link
                 to={`/product/${product.id}`}
-                className="block aspect-[4/5] w-full rounded-2xl mb-4 overflow-hidden relative shadow-sm"
+                className="block aspect-[4/5] w-full rounded-2xl mb-4 overflow-hidden relative shadow-sm cursor-pointer"
                 style={{ background: 'var(--bg-tertiary)' }}
             >
                 <motion.img
@@ -39,6 +60,22 @@ const ProductCard = ({ product }) => {
                         </span>
                     ) : null}
                 </div>
+
+                {/* Heart / Like Button */}
+                <button
+                    onClick={handleFavorite}
+                    className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer z-10 shadow-lg
+                        ${liked
+                            ? 'bg-red-500 scale-110'
+                            : 'bg-white/20 backdrop-blur-md hover:bg-red-500 hover:scale-110 opacity-0 group-hover:opacity-100'
+                        }`}
+                >
+                    <Heart
+                        size={16}
+                        className={`transition-all ${liked ? 'fill-white text-white' : 'text-white'}`}
+                        fill={liked ? 'white' : 'none'}
+                    />
+                </button>
 
                 {/* Modern Action Overlay */}
                 {!isSold && (

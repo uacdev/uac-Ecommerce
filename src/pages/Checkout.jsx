@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { useParams, useNavigate } from 'react-router-dom'
-import { CreditCard, User, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { CreditCard, User, ShieldCheck, ArrowLeft, ShoppingBag, Trash2, Plus, Minus, ChevronRight, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../context/StoreContext'
 
@@ -9,7 +9,7 @@ const Checkout = () => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState('paystack') // 'paystack' or 'bank'
-    const { products, addOrder } = useStore()
+    const { products, addOrder, cart, removeFromCart, updateCartQuantity, cartTotal } = useStore()
 
     const [buyer, setBuyer] = useState({
         name: '',
@@ -18,19 +18,30 @@ const Checkout = () => {
         address: '',
     })
 
-    const product = products.find(p => p.id === id)
+    // Determine if we are checking out a single item or the whole cart
+    const isSingleItem = !!id
+    const singleProduct = isSingleItem ? products.find(p => p.id === id) : null
+    const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: 1 }] : []) : cart
+    const totalAmount = isSingleItem ? (singleProduct?.price || 0) : cartTotal
 
-    if (!product) return (
+    if (isSingleItem && !singleProduct) return (
         <div className="pt-48 text-center container">
             <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Product not found</h2>
             <button onClick={() => navigate('/')} className="text-[#F18B24] hover:underline">Return Home</button>
         </div>
     )
 
-    if (product.status === 'sold') return (
-        <div className="pt-48 text-center container">
-            <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>This item has been sold</h2>
-            <button onClick={() => navigate('/')} className="text-[#F18B24] hover:underline">Browse other items</button>
+    if (!isSingleItem && cart.length === 0) return (
+        <div className="pt-48 text-center container min-h-[60vh] flex flex-col items-center justify-center">
+            <ShoppingBag size={64} className="text-[#F18B24] mb-6 opacity-20" />
+            <h2 className="text-3xl font-black mb-4 tracking-tight" style={{ color: 'var(--text-primary)' }}>Your cart is empty</h2>
+            <p className="text-[var(--text-muted)] mb-8 font-medium">Add some amazing items to your cart before checking out.</p>
+            <button 
+                onClick={() => navigate('/')} 
+                className="btn-primary py-4 px-10 text-xs font-black uppercase tracking-widest"
+            >
+                Back to Shop
+            </button>
         </div>
     )
 
@@ -38,17 +49,21 @@ const Checkout = () => {
         e.preventDefault()
         setLoading(true)
         try {
+            // For simplicity, we track the order with the first item's details if multi-item
+            // or we could expand addOrder to handle arrays. Keeping it simple for now:
+            const mainItem = checkoutItems[0]
             const result = await addOrder({
-                productId: product.id,
-                productName: product.name,
-                productImage: product.image,
-                sellerName: product.sellerName,
-                amount: product.price,
+                productId: isSingleItem ? mainItem.id : 'multi-cart',
+                productName: isSingleItem ? mainItem.name : `${checkoutItems.length} Items in Cart`,
+                productImage: mainItem.images?.[0] || mainItem.image,
+                sellerName: mainItem.sellerName,
+                amount: totalAmount,
                 buyerName: buyer.name,
                 buyerPhone: buyer.phone,
                 buyerEmail: buyer.email,
                 buyerAddress: buyer.address,
                 paymentMethod: paymentMethod,
+                items: checkoutItems.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price }))
             })
 
             if (result && result.id) {
@@ -67,8 +82,8 @@ const Checkout = () => {
     const updateBuyer = (field, value) => setBuyer(prev => ({ ...prev, [field]: value }))
 
     const inputStyle = {
-        background: 'var(--input-bg)',
-        border: '1px solid var(--input-border)',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--divider)',
         color: 'var(--text-primary)',
     }
 
@@ -77,88 +92,91 @@ const Checkout = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
-            className="pt-48 pb-20 container max-w-4xl"
+            className="pt-48 pb-20 container max-w-6xl"
         >
             <button 
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-8 transition-colors"
-                style={{ color: 'var(--text-muted)', hover: { color: 'var(--text-primary)' } }}
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-12 transition-colors hover:text-[#F18B24]"
+                style={{ color: 'var(--text-muted)' }}
             >
-                <ArrowLeft size={16} /> Back to Gallery
+                <ArrowLeft size={16} /> Continue Shopping
             </button>
 
-            <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold mb-4 font-heading" style={{ color: 'var(--text-primary)' }}>Secure Checkout</h1>
-                <p style={{ color: 'var(--text-muted)' }}>Guest Checkout — No account required.</p>
+            <div className="mb-16">
+                <h1 className="text-5xl md:text-6xl font-black mb-4 font-heading tracking-tight" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
+                <p className="font-medium text-lg" style={{ color: 'var(--text-muted)' }}>Review your items and complete your secure purchase.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 {/* Form Section */}
-                <div className="lg:col-span-3">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="glass p-8 space-y-6">
-                            <h2 className="text-xl font-bold flex items-center gap-2 mb-6" style={{ color: 'var(--text-primary)' }}>
+                <div className="lg:col-span-7 space-y-8">
+                    <form id="checkout-form" onSubmit={handleSubmit} className="space-y-8">
+                        {/* Buyer Info */}
+                        <div className="p-8 md:p-10 rounded-[32px] border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
+                            <h2 className="text-xl font-black uppercase tracking-widest flex items-center gap-3 mb-8" style={{ color: 'var(--text-primary)' }}>
                                 <User size={20} className="text-[#F18B24]" />
-                                Buyer Information
+                                Shipping Info
                             </h2>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Full Name *</label>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Full Name *</label>
                                     <input
                                         required
                                         type="text"
                                         value={buyer.name}
                                         onChange={e => updateBuyer('name', e.target.value)}
-                                        placeholder="John Doe"
-                                        className="w-full rounded-xl px-4 py-3 outline-none focus:border-[#F18B24] transition-colors"
+                                        placeholder="Enter your full name"
+                                        className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold"
                                         style={inputStyle}
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Phone Number *</label>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Phone Number *</label>
                                         <input
                                             required
                                             type="tel"
                                             value={buyer.phone}
                                             onChange={e => updateBuyer('phone', e.target.value)}
                                             placeholder="+234..."
-                                            className="w-full rounded-xl px-4 py-3 outline-none focus:border-[#F18B24] transition-colors"
+                                            className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold"
                                             style={inputStyle}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Email (Optional)</label>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Email Address *</label>
                                         <input
+                                            required
                                             type="email"
                                             value={buyer.email}
                                             onChange={e => updateBuyer('email', e.target.value)}
-                                            placeholder="john@example.com"
-                                            className="w-full rounded-xl px-4 py-3 outline-none focus:border-[#F18B24] transition-colors"
+                                            placeholder="your@email.com"
+                                            className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold"
                                             style={inputStyle}
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Delivery Area / Address *</label>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Delivery Address *</label>
                                     <textarea
                                         required
                                         rows="3"
                                         value={buyer.address}
                                         onChange={e => updateBuyer('address', e.target.value)}
-                                        placeholder="Enter your specific area or full delivery address"
-                                        className="w-full rounded-xl px-4 py-3 outline-none focus:border-[#F18B24] transition-colors resize-none"
+                                        placeholder="Flat number, building name, street, area..."
+                                        className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold resize-none"
                                         style={inputStyle}
                                     ></textarea>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="glass p-8">
-                            <h2 className="text-xl font-bold flex items-center gap-2 mb-6" style={{ color: 'var(--text-primary)' }}>
+                        {/* Payment Method */}
+                        <div className="p-8 md:p-10 rounded-[32px] border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
+                            <h2 className="text-xl font-black uppercase tracking-widest flex items-center gap-3 mb-8" style={{ color: 'var(--text-primary)' }}>
                                 <CreditCard size={20} className="text-[#F18B24]" />
                                 Payment Method
                             </h2>
@@ -167,114 +185,132 @@ const Checkout = () => {
                                 <button
                                     type="button"
                                     onClick={() => setPaymentMethod('paystack')}
-                                    className="w-full p-4 rounded-xl flex justify-between items-center transition-all"
+                                    className="w-full p-6 rounded-2xl flex justify-between items-center transition-all border-2"
                                     style={{
-                                        border: paymentMethod === 'paystack' ? '1px solid #F18B24' : '1px solid var(--divider)',
-                                        background: paymentMethod === 'paystack' ? 'var(--badge-bg)' : 'transparent'
+                                        borderColor: paymentMethod === 'paystack' ? '#F18B24' : 'transparent',
+                                        background: paymentMethod === 'paystack' ? 'var(--badge-bg)' : 'var(--bg-primary)'
                                     }}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-4 h-4 rounded-full border-4 ${paymentMethod === 'paystack' ? 'border-[#F18B24]' : 'border-gray-500'}`} />
-                                        <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Paystack (Card/Transfer)</span>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-5 h-5 rounded-full border-4 ${paymentMethod === 'paystack' ? 'border-[#F18B24]' : 'border-[var(--divider)]'}`} />
+                                        <div className="text-left">
+                                            <p className="font-black text-sm uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Paystack</p>
+                                            <p className="text-[10px] font-bold text-[var(--text-muted)]">Card, Transfer, USSD, Bank</p>
+                                        </div>
                                     </div>
-                                    <img src="https://checkout.paystack.com/static/media/paystack-logo.212f45cc.svg" alt="Paystack" className="h-4" />
+                                    <img src="https://checkout.paystack.com/static/media/paystack-logo.212f45cc.svg" alt="Paystack" className="h-4 opacity-50" />
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => setPaymentMethod('bank')}
-                                    className="w-full p-4 rounded-xl flex justify-between items-center transition-all text-left"
+                                    className="w-full p-6 rounded-2xl flex justify-between items-center transition-all border-2"
                                     style={{
-                                        border: paymentMethod === 'bank' ? '1px solid #F18B24' : '1px solid var(--divider)',
-                                        background: paymentMethod === 'bank' ? 'var(--badge-bg)' : 'transparent'
+                                        borderColor: paymentMethod === 'bank' ? '#F18B24' : 'transparent',
+                                        background: paymentMethod === 'bank' ? 'var(--badge-bg)' : 'var(--bg-primary)'
                                     }}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-4 h-4 rounded-full border-4 ${paymentMethod === 'bank' ? 'border-[#F18B24]' : 'border-gray-500'}`} />
-                                        <div>
-                                            <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Direct Bank Transfer</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Manual Confirmation</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-5 h-5 rounded-full border-4 ${paymentMethod === 'bank' ? 'border-[#F18B24]' : 'border-[var(--divider)]'}`} />
+                                        <div className="text-left">
+                                            <p className="font-black text-sm uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Direct Bank Transfer</p>
+                                            <p className="text-[10px] font-bold text-red-400">Manual Confirmation Required</p>
                                         </div>
                                     </div>
                                 </button>
-
-                                {paymentMethod === 'bank' && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        className="p-6 rounded-xl bg-black/5 dark:bg-white/5 border border-dashed border-[#F18B24]/30"
-                                    >
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 text-[#F18B24]">Platform Bank Details</p>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <p className="text-[10px] uppercase font-bold text-gray-500">Bank Name</p>
-                                                <p className="text-sm font-black">Guaranty Trust Bank (GTB)</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] uppercase font-bold text-gray-500">Account Name</p>
-                                                <p className="text-sm font-black">SELLOUT & RELOCATE TECH</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] uppercase font-bold text-gray-500">Account Number</p>
-                                                <p className="text-xl font-black text-[#F18B24]">0123456789</p>
-                                            </div>
-                                            <div className="mt-4 p-3 rounded-lg bg-[#F18B24]/10">
-                                                <p className="text-[10px] font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
-                                                    IMPORTANT: Use your Order ID as transaction narration.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
                             </div>
                         </div>
-
-                        <button
-                            disabled={loading}
-                            className="btn-primary w-full py-5 text-xl relative overflow-hidden"
-                        >
-                            {loading ? (
-                                <div className="flex items-center gap-3">
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Processing...
-                                </div>
-                            ) : `Pay Now — ₦${product.price.toLocaleString()}`}
-                        </button>
                     </form>
                 </div>
 
-                {/* Order Summary */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="glass p-8 sticky top-32">
-                        <h2 className="text-xl font-bold mb-6 italic" style={{ color: 'var(--text-primary)' }}>Order Summary</h2>
+                {/* Summary Section */}
+                <div className="lg:col-span-5">
+                    <div className="sticky top-40 space-y-6">
+                        <div className="glass p-8 md:p-10 rounded-[40px] border-none shadow-2xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#F18B24]/5 rounded-bl-full -z-10" />
+                            
+                            <h2 className="text-xl font-black uppercase tracking-widest mb-8" style={{ color: 'var(--text-primary)' }}>Order Summary</h2>
+                            
+                            <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                                {checkoutItems.map((item) => (
+                                    <div key={item.id} className="flex gap-5 group">
+                                        <div className="w-24 h-24 rounded-2xl overflow-hidden glass shrink-0 relative">
+                                            <img src={item.images?.[0] || item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                            {!isSingleItem && (
+                                                <button 
+                                                    onClick={() => removeFromCart(item.id)}
+                                                    className="absolute -top-1 -left-1 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col flex-1 justify-center">
+                                            <h4 className="font-black text-sm line-clamp-1 uppercase tracking-wider mb-1" style={{ color: 'var(--text-primary)' }}>{item.name}</h4>
+                                            <div className="flex items-center justify-between mt-2">
+                                                {!isSingleItem ? (
+                                                    <div className="flex items-center gap-3 bg-[var(--bg-secondary)] px-2 py-1 rounded-lg border border-[var(--divider)]">
+                                                        <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="text-[var(--text-muted)] hover:text-[#F18B24]"><Minus size={14}/></button>
+                                                        <span className="text-xs font-black">{item.quantity}</span>
+                                                        <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="text-[var(--text-muted)] hover:text-[#F18B24]"><Plus size={14}/></button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs font-bold text-[var(--text-muted)]">Qty: 1</span>
+                                                )}
+                                                <p className="font-black text-[#F18B24]">₦{(item.price * item.quantity).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
 
-                        <div className="flex gap-4 mb-6">
-                            <img src={product.image} className="w-20 h-20 object-cover rounded-lg shrink-0" style={{ background: 'var(--bg-tertiary)' }} />
+                            <div className="space-y-4 pt-6 border-t border-[var(--divider)]">
+                                <div className="flex justify-between items-center text-sm font-bold">
+                                    <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
+                                    <span style={{ color: 'var(--text-primary)' }}>₦{totalAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm font-bold">
+                                    <span style={{ color: 'var(--text-muted)' }}>Shipping</span>
+                                    <span className="text-emerald-500 font-black uppercase tracking-widest text-[10px]">Calculated Later</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-4 border-t border-[var(--divider)]">
+                                    <span className="text-lg font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Total</span>
+                                    <span className="text-3xl font-black text-[#F18B24]">₦{totalAmount.toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            <button
+                                form="checkout-form"
+                                disabled={loading}
+                                className="w-full btn-primary py-5 mt-10 text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-[#F18B2430] flex items-center justify-center gap-3 group"
+                            >
+                                {loading ? (
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Processing...
+                                    </div>
+                                ) : (
+                                    <>
+                                        Confirm & Pay Now
+                                        <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+
+                            <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-[#F18B2405] border border-[#F18B2410]">
+                                <ShieldCheck size={20} className="text-[#F18B24] shrink-0" />
+                                <p className="text-[10px] font-bold leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                                    Your transaction is protected by Sellout & Relocate's secure escrow gateway.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-6 rounded-3xl border border-[var(--divider)] flex items-center gap-4 bg-[var(--bg-secondary)]">
+                            <Truck size={24} className="text-[var(--text-muted)]" />
                             <div>
-                                <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{product.name}</h4>
-                                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Qty: 1</p>
-                                <p className="text-[#F18B24] font-bold">₦{product.price.toLocaleString()}</p>
+                                <p className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Fast Delivery</p>
+                                <p className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Typically arrives in 24-48 hours after validation.</p>
                             </div>
-                        </div>
-
-                        <div className="space-y-4 pt-6 mb-8" style={{ borderTop: '1px solid var(--divider)' }}>
-                            <div className="flex justify-between text-sm">
-                                <span style={{ color: 'var(--text-muted)' }}>Subtotal</span>
-                                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>₦{product.price.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span style={{ color: 'var(--text-muted)' }}>Delivery Fee</span>
-                                <span className="font-medium italic text-xs" style={{ color: 'var(--text-muted)' }}>Quoted after checkout</span>
-                            </div>
-                            <div className="flex justify-between text-xl font-bold pt-4" style={{ borderTop: '1px solid var(--divider)' }}>
-                                <span style={{ color: 'var(--text-primary)' }}>Total</span>
-                                <span className="text-[#F18B24]">₦{product.price.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <div className="text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                            <p className="flex items-center gap-1 mb-1"><ShieldCheck size={10} /> Secure Encryption</p>
-                            <p>By clicking Pay Now, you agree to the inspection policy and delivery coordination terms.</p>
                         </div>
                     </div>
                 </div>

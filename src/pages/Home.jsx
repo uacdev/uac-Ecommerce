@@ -1,7 +1,7 @@
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight, ShoppingBag, ShieldCheck, Zap, Truck, Filter, Star, ArrowUpRight, ChevronRight, Instagram, Mail } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { CATEGORIES } from '../data/products'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
@@ -11,6 +11,7 @@ const Home = () => {
     const [activeCategory, setActiveCategory] = useState("All")
     const [flipped, setFlipped] = useState(false)
     const { products } = useStore()
+    const location = useLocation()
 
     useEffect(() => {
         const interval = setInterval(() => setFlipped(prev => !prev), 3000)
@@ -21,6 +22,9 @@ const Home = () => {
     const heroRef = useRef(null)
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] })
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 150])
+
+    const queryParams = new URLSearchParams(location.search)
+    const searchQuery = queryParams.get('search')?.toLowerCase() || ''
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -44,9 +48,14 @@ const Home = () => {
         }
     }
 
-    const filteredProducts = activeCategory === "All"
-        ? products
-        : products.filter(p => p.category === activeCategory)
+    const filteredProducts = products.filter(p => {
+        const matchesCategory = activeCategory === "All" || p.category === activeCategory
+        const matchesSearch = !searchQuery || 
+            p.name.toLowerCase().includes(searchQuery) || 
+            p.description.toLowerCase().includes(searchQuery) ||
+            p.category.toLowerCase().includes(searchQuery)
+        return matchesCategory && matchesSearch
+    })
 
     // Featured products (first 4)
     const featuredProducts = products.slice(0, 4)
@@ -61,7 +70,7 @@ const Home = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* HERO SECTION — Inspired by sneaker store's bold typography */}
             {/* ═══════════════════════════════════════════ */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-20 md:pt-40">
+            <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-32 md:pt-40">
                 {/* Background gradient elements */}
                 <div className="absolute top-20 right-[-5%] w-[600px] h-[600px] rounded-full" style={{ background: isDark ? '#F18B2412' : '#F18B2408', filter: 'blur(150px)' }} />
                 <div className="absolute bottom-0 left-[-10%] w-[500px] h-[500px] rounded-full" style={{ background: isDark ? '#F18B240A' : '#F18B2406', filter: 'blur(120px)' }} />
@@ -131,8 +140,8 @@ const Home = () => {
                                 className="text-base md:text-lg max-w-md mb-10 leading-relaxed"
                                 style={{ color: 'var(--text-muted)' }}
                             >
-                                The premium transaction gateway for Instagram sellers relocating.
-                                Browse curated items, pay securely, get it delivered.
+                                Premium furniture, appliances & gadgets from Nigerians on the move.
+                                Every item inspected. Every payment protected. Delivered to your door.
                             </motion.p>
 
                             <motion.div
@@ -558,7 +567,7 @@ const Home = () => {
                             </motion.div>
 
                             <div className="flex items-center justify-center gap-6 mt-8">
-                                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/40 hover:text-[#F18B24] transition-colors text-xs font-bold uppercase tracking-widest">
+                                <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/40 hover:text-[#F18B24] transition-colors text-xs font-bold uppercase tracking-widest">
                                     <Instagram size={14} /> Instagram
                                 </a>
                                 <span className="w-1 h-1 rounded-full bg-white/20" />

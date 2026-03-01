@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
+import { Toaster } from 'react-hot-toast'
 import { StoreProvider } from './context/StoreContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -12,6 +13,7 @@ import SuccessDelivery from './pages/SuccessDelivery'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminLogin from './pages/AdminLogin'
 import TrackOrder from './pages/TrackOrder'
+import Favorites from './pages/Favorites'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
@@ -31,6 +33,7 @@ function Layout() {
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      <Toaster position="top-center" reverseOrder={false} />
       {!isAdmin && <Navbar />}
       <main>
         <AnimatePresence mode="wait">
@@ -38,10 +41,12 @@ function Layout() {
             <Route path="/" element={<Home />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/checkout/:id" element={<Checkout />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="/success" element={<Success />} />
             <Route path="/deliver-selection" element={<DeliverySelection />} />
             <Route path="/success-delivery" element={<SuccessDelivery />} />
             <Route path="/track-order" element={<TrackOrder />} />
+            <Route path="/favorites" element={<Favorites />} />
             
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route 
