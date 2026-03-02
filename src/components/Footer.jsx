@@ -15,7 +15,7 @@ const Footer = () => {
                             <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#F18B24] hover:border-[#F18B24] transition-all">
                                 <Instagram size={18} />
                             </a>
-                            <a href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#F18B24] hover:border-[#F18B24] transition-all">
+                            <a href="https://wa.me/+2349098050402" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/40 hover:text-[#25D366] hover:border-[#25D366] transition-all">
                                 <MessageCircle size={18} />
                             </a>
                         </div>

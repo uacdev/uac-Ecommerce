@@ -277,10 +277,10 @@ const ProductDetails = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <button className="flex items-center justify-center gap-2 py-4 border border-[#25D366] text-[#25D366] rounded-xl hover:bg-[#25D366] hover:text-white active:scale-95 transition-all cursor-pointer font-bold text-xs uppercase tracking-widest">
+                            <a href="https://wa.me/+2349098050402" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[#25D366] text-[#25D366] rounded-xl hover:bg-[#25D366] hover:text-white active:scale-95 transition-all cursor-pointer font-bold text-xs uppercase tracking-widest">
                                 <MessageCircle size={18} />
                                 WhatsApp
-                            </button>
+                            </a>
                             <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[#E4405F] text-[#E4405F] rounded-xl hover:bg-[#E4405F] hover:text-white active:scale-95 transition-all cursor-pointer font-bold text-xs uppercase tracking-widest">
                                 <Instagram size={18} />
                                 Instagram
