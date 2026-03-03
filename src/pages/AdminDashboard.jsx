@@ -23,6 +23,7 @@ const AdminDashboard = () => {
     const [showNotifications, setShowNotifications] = useState(false)
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
@@ -60,50 +61,68 @@ const AdminDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* ════ LEFT SIDEBAR (ProfitPulse/Mate Style) ════ */}
-            <aside 
-                className={`fixed lg:static inset-y-0 left-0 w-64 flex flex-col shrink-0 transition-transform duration-300 z-[101] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} 
-                style={{ background: isDark ? '#000000' : '#0F1115', borderRight: '1px solid var(--divider)' }}
+            {/* ════ LEFT SIDEBAR ════ */}
+            <motion.aside 
+                animate={{ width: sidebarCollapsed ? 72 : 256 }}
+                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                className={`fixed lg:static inset-y-0 left-0 flex flex-col shrink-0 overflow-hidden transition-transform duration-300 z-[101] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                style={{ background: isDark ? '#000000' : '#0F1115', borderRight: '1px solid rgba(255,255,255,0.06)' }}
             >
                 {/* Brand */}
-                <div className="p-8 flex items-center justify-between lg:justify-start gap-4">
-                    <img src="/images/logo_nobg.png" alt="Logo" className="h-16 lg:h-20 w-auto brightness-0 invert" />
-                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
-                        <X size={20} />
-                    </button>
+                <div className={`flex items-center border-b border-white/5 shrink-0 ${sidebarCollapsed ? 'justify-center p-4 h-20' : 'justify-between p-6 h-20'}`}>
+                    {!sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-14 w-auto brightness-0 invert" />}
+                    {sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-8 w-auto brightness-0 invert opacity-60" />}
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
+                            <X size={20} />
+                        </button>
+                        <button
+                            onClick={() => setSidebarCollapsed(v => !v)}
+                            className="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all"
+                            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            <ChevronRight size={15} className={`transition-transform duration-300 ${sidebarCollapsed ? '' : 'rotate-180'}`} />
+                        </button>
+                    </div>
                 </div>
 
-                <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-                    <SidebarGroup label="Navigation">
-                        <SidebarLink icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeTab === 'overview'} onClick={() => { setActiveTab('overview'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
-                        <SidebarLink icon={<ShoppingCart size={18} />} label="Orders" active={activeTab === 'orders'} onClick={() => { setActiveTab('orders'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
-                        <SidebarLink icon={<Package size={18} />} label="Products" active={activeTab === 'products'} onClick={() => { setActiveTab('products'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
-                        <SidebarLink icon={<Users size={18} />} label="Customers" active={activeTab === 'customers'} onClick={() => { setActiveTab('customers'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
+                <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                    <SidebarGroup label="Navigation" collapsed={sidebarCollapsed}>
+                        <SidebarLink icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeTab === 'overview'} onClick={() => { setActiveTab('overview'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
+                        <SidebarLink icon={<ShoppingCart size={18} />} label="Orders" active={activeTab === 'orders'} onClick={() => { setActiveTab('orders'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
+                        <SidebarLink icon={<Package size={18} />} label="Products" active={activeTab === 'products'} onClick={() => { setActiveTab('products'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
+                        <SidebarLink icon={<Users size={18} />} label="Customers" active={activeTab === 'customers'} onClick={() => { setActiveTab('customers'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
                     </SidebarGroup>
 
-                    <SidebarGroup label="Finance">
-                        <SidebarLink icon={<BarChart3 size={18} />} label="Payments" active={activeTab === 'ledger'} onClick={() => { setActiveTab('ledger'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
-                        <SidebarLink icon={<TrendingUp size={18} />} label="Reports" active={activeTab === 'stats'} onClick={() => { setActiveTab('stats'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
+                    <SidebarGroup label="Finance" collapsed={sidebarCollapsed}>
+                        <SidebarLink icon={<BarChart3 size={18} />} label="Payments" active={activeTab === 'ledger'} onClick={() => { setActiveTab('ledger'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
+                        <SidebarLink icon={<TrendingUp size={18} />} label="Reports" active={activeTab === 'stats'} onClick={() => { setActiveTab('stats'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
                     </SidebarGroup>
 
-                    <SidebarGroup label="App">
-                        <SidebarLink icon={<Settings size={18} />} label="Settings" active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setSelectedOrder(null); setIsSidebarOpen(false); }} />
+                    <SidebarGroup label="App" collapsed={sidebarCollapsed}>
+                        <SidebarLink icon={<Settings size={18} />} label="Settings" active={activeTab === 'settings'} onClick={() => { setActiveTab('settings'); setSelectedOrder(null); setIsSidebarOpen(false); }} collapsed={sidebarCollapsed} />
                     </SidebarGroup>
                 </nav>
 
-                <div className="p-6 border-t border-white/5 space-y-4">
-                    <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-white transition-colors text-xs font-bold">
-                        {isDark ? <Sun size={16} /> : <Moon size={16} />}
-                        {isDark ? 'Light Mode' : 'Dark Mode'}
-                    </button>
-                    <button 
-                        onClick={() => setShowLogoutConfirm(true)}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-white/40 hover:text-red-500 transition-colors text-xs font-bold"
+                <div className={`border-t border-white/5 space-y-1 p-2 ${sidebarCollapsed ? 'flex flex-col items-center' : ''}`}>
+                    <button
+                        onClick={toggleTheme}
+                        title={isDark ? 'Light Mode' : 'Dark Mode'}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/5 transition-all text-xs font-bold ${sidebarCollapsed ? 'justify-center w-10' : 'w-full'}`}
                     >
-                        <LogOut size={16} /> Log out
+                        {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                        {!sidebarCollapsed && (isDark ? 'Light Mode' : 'Dark Mode')}
+                    </button>
+                    <button
+                        onClick={() => setShowLogoutConfirm(true)}
+                        title="Log out"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/40 hover:text-red-500 hover:bg-red-500/5 transition-all text-xs font-bold ${sidebarCollapsed ? 'justify-center w-10' : 'w-full'}`}
+                    >
+                        <LogOut size={16} />
+                        {!sidebarCollapsed && 'Log out'}
                     </button>
                 </div>
-            </aside>
+            </motion.aside>
 
             {/* ════ MAIN CONTENT ════ */}
             <main className="flex-1 flex flex-col min-w-0 transition-colors duration-500" style={{ background: 'var(--bg-secondary)' }}>
@@ -150,7 +169,8 @@ const AdminDashboard = () => {
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute right-0 mt-4 w-80 glass z-[110] overflow-hidden"
+                                            className="absolute right-0 mt-4 w-80 z-[110] overflow-hidden rounded-2xl shadow-2xl border"
+                                            style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}
                                         >
                                             <div className="p-4 border-b border-[var(--divider)] flex justify-between items-center bg-[var(--bg-primary)]">
                                                 <p className="text-xs font-black uppercase tracking-widest">Notifications</p>
@@ -304,23 +324,27 @@ const AdminDashboard = () => {
     )
 }
 
-const SidebarGroup = ({ label, children }) => (
+const SidebarGroup = ({ label, children, collapsed }) => (
     <div className="pb-4">
-        <p className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-3">{label}</p>
+        {!collapsed && <p className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-3">{label}</p>}
+        {collapsed && <div className="my-2 border-t border-white/5" />}
         <div className="space-y-1">{children}</div>
     </div>
 )
 
-const SidebarLink = ({ icon, label, active, onClick }) => (
+const SidebarLink = ({ icon, label, active, onClick, collapsed }) => (
     <button
         onClick={onClick}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active
+        title={collapsed ? label : undefined}
+        className={`w-full flex items-center py-3 rounded-xl transition-all ${
+            collapsed ? 'justify-center px-2' : 'gap-3 px-4'
+        } ${active
                 ? 'bg-white text-black shadow-lg shadow-black/10'
                 : 'text-white/40 hover:text-white hover:bg-white/5'
             }`}
     >
         {icon}
-        <span className="text-xs font-bold">{label}</span>
+        {!collapsed && <span className="text-xs font-bold whitespace-nowrap">{label}</span>}
     </button>
 )
 

@@ -325,6 +325,7 @@ export const StoreProvider = ({ children }) => {
             cartTotal,
             cartCount,
             loading,
+            stats,
             toggleFavorite,
             isFavorite,
             addProduct,
