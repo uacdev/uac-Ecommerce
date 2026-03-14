@@ -66,7 +66,7 @@ const TrackOrder = () => {
                     <Package className="text-[#F18B24]" size={32} />
                 </motion.div>
                 <h1 className="text-4xl md:text-5xl font-black font-heading mb-4 tracking-tighter" style={{ color: 'var(--text-primary)' }}>Track Your Order</h1>
-                <p className="max-w-md mx-auto" style={{ color: 'var(--text-muted)' }}>Enter your order details to see real-time updates from SR-Cloud Logistics.</p>
+                <p className="max-w-md mx-auto" style={{ color: 'var(--text-muted)' }}>Enter your order details to see real-time updates from Sellout Cloud Logistics.</p>
             </div>
 
             {!foundOrder ? (
@@ -140,49 +140,112 @@ const TrackOrder = () => {
                         </div>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="glass p-8 md:p-12 overflow-hidden">
-                        <h3 className="text-lg font-black mb-12 flex items-center gap-3">
-                            <Clock className="text-[#F18B24]" />
-                            Logistics Timeline
-                        </h3>
-                        
-                        <div className="relative">
-                            {/* Connector Line */}
-                            <div className="absolute left-[11px] md:left-1/2 top-0 bottom-0 w-[2px] bg-[var(--divider)] -translate-x-1/2" />
-                            <div className="absolute left-[11px] md:left-1/2 top-0 w-[2px] bg-[#F18B24] transition-all duration-1000 -translate-x-1/2" style={{ height: `${(getStatusIndex(foundOrder.status) / (steps.length - 1)) * 100}%` }} />
+                    {/* Detailed Logistics Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="glass p-8 md:p-10 transition-all hover:border-[#F18B24]">
+                            <h3 className="text-lg font-black mb-10 flex items-center gap-3">
+                                <Clock className="text-[#F18B24]" />
+                                Logistics Timeline
+                            </h3>
+                            
+                            <div className="relative">
+                                {/* Connector Line */}
+                                <div className="absolute left-[11px] top-0 bottom-0 w-[2px] bg-[var(--divider)] -translate-x-1/2" />
+                                <div className="absolute left-[11px] top-0 w-[2px] bg-[#F18B24] transition-all duration-1000 -translate-x-1/2" style={{ height: `${(getStatusIndex(foundOrder.status) / (steps.length - 1)) * 100}%` }} />
 
-                            <div className="space-y-12">
-                                {steps.map((step, idx) => {
-                                    const isActive = getStatusIndex(foundOrder.status) >= idx
-                                    const isLastActive = getStatusIndex(foundOrder.status) === idx
+                                <div className="space-y-12">
+                                    {steps.map((step, idx) => {
+                                        const isActive = getStatusIndex(foundOrder.status) >= idx
+                                        const isLastActive = getStatusIndex(foundOrder.status) === idx
 
-                                    return (
-                                        <div key={idx} className={`relative flex items-center md:justify-center ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                                            {/* dot */}
-                                            <div className={`absolute left-0 md:left-1/2 w-6 h-6 rounded-full border-4 -translate-x-[7px] md:-translate-x-3 z-10 transition-colors duration-500 ${isActive ? 'bg-[#F18B24] border-[#F18B2430]' : 'bg-[var(--bg-secondary)] border-[var(--divider)]'}`}>
-                                                {isLastActive && <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="w-full h-full rounded-full bg-[#F18B2440]" />}
+                                        return (
+                                            <div key={idx} className="relative flex items-center">
+                                                {/* dot */}
+                                                <div className={`absolute left-0 w-6 h-6 rounded-full border-4 -translate-x-[7px] z-10 transition-colors duration-500 ${isActive ? 'bg-[#F18B24] border-[#F18B2430]' : 'bg-[var(--bg-secondary)] border-[var(--divider)]'}`}>
+                                                    {isLastActive && <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="w-full h-full rounded-full bg-[#F18B2440]" />}
+                                                </div>
+
+                                                <div className="pl-12">
+                                                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isActive ? 'text-[#F18B24]' : 'text-[var(--text-muted)]'}`}>
+                                                        {step.label}
+                                                    </p>
+                                                    <p className="text-xs font-bold mt-1" style={{ color: 'var(--text-muted)' }}>{step.desc}</p>
+                                                </div>
                                             </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
 
-                                            {/* content */}
-                                            <div className={`pl-12 md:pl-0 md:w-1/2 ${idx % 2 === 0 ? 'md:pr-20 md:text-right' : 'md:pl-20 md:text-left'}`}>
-                                                <p className={`text-xs font-black uppercase tracking-widest ${isActive ? 'text-[#F18B24]' : 'text-[var(--text-muted)]'}`}>
-                                                    {step.label}
-                                                </p>
-                                                <p className="text-[11px] font-bold mt-1" style={{ color: 'var(--text-muted)' }}>{step.desc}</p>
-                                            </div>
-                                            <div className="hidden md:block w-1/2" />
-                                        </div>
-                                    )
-                                })}
+                        <div className="space-y-6">
+                            <div className="glass p-8 space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                        <Truck size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Delivery Method</p>
+                                        <p className="text-sm font-black uppercase">{foundOrder.deliveryMethod === 'assisted' ? 'SR-Cloud Assisted' : 'Self-Arranged Pick-up'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                        <ShieldCheck size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Logistics Partner</p>
+                                        <p className="text-sm font-black">{foundOrder.logisticsPartner || 'Awaiting Assignment'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-[#F18B2410] flex items-center justify-center text-[#F18B24]">
+                                        <MapPin size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Destination</p>
+                                        <p className="text-sm font-black truncate">{foundOrder.shippingAddress || 'Verified Pickup Hub'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="glass p-8 border-t-4 border-t-emerald-500">
+                                <div className="flex justify-between items-center mb-6">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Escrow Breakdown</p>
+                                    <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase">Secured</span>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between">
+                                        <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>Product Price</span>
+                                        <span className="text-xs font-black">₦{foundOrder.amount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>Logistics Fee</span>
+                                        <span className="text-xs font-black">₦{(foundOrder.deliveryFee || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="pt-4 border-t flex justify-between" style={{ borderColor: 'var(--divider)' }}>
+                                        <span className="text-sm font-black">Total Secured</span>
+                                        <span className="text-sm font-black text-[#F18B24]">₦{(foundOrder.amount + (foundOrder.deliveryFee || 0)).toLocaleString()}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-center">
+                    <div className="flex flex-col md:flex-row justify-center gap-6 pt-10 border-t" style={{ borderColor: 'var(--divider)' }}>
+                        <a 
+                            href={`https://wa.me/2349098050402?text=Hi, i am tracking Order ${foundOrder.id}. I need some help.`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-3 px-8 py-5 border-2 border-[#25D366] text-[#25D366] rounded-2xl hover:bg-[#25D366] hover:text-white transition-all font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-500/10"
+                        >
+                            <MessageCircle size={20} /> Contact SR Logistics
+                        </a>
                         <button 
                             onClick={() => setFoundOrder(null)} 
-                            className="bg-[var(--bg-primary)] border border-[var(--divider)] px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-colors"
+                            className="bg-[var(--bg-primary)] border border-[var(--divider)] px-8 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-colors"
                         >
                             Track Another Order
                         </button>

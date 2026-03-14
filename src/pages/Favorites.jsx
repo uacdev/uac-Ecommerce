@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, ArrowLeft, Trash2, ShoppingBag } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
+import EmptyState from '../components/EmptyState'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 
@@ -74,22 +75,13 @@ const Favorites = () => {
 
             {/* Empty State */}
             {favorites.length === 0 && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center py-32 text-center"
-                >
-                    <div className="w-28 h-28 rounded-full bg-[#F18B2408] border border-[#F18B2415] flex items-center justify-center mb-8">
-                        <Heart size={48} className="text-[#F18B24] opacity-30" />
-                    </div>
-                    <h2 className="text-3xl font-black mb-4 tracking-tight" style={{ color: 'var(--text-primary)' }}>No saved items yet</h2>
-                    <p className="text-base font-medium mb-10 max-w-sm" style={{ color: 'var(--text-muted)' }}>
-                        Tap the heart icon on any product to save it here for later.
-                    </p>
-                    <Link to="/" className="btn-primary py-4 px-12 font-black uppercase tracking-widest text-xs cursor-pointer">
-                        Browse Products
-                    </Link>
-                </motion.div>
+                <EmptyState
+                    icon={Heart}
+                    title="No saved items"
+                    description="Tap the heart icon on any product to save it here for later. Build your dream collection today."
+                    actionLabel="Discover Products"
+                    onAction={() => navigate('/shop')}
+                />
             )}
 
             {/* Product Grid */}

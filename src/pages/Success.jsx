@@ -68,7 +68,7 @@ const Success = () => {
                         <span style={{ color: 'var(--text-primary)' }}>Instagram Direct</span>
                     </a>
                     <a
-                        href={`https://wa.me/?text=Hi, i just paid for Order ${orderId}. Please confirm.`}
+                        href={`https://wa.me/2349098050402?text=Hi, i just paid for Order ${orderId}. Please confirm.`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-3 py-4 glass transition-all font-bold group"

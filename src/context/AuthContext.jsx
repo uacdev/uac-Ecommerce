@@ -12,19 +12,11 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         // Check active sessions and sets the user
         const getSession = async () => {
-            // Check for mock session first
-            const mockSession = localStorage.getItem('sr_admin_session')
-            if (mockSession) {
-                setUser(JSON.parse(mockSession))
-                setLoading(false)
-                return
-            }
-
             try {
                 const { data: { session } } = await supabase.auth.getSession()
                 setUser(session?.user ?? null)
             } catch (err) {
-                console.warn('Supabase session check failed (using placeholders?):', err.message)
+                console.error('Supabase session check failed:', err.message)
                 setUser(null)
             } finally {
                 setLoading(false)
@@ -34,18 +26,10 @@ export const AuthProvider = ({ children }) => {
         getSession()
 
         // Listen for changes on auth state (logged in, signed out, etc.)
-        let subscription = null;
-        try {
-            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-                if (!localStorage.getItem('sr_admin_session')) {
-                    setUser(session?.user ?? null)
-                    setLoading(false)
-                }
-            })
-            subscription = data?.subscription;
-        } catch (err) {
-            console.warn('Supabase auth listener failed:', err.message)
-        }
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null)
+            setLoading(false)
+        })
 
         return () => subscription?.unsubscribe()
     }, [])

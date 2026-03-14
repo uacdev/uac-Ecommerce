@@ -45,10 +45,10 @@ const Footer = () => {
 
                 <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest">
-                        © {new Date().getFullYear()} SELLOUT & RELOCATE. ALL RIGHTS RESERVED.
+                        © {new Date().getFullYear()} SELLOUT. ALL RIGHTS RESERVED.
                     </p>
                     <p className="text-white/10 text-[9px] font-bold uppercase tracking-widest max-w-[400px] text-center md:text-right">
-                        Sellout & Relocate acts as a transaction gateway. All product claims are the responsibility of the seller.
+                        Sellout acts as a transaction gateway. All product claims are the responsibility of the seller.
                     </p>
                 </div>
             </div>

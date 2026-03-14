@@ -1,5 +1,5 @@
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
-import { ArrowRight, ShoppingBag, ShieldCheck, Zap, Truck, Filter, Star, ArrowUpRight, ChevronRight, Instagram, Mail } from 'lucide-react'
+import { ArrowRight, ShoppingBag, ShieldCheck, Zap, Truck, Filter, Star, ArrowUpRight, ChevronRight, Instagram, Mail, Sparkles } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CATEGORIES } from '../data/products'
@@ -10,7 +10,7 @@ import ProductCard from '../components/ProductCard'
 const Home = () => {
     const [activeCategory, setActiveCategory] = useState("All")
     const [flipped, setFlipped] = useState(false)
-    const { products } = useStore()
+    const { products, categories } = useStore()
     const location = useLocation()
 
     useEffect(() => {
@@ -22,6 +22,14 @@ const Home = () => {
     const heroRef = useRef(null)
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] })
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 150])
+
+    useEffect(() => {
+        document.title = 'Sellout | Premium Transaction Gateway'
+        const metaDescription = document.querySelector('meta[name="description"]')
+        if (metaDescription) {
+            metaDescription.setAttribute('content', 'The premium transaction gateway for buying and selling vetted furniture, appliances and gadgets securely with human confirmation.')
+        }
+    }, [])
 
     const queryParams = new URLSearchParams(location.search)
     const searchQuery = queryParams.get('search')?.toLowerCase() || ''
@@ -54,7 +62,7 @@ const Home = () => {
             p.name.toLowerCase().includes(searchQuery) || 
             p.description.toLowerCase().includes(searchQuery) ||
             p.category.toLowerCase().includes(searchQuery)
-        return matchesCategory && matchesSearch
+        return matchesCategory && matchesSearch && p.status === 'available'
     })
 
     // Featured products (first 4)
@@ -68,16 +76,14 @@ const Home = () => {
             className="overflow-x-hidden"
         >
             {/* ═══════════════════════════════════════════ */}
-            {/* HERO SECTION — Inspired by sneaker store's bold typography */}
+            {/* HERO SECTION */}
             {/* ═══════════════════════════════════════════ */}
             <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden pt-32 md:pt-40">
-                {/* Background gradient elements */}
                 <div className="absolute top-20 right-[-5%] w-[600px] h-[600px] rounded-full" style={{ background: isDark ? '#F18B2412' : '#F18B2408', filter: 'blur(150px)' }} />
                 <div className="absolute bottom-0 left-[-10%] w-[500px] h-[500px] rounded-full" style={{ background: isDark ? '#F18B240A' : '#F18B2406', filter: 'blur(120px)' }} />
 
                 <div className="container relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center min-h-[80vh]">
-                        {/* Left: Bold Typography */}
                         <motion.div style={{ y: heroY }}>
                             <motion.div
                                 initial={{ opacity: 0, x: -40 }}
@@ -94,43 +100,28 @@ const Home = () => {
                                 initial={{ opacity: 0, y: 50 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-                                className="text-[3.5rem] sm:text-[4.5rem] md:text-[5.5rem] lg:text-[6rem] font-black leading-[0.9] tracking-[-0.04em] mb-8"
+                                className="text-[2.8rem] sm:text-[3.8rem] md:text-[4.8rem] lg:text-[6rem] font-black leading-[0.85] tracking-[-0.04em] mb-8"
                                 style={{ color: 'var(--text-primary)' }}
                             >
-                                SELL OUT
-                                <br />
                                 <div className="h-[1.1em] overflow-hidden">
                                     <AnimatePresence mode="wait">
                                         <motion.span
-                                            key={flipped ? 'easy' : 'fast'}
+                                            key={flipped ? 'buy' : 'sell'}
                                             initial={{ y: "-100%", opacity: 0 }}
                                             animate={{ y: 0, opacity: 1 }}
                                             exit={{ y: "100%", opacity: 0 }}
                                             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                                            className="italic font-heading block"
-                                            style={{ color: '#F18B24' }}
+                                            className="block"
                                         >
-                                            {flipped ? 'EASY.' : 'FAST.'}
+                                            {flipped ? 'BUY' : 'SELL'}
                                         </motion.span>
                                     </AnimatePresence>
                                 </div>
-                                RELOCATE
+                                <span className="italic font-heading" style={{ color: '#F18B24' }}>PREMIUM</span>
                                 <br />
-                                <div className="h-[1.1em] overflow-hidden">
-                                    <AnimatePresence mode="wait">
-                                        <motion.span
-                                            key={flipped ? 'fast' : 'easy'}
-                                            initial={{ y: "-100%", opacity: 0 }}
-                                            animate={{ y: 0, opacity: 1 }}
-                                            exit={{ y: "100%", opacity: 0 }}
-                                            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                                            className="italic font-heading block"
-                                            style={{ color: '#F18B24' }}
-                                        >
-                                            {flipped ? 'FAST.' : 'EASY.'}
-                                        </motion.span>
-                                    </AnimatePresence>
-                                </div>
+                                ITEMS
+                                <br />
+                                SECURELY.
                             </motion.h1>
 
                             <motion.p
@@ -140,8 +131,8 @@ const Home = () => {
                                 className="text-base md:text-lg max-w-md mb-10 leading-relaxed"
                                 style={{ color: 'var(--text-muted)' }}
                             >
-                                Premium furniture, appliances & gadgets from Nigerians on the move.
-                                Every item inspected. Every payment protected. Delivered to your door.
+                                Premium furniture, appliances & gadgets from vetted sellers.
+                                Every item inspected. Every payment protected. Fast & reliably delivered.
                             </motion.p>
 
                             <motion.div
@@ -150,50 +141,44 @@ const Home = () => {
                                 transition={{ duration: 0.8, delay: 0.6 }}
                                 className="flex flex-col sm:flex-row gap-4"
                             >
-                                <a href="#all-products" className="btn-primary py-4 px-10 text-base group">
+                                <Link to="/shop" className="btn-primary py-4 px-10 text-base group">
                                     Shop Now
                                     <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
-                                </a>
+                                </Link>
                                 <a href="#how-it-works" className="btn-outline py-4 px-10 text-base">
                                     How it works
                                 </a>
                             </motion.div>
                         </motion.div>
 
-                        {/* Right: Hero Product Grid — VESON-style */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 1, delay: 0.3 }}
-                            className="hidden lg:grid grid-cols-2 gap-4 lg:mt-10"
+                            className="hidden lg:block relative"
                         >
-                            {featuredProducts.slice(0, 4).map((product, i) => (
-                                <Link
-                                    key={product.id}
-                                    to={`/product/${product.id}`}
-                                    className="group relative overflow-hidden rounded-2xl"
-                                    style={{ aspectRatio: i === 0 || i === 3 ? '1/1.2' : '1/1' }}
-                                >
-                                    <img
-                                        src={product.image}
-                                        alt={product.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                                        <p className="text-white font-bold text-sm">{product.name}</p>
-                                        <p className="text-[#F18B24] font-bold">₦{product.price.toLocaleString()}</p>
-                                    </div>
-                                </Link>
-                            ))}
+                            <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden border border-[var(--divider)] shadow-2xl">
+                                <img 
+                                    src="/images/hero_aesthetic.png" 
+                                    alt="Aesthetic Interior" 
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                            </div>
+                            
+                            <motion.div 
+                                animate={{ y: [0, -10, 0] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                className="absolute -top-6 -right-6 glass p-6 rounded-2xl shadow-xl"
+                            >
+                                <Sparkles className="text-[#F18B24] mb-2" size={20} />
+                                <p className="text-[10px] font-black uppercase tracking-widest">Premium Collection</p>
+                            </motion.div>
                         </motion.div>
                     </div>
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* MARQUEE BANNER — Sneaker store inspiration */}
-            {/* ═══════════════════════════════════════════ */}
             <section className="overflow-hidden py-6" style={{ background: '#F18B24' }}>
                 <motion.div
                     animate={{ x: [0, -1920] }}
@@ -204,20 +189,17 @@ const Home = () => {
                         <span key={i} className="flex items-center gap-8">
                             <span className="text-white font-black text-lg tracking-widest uppercase">SELL YOUR ITEMS</span>
                             <Star size={16} className="text-white/60" />
-                            <span className="text-white font-black text-lg tracking-widest uppercase">RELOCATE WITH EASE</span>
+                            <span className="text-white font-black text-lg tracking-widest uppercase">BUY WITH TRUST</span>
                             <Star size={16} className="text-white/60" />
-                            <span className="text-white font-black text-lg tracking-widest uppercase">SECURE PAYMENTS</span>
+                            <span className="text-white font-black text-lg tracking-widest uppercase">SECURE ESCROW</span>
                             <Star size={16} className="text-white/60" />
-                            <span className="text-white font-black text-lg tracking-widest uppercase">VERIFIED SELLERS</span>
+                            <span className="text-white font-black text-lg tracking-widest uppercase">VERIFIED LISTINGS</span>
                             <Star size={16} className="text-white/60" />
                         </span>
                     ))}
                 </motion.div>
             </section>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* FEATURED PRODUCTS — VESON "Winter Sale" style row */}
-            {/* ═══════════════════════════════════════════ */}
             <section id="all-products" className="py-20 md:py-28" style={{ background: 'var(--bg-primary)' }}>
                 <div className="container">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-14">
@@ -229,7 +211,7 @@ const Home = () => {
                                 className="text-[10px] font-bold uppercase tracking-[0.3em] mb-3"
                                 style={{ color: '#F18B24' }}
                             >
-                                Curated Collection
+                                Latest Drops
                             </motion.p>
                             <motion.h2
                                 initial={{ opacity: 0, y: 20 }}
@@ -242,7 +224,7 @@ const Home = () => {
                             </motion.h2>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide max-w-full">
-                            {CATEGORIES.map(cat => (
+                            {categories.map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
@@ -252,7 +234,7 @@ const Home = () => {
                                         }`}
                                     style={activeCategory !== cat ? {
                                         color: 'var(--text-muted)',
-                                        border: '1px solid var(--glass-border)',
+                                        border: '1px solid var(--divider)',
                                     } : {}}
                                 >
                                     {cat}
@@ -465,7 +447,7 @@ const Home = () => {
                                 step="01"
                                 icon={<ShoppingBag className="text-[#F18B24]" size={28} />}
                                 title="Discover"
-                                description="Browse curated, pre-verified items from Instagram sellers who are relocating. Every listing is quality-checked."
+                                description="Browse curated, pre-verified items from verified sellers. Every listing is quality-checked."
                             />
                         </motion.div>
                         <motion.div variants={itemVariants}>

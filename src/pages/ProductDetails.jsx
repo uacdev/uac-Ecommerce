@@ -14,10 +14,32 @@ const ProductDetails = () => {
     const { products, addToCart, toggleFavorite, isFavorite } = useStore()
 
     const product = products.find(p => p.id === id)
+    const productImages = product ? (product.images?.length > 0 ? product.images : [product.image]) : []
 
-    // Slideshow logic
-    const productImages = product ? (product.images || [product.image, product.image, product.image]) : []
-    
+    // SEO and Metadata
+    useEffect(() => {
+        if (product) {
+            document.title = `${product.name} | Sellout & Relocate`
+            
+            // Dynamic Meta Tags (Basic)
+            const metaDescription = document.querySelector('meta[name="description"]')
+            if (metaDescription) {
+                metaDescription.setAttribute('content', product.description.substring(0, 160))
+            }
+
+            // OG Tags for Social Sharing
+            const ogTitle = document.querySelector('meta[property="og:title"]')
+            if (ogTitle) ogTitle.setAttribute('content', product.name)
+            
+            const ogImage = document.querySelector('meta[property="og:image"]')
+            if (ogImage) ogImage.setAttribute('content', productImages[0])
+        }
+        
+        return () => {
+            document.title = 'Sellout & Relocate | Premium Gateway'
+        }
+    }, [product, productImages]);
+
     useEffect(() => {
         if (!product || productImages.length <= 1) return;
         
@@ -98,64 +120,69 @@ const ProductDetails = () => {
                 Back to Gallery
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
                 {/* Left: Image Gallery */}
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <motion.div
                         layoutId={`prod-img-${id}`}
-                        className="aspect-square glass overflow-hidden rounded-3xl relative group"
+                        className="aspect-square glass overflow-hidden rounded-[40px] relative group shadow-2xl"
+                        style={{ border: '1px solid var(--divider)' }}
                     >
                         <AnimatePresence mode="wait">
                             <motion.img
                                 key={activeImage}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.8, ease: "easeInOut" }}
+                                initial={{ opacity: 0, scale: 1.1 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                 src={productImages[activeImage]}
                                 alt={product.name}
                                 className="w-full h-full object-cover"
                             />
                         </AnimatePresence>
 
+                        {/* Premium Gradient Overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+
                         {/* Navigation Arrows */}
-                        <div className="absolute inset-0 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <div className="absolute inset-0 flex items-center justify-between px-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <button 
                                 onClick={(e) => { e.preventDefault(); prevImage(); }}
-                                className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[#F18B24] transition-colors"
+                                className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[#F18B24] transition-all transform hover:scale-110 active:scale-90"
                             >
-                                <ChevronLeft size={24} />
+                                <ChevronLeft size={28} />
                             </button>
                             <button 
                                 onClick={(e) => { e.preventDefault(); nextImage(); }}
-                                className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[#F18B24] transition-colors"
+                                className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[#F18B24] transition-all transform hover:scale-110 active:scale-90"
                             >
-                                <ChevronRight size={24} />
+                                <ChevronRight size={28} />
                             </button>
                         </div>
 
                         {/* Pagination Dots */}
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
                             {productImages.map((_, i) => (
-                                <div 
+                                <button 
                                     key={i} 
-                                    className={`h-1 rounded-full transition-all duration-300 ${activeImage === i ? 'w-8 bg-[#F18B24]' : 'w-2 bg-white/40'}`}
+                                    onClick={() => setActiveImage(i)}
+                                    className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${activeImage === i ? 'w-10 bg-[#F18B24]' : 'w-3 bg-white/40 hover:bg-white/60'}`}
                                 />
                             ))}
                         </div>
                     </motion.div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                         {productImages.map((img, i) => (
                             <button
                                 key={i}
                                 onClick={() => setActiveImage(i)}
-                                className={`aspect-square glass rounded-xl overflow-hidden border-2 transition-all ${activeImage === i ? 'border-[#F18B24]' : 'border-transparent'}`}
+                                className={`aspect-square glass rounded-2xl overflow-hidden border-2 transition-all duration-300 transform hover:scale-105 ${activeImage === i ? 'border-[#F18B24] shadow-lg shadow-orange-500/20' : 'border-transparent opacity-60 hover:opacity-100'}`}
                             >
                                 <img
                                     src={img}
                                     alt=""
-                                    className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity"
+                                    className="w-full h-full object-cover"
                                 />
                             </button>
                         ))}
@@ -170,100 +197,109 @@ const ProductDetails = () => {
                     </div>
 
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--divider)] rounded text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Delivered by Sellout & Relocate</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Delivered by Sellout & Relocate</span>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
 
-                    <h1 className="text-4xl md:text-5xl font-black mb-4 font-heading tracking-tight" style={{ color: 'var(--text-primary)' }}>{product.name}</h1>
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 font-heading tracking-tighter" style={{ color: 'var(--text-primary)' }}>{product.name}</h1>
 
-                    <div className="flex items-center gap-4 mb-6">
-                        <p className="text-3xl font-extrabold text-[#F18B24]">₦{product.price.toLocaleString()}</p>
-                        <div className="h-4 w-[1px]" style={{ background: 'var(--divider)' }} />
-                        <p style={{ color: 'var(--text-muted)' }}>{product.location}</p>
+                    <div className="flex items-center gap-6 mb-8">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Selling Price</p>
+                            <p className="text-4xl font-black text-[#F18B24]">₦{product.price.toLocaleString()}</p>
+                        </div>
+                        <div className="h-10 w-[1px]" style={{ background: 'var(--divider)' }} />
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Pick up from</p>
+                            <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}><MapPin size={16} className="text-[#F18B24]" /> {product.location}</p>
+                        </div>
                         <button
                             onClick={handleFavorite}
-                            className={`ml-auto w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md ${
+                            className={`ml-auto w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 shadow-xl ${
                                 liked
-                                    ? 'bg-red-500 scale-110'
-                                    : 'bg-[var(--bg-secondary)] hover:bg-red-50 hover:scale-110 border border-[var(--divider)]'
+                                    ? 'bg-red-500 scale-105'
+                                    : 'bg-[var(--bg-secondary)] hover:bg-red-50 border border-[var(--divider)]'
                             }`}
-                            title={liked ? 'Remove from favourites' : 'Save to favourites'}
                         >
                             <Heart
-                                size={20}
+                                size={24}
                                 className={`transition-all ${ liked ? 'text-white' : 'text-red-500' }`}
                                 fill={liked ? 'white' : 'none'}
                             />
                         </button>
                     </div>
 
-                    <p className="mb-8 leading-relaxed max-w-lg font-medium" style={{ color: 'var(--text-primary)' }}>
-                        {product.description}
-                    </p>
+                    <div className="p-8 rounded-3xl border mb-10 space-y-4" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--divider)' }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Description</p>
+                        <p className="leading-relaxed font-bold text-sm lg:text-base" style={{ color: 'var(--text-primary)' }}>
+                            {product.description}
+                        </p>
+                    </div>
 
                     {/* Quantity Selector */}
-                    <div className="mb-10 space-y-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Quantity</p>
-                        <div className="flex items-center gap-6 w-fit bg-[var(--bg-secondary)] p-2 rounded-2xl border" style={{ borderColor: 'var(--divider)' }}>
+                    <div className="mb-12 space-y-4">
+                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Inventory Count</p>
+                        <div className="flex items-center gap-8 w-fit bg-[var(--bg-primary)] p-2 rounded-2xl border-2" style={{ borderColor: 'var(--divider)' }}>
                             <button 
                                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--badge-bg)] active:scale-90 transition-all cursor-pointer"
+                                className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-[var(--bg-secondary)] active:scale-95 transition-all cursor-pointer text-[var(--text-primary)]"
                             >
-                                <Minus size={18} style={{ color: 'var(--text-primary)' }} />
+                                <Minus size={20} />
                             </button>
-                            <span className="text-xl font-black w-8 text-center" style={{ color: 'var(--text-primary)' }}>{quantity}</span>
+                            <span className="text-2xl font-black w-8 text-center" style={{ color: 'var(--text-primary)' }}>{quantity}</span>
                             <button 
                                 onClick={() => setQuantity(q => q + 1)}
-                                className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-[var(--badge-bg)] active:scale-90 transition-all cursor-pointer"
+                                className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-[var(--bg-secondary)] active:scale-95 transition-all cursor-pointer text-[var(--text-primary)]"
                             >
-                                <Plus size={18} style={{ color: 'var(--text-primary)' }} />
+                                <Plus size={20} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="space-y-6 mb-10">
-                        <div className="flex items-start gap-4 p-4 glass">
-                            <Truck size={24} style={{ color: 'var(--text-muted)' }} className="mt-1" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
+                        <div className="flex items-start gap-4 p-5 rounded-2xl border bg-emerald-500/5 transition-colors border-emerald-500/20">
+                            <Truck size={24} className="text-emerald-500 mt-1" />
                             <div>
-                                <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Delivery Window</h4>
-                                <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{product.delivery_window || "2-3 Working Days"}</p>
+                                <h4 className="font-black text-[10px] uppercase tracking-widest mb-1 text-emerald-600">Guided Delivery</h4>
+                                <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{product.delivery_window || "2-3 Working Days"}</p>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-4 p-5 rounded-2xl border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
-                            <Info size={24} style={{ color: 'var(--text-muted)' }} className="mt-1" />
+                        <div className="flex items-start gap-4 p-5 rounded-2xl border bg-orange-500/5 border-orange-500/20">
+                            <Info size={24} className="text-[#F18B24] mt-1" />
                             <div>
-                                <h4 className="font-black text-xs uppercase tracking-widest mb-1" style={{ color: 'var(--text-primary)' }}>Inspection & Trust Policy</h4>
-                                <p className="text-xs font-bold leading-relaxed" style={{ color: 'var(--text-muted)' }}>This is a human-assisted transaction. Physical inspection is mandatory or optional based on location before final payment release to seller.</p>
+                                <h4 className="font-black text-[10px] uppercase tracking-widest mb-1 text-[#F18B24]">Gatekeep Policy</h4>
+                                <p className="text-[10px] font-bold leading-relaxed" style={{ color: 'var(--text-muted)' }}>Physical inspection mandatory before final escrow release.</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Status Banner */}
                     {product.status === 'sold' && (
-                        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-6">
-                            <p className="text-red-500 font-bold text-sm">This item has been sold.</p>
+                        <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/20 mb-8 flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                            <p className="text-red-500 font-black text-xs uppercase tracking-widest">Listing Sold Out</p>
                         </div>
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {product.status === 'sold' ? (
-                                <span className="py-4 text-center rounded-xl font-bold bg-red-500/10 text-red-500 border border-red-500/20">
+                                <span className="py-5 text-center rounded-2xl font-black uppercase tracking-widest text-xs bg-red-500/10 text-red-500 border border-red-500/20">
                                     Sold Out
                                 </span>
                             ) : (
                                 <button
                                     onClick={() => navigate(`/checkout/${product.id}`)}
-                                    className="btn-primary py-4 text-center font-black uppercase tracking-widest text-xs cursor-pointer active:scale-95 transition-transform"
+                                    className="btn-primary py-5 text-center font-black uppercase tracking-widest text-xs cursor-pointer hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-orange-500/20"
                                 >
-                                    Buy Now
+                                    Instant Buy
                                 </button>
                             )}
                             <button
                                 onClick={handleAddToCart}
-                                className="flex items-center justify-center gap-2 py-4 rounded-xl transition-all font-black uppercase tracking-widest text-xs border-2 cursor-pointer active:scale-95 hover:bg-[#F18B24] hover:text-white"
+                                className={`flex items-center justify-center gap-3 py-5 rounded-2xl transition-all font-black uppercase tracking-widest text-xs border-2 cursor-pointer active:scale-95 hover:bg-[#F18B24] hover:text-white ${product.status === 'sold' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 style={{ 
                                     borderColor: '#F18B24', 
                                     color: '#F18B24',
@@ -271,20 +307,23 @@ const ProductDetails = () => {
                                 }}
                                 disabled={product.status === 'sold'}
                             >
-                                <ShoppingBag size={18} />
-                                {product.status === 'sold' ? 'Unavailable' : 'Add to Cart'}
+                                <ShoppingBag size={20} />
+                                Add to Cart
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <a href="https://wa.me/+2349098050402" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[#25D366] text-[#25D366] rounded-xl hover:bg-[#25D366] hover:text-white active:scale-95 transition-all cursor-pointer font-bold text-xs uppercase tracking-widest">
-                                <MessageCircle size={18} />
-                                WhatsApp
-                            </a>
-                            <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[#E4405F] text-[#E4405F] rounded-xl hover:bg-[#E4405F] hover:text-white active:scale-95 transition-all cursor-pointer font-bold text-xs uppercase tracking-widest">
-                                <Instagram size={18} />
-                                Instagram
-                            </a>
+                        <div className="space-y-4">
+                            <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Human Confirmation Required</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <a href="https://wa.me/+2349098050402" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#25D366] text-[#25D366] rounded-2xl hover:bg-[#25D366] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-green-500/10">
+                                    <MessageCircle size={20} />
+                                    WhatsApp SR
+                                </a>
+                                <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#E4405F] text-[#E4405F] rounded-2xl hover:bg-[#E4405F] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-pink-500/10">
+                                    <Instagram size={20} />
+                                    Instagram SR
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminLogin from './pages/AdminLogin'
 import TrackOrder from './pages/TrackOrder'
 import Favorites from './pages/Favorites'
+import Products from './pages/Products'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
@@ -39,6 +40,8 @@ function Layout() {
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<Products />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/checkout/:id" element={<Checkout />} />
             <Route path="/checkout" element={<Checkout />} />

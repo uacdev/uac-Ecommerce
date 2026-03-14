@@ -22,17 +22,6 @@ const AdminLogin = () => {
         const cleanEmail = email.trim()
         const cleanPassword = password.trim()
 
-        console.log('Login attempt:', cleanEmail)
-
-        // HARDCODED BYPASS FOR LOCAL DEVELOPMENT
-        if (cleanEmail === 'admin@sellout.ng' && cleanPassword === 'admin123') {
-            const mockUser = { email: 'admin@sellout.ng', role: 'authenticated' }
-            localStorage.setItem('sr_admin_session', JSON.stringify(mockUser))
-            setUser(mockUser)
-            navigate('/admin')
-            return
-        }
-
         try {
             const { error: authError } = await supabase.auth.signInWithPassword({
                 email: cleanEmail,
@@ -40,10 +29,9 @@ const AdminLogin = () => {
             })
 
             if (authError) throw authError
-
             navigate('/admin')
         } catch (err) {
-            setError(err.message === 'Failed to fetch' ? 'Bypassing Supabase? Use admin@sellout.ng / admin123' : err.message)
+            setError(err.message)
             setLoading(false)
         }
     }

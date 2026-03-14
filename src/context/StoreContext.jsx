@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products'
 
@@ -36,9 +36,9 @@ export const StoreProvider = ({ children }) => {
         const fetchData = async () => {
             setLoading(true)
             
-            // Avoid DNS errors if Supabase is not configured
-            if (supabase.supabaseUrl.includes('placeholder')) {
-                console.warn('Supabase not configured. Using local data.');
+            // Ensure Supabase is initialized
+            if (!supabase.supabaseUrl) {
+                console.warn('Supabase URL not found. Ensure VITE_SUPABASE_URL is set in .env');
                 setProducts(INITIAL_PRODUCTS);
                 setLoading(false);
                 return;
@@ -54,18 +54,14 @@ export const StoreProvider = ({ children }) => {
                 if (pError) throw pError
                 
                 if (dbProducts && dbProducts.length > 0) {
-                    setProducts(dbProducts.map(p => {
-                        const initial = INITIAL_PRODUCTS.find(i => i.id === p.id);
-                        return {
-                            ...p,
-                            image: (p.id === 'prod-002' || p.id === 'prod-006') ? initial.image : p.image,
-                            sellerPrice: p.seller_price,
-                            sellerName: p.seller_name,
-                            isReserved: p.is_reserved
-                        };
-                    }))
+                    setProducts(dbProducts.map(p => ({
+                        ...p,
+                        sellerPrice: p.seller_price,
+                        sellerName: p.seller_name,
+                        isReserved: p.is_reserved || false
+                    })))
                 } else {
-                    setProducts(INITIAL_PRODUCTS)
+                    setProducts([]) // Start with empty if no DB products
                 }
 
                 // Fetch Orders
@@ -89,6 +85,28 @@ export const StoreProvider = ({ children }) => {
                     deliveryMethod: o.delivery_method,
                     sellerAgreedPrice: o.seller_agreed_price
                 })))
+
+                // Setup Real-time Subscriptions
+                const productSubscription = supabase
+                    .channel('public:products')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+                        console.log('Product change detected:', payload)
+                        fetchData() // Refresh everything or specifically update products
+                    })
+                    .subscribe()
+
+                const orderSubscription = supabase
+                    .channel('public:orders')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                        console.log('Order change detected:', payload)
+                        fetchData() // Refresh everything or specifically update orders
+                    })
+                    .subscribe()
+
+                return () => {
+                    supabase.removeChannel(productSubscription)
+                    supabase.removeChannel(orderSubscription)
+                }
 
             } catch (err) {
                 console.error('Supabase fetch error:', err)
@@ -238,6 +256,9 @@ export const StoreProvider = ({ children }) => {
             buyer_address: orderData.buyerAddress,
             payment_method: orderData.paymentMethod,
             delivery_method: null,
+            delivery_fee: 0,
+            logistics_partner: '',
+            pickup_location: '',
             status: 'pending',
             seller_agreed_price: orderData.amount * 0.9,
             commission: orderData.amount * 0.1,
@@ -256,6 +277,9 @@ export const StoreProvider = ({ children }) => {
             buyerAddress: newOrderDb.buyer_address,
             paymentMethod: newOrderDb.payment_method,
             deliveryMethod: newOrderDb.delivery_method,
+            deliveryFee: newOrderDb.delivery_fee,
+            logisticsPartner: newOrderDb.logistics_partner,
+            pickupLocation: newOrderDb.pickup_location,
             sellerAgreedPrice: newOrderDb.seller_agreed_price
         }
 
@@ -280,9 +304,12 @@ export const StoreProvider = ({ children }) => {
             
             setOrders(orders.map(o => {
                 if (o.id !== id) return o
+                
+                // Per PRD: When order is completed, mark product as sold
                 if (status === 'completed' && o.productId) {
                     markProductSold(o.productId)
                 }
+                
                 return { ...o, status }
             }))
         } catch (err) {
@@ -291,20 +318,40 @@ export const StoreProvider = ({ children }) => {
         }
     }
 
-    const updateOrderDelivery = async (orderId, delivery_method) => {
+    const updateOrderDelivery = async (orderId, delivery_method, delivery_fee = 0, logistics_partner = '') => {
         try {
-            const { error } = await supabase.from('orders').update({ delivery_method }).eq('id', orderId)
+            const updates = { 
+                delivery_method, 
+                delivery_fee: parseFloat(delivery_fee), 
+                logistics_partner 
+            }
+            const { error } = await supabase.from('orders').update(updates).eq('id', orderId)
             if (error) throw error
-            setOrders(orders.map(o => o.id === orderId ? { ...o, deliveryMethod: delivery_method } : o))
+            setOrders(orders.map(o => o.id === orderId ? { 
+                ...o, 
+                deliveryMethod: delivery_method, 
+                deliveryFee: parseFloat(delivery_fee), 
+                logisticsPartner: logistics_partner 
+            } : o))
         } catch (err) {
             console.error('Update delivery error:', err)
-            setOrders(orders.map(o => o.id === orderId ? { ...o, deliveryMethod: delivery_method } : o))
+            // Local fallback
+            setOrders(orders.map(o => o.id === orderId ? { 
+                ...o, 
+                deliveryMethod: delivery_method,
+                deliveryFee: parseFloat(delivery_fee),
+                logisticsPartner: logistics_partner
+            } : o))
         }
     }
 
     const getOrderById = (id) => orders.find(o => o.id === id)
 
-    // ─── Stats / Computed ───
+    const categories = useMemo(() => {
+        const unique = new Set(products.map(p => p.category))
+        return ['All', ...Array.from(unique).sort()]
+    }, [products])
+
     const stats = {
         totalProducts: products.length,
         availableProducts: products.filter(p => !p.is_reserved && p.status !== 'sold').length,
@@ -326,6 +373,7 @@ export const StoreProvider = ({ children }) => {
             cartCount,
             loading,
             stats,
+            categories,
             toggleFavorite,
             isFavorite,
             addProduct,

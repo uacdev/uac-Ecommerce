@@ -5,12 +5,17 @@ import {
     Plus, Search, Clock, CheckCircle2, Truck, X, Edit3, Trash2, Sun, Moon,
     User, Phone, MapPin, Mail, ChevronDown, ChevronUp, Eye, Bell, MoreHorizontal,
     CreditCard, Users, ArrowUpRight, TrendingUp, Filter, Download, MessageSquare,
-    ChevronRight, ArrowLeft, MoreVertical, Menu, Upload, Image as ImageIcon, Camera
+    ChevronRight, ArrowLeft, MoreVertical, Menu, Upload, Image as ImageIcon, Camera,
+    Calendar
 } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { CATEGORIES } from '../data/products'
+import DatePicker from 'react-datepicker'
+import "react-datepicker/dist/react-datepicker.css"
+import { format } from 'date-fns'
+import EmptyState from '../components/EmptyState'
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview')
@@ -27,9 +32,29 @@ const AdminDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('')
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
+    const [dateRange, setDateRange] = useState({ start: '', end: '' })
     const { isDark, toggleTheme } = useTheme()
-    const { loading, removeProduct } = useStore()
+    const { loading, removeProduct, orders, products } = useStore()
     const { signOut: logout } = useAuth()
+
+    const exportToCSV = (data, filename) => {
+        if (!data || !data.length) return;
+        const headers = Object.keys(data[0]).filter(k => typeof data[0][k] !== 'object').join(',');
+        const rows = data.map(obj => 
+            Object.keys(obj).filter(k => typeof obj[k] !== 'object').map(k => {
+                const val = obj[k];
+                return typeof val === 'string' ? `"${val.replace(/"/g, '""')}"` : val;
+            }).join(',')
+        ).join('\n');
+        const csvContent = "data:text/csv;charset=utf-8," + headers + "\n" + rows;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${filename}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 
     if (loading) {
         return (
@@ -40,7 +65,7 @@ const AdminDashboard = () => {
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                         className="w-12 h-12 border-4 border-[#F18B24] border-t-transparent rounded-full"
                     />
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Synchronizing SR-Cloud</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Cloud Sync Active</p>
                 </div>
             </div>
         )
@@ -127,6 +152,7 @@ const AdminDashboard = () => {
             {/* ════ MAIN CONTENT ════ */}
             <main className="flex-1 flex flex-col min-w-0 transition-colors duration-500" style={{ background: 'var(--bg-secondary)' }}>
                 {/* Topbar */}
+                {/* Topbar */}
                 <header className="h-20 lg:h-24 flex items-center justify-between px-4 lg:px-10 shrink-0 border-b gap-4" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
                     <div className="flex items-center gap-4">
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
@@ -141,7 +167,7 @@ const AdminDashboard = () => {
                             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#F18B24] transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search SR Cloud..."
+                                placeholder={`Search in ${activeTab}...`}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] shadow-sm rounded-xl pl-11 pr-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-[#F18B2420] focus:border-[#F18B24] transition-all"
@@ -150,7 +176,7 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 lg:gap-6">
+                    <div className="flex items-center gap-2 lg:gap-4">
                         <div className="relative">
                             <button 
                                 onClick={() => setShowNotifications(!showNotifications)}
@@ -158,7 +184,9 @@ const AdminDashboard = () => {
                                 style={{ color: 'var(--text-primary)' }}
                             >
                                 <Bell size={20} />
-                                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#F18B24] rounded-full border-2 border-[var(--bg-secondary)]" />
+                                {orders.filter(o => o.status === 'pending' || o.status === 'paid').length > 0 && (
+                                    <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-[#F18B24] rounded-full border-2 border-[var(--bg-secondary)] animate-pulse" />
+                                )}
                             </button>
 
                             <AnimatePresence>
@@ -169,38 +197,34 @@ const AdminDashboard = () => {
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            className="absolute right-0 mt-4 w-80 z-[110] overflow-hidden rounded-2xl shadow-2xl border"
+                                            className="absolute right-0 mt-4 w-80 lg:w-96 z-[110] overflow-hidden rounded-2xl shadow-2xl border"
                                             style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}
                                         >
                                             <div className="p-4 border-b border-[var(--divider)] flex justify-between items-center bg-[var(--bg-primary)]">
-                                                <p className="text-xs font-black uppercase tracking-widest">Notifications</p>
+                                                <p className="text-xs font-black uppercase tracking-widest">Recent Activity</p>
                                                 <button className="text-[10px] text-[#F18B24] font-bold">Mark all read</button>
                                             </div>
-                                            <div className="max-h-[350px] overflow-y-auto">
-                                                <NotificationItem 
-                                                    title="New Order Received" 
-                                                    desc="Order #SR-2026-8921 just came in." 
-                                                    time="2 mins ago" 
-                                                    icon={<ShoppingCart size={14}/>} 
-                                                    color="bg-blue-500"
-                                                />
-                                                <NotificationItem 
-                                                    title="Payout Successful" 
-                                                    desc="₦120,500 has been sent to James." 
-                                                    time="1 hour ago" 
-                                                    icon={<CreditCard size={14}/>} 
-                                                    color="bg-green-500"
-                                                />
-                                                <NotificationItem 
-                                                    title="Product Flagged" 
-                                                    desc="Minimalist Lamp reported for wrong category." 
-                                                    time="3 hours ago" 
-                                                    icon={<Package size={14}/>} 
-                                                    color="bg-red-500"
-                                                />
+                                            <div className="max-h-[400px] overflow-y-auto no-scrollbar">
+                                                {orders.slice(0, 10).map((order) => (
+                                                    <NotificationItem 
+                                                        key={order.id}
+                                                        title={order.status === 'pending' || order.status === 'paid' ? "New Order" : "Order Update"} 
+                                                        desc={`${order.buyerName} - ${order.productName}`} 
+                                                        time={new Date(order.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 
+                                                        icon={<ShoppingCart size={14}/>} 
+                                                        color={order.status === 'pending' || order.status === 'paid' ? "bg-orange-500" : "bg-blue-500"}
+                                                        onClick={() => { setSelectedOrder(order); setShowNotifications(false); }}
+                                                    />
+                                                ))}
+                                                {orders.length === 0 && (
+                                                    <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No activity found.</div>
+                                                )}
                                             </div>
-                                            <button className="w-full py-3 text-[10px] font-black uppercase tracking-widest border-t border-[var(--divider)] hover:bg-[var(--bg-secondary)] transition-colors">
-                                                View All Activity
+                                            <button 
+                                                onClick={() => { setActiveTab('orders'); setShowNotifications(false); }}
+                                                className="w-full py-4 text-[10px] font-black uppercase tracking-widest border-t border-[var(--divider)] hover:bg-[var(--bg-secondary)] transition-colors"
+                                            >
+                                                View All Orders
                                             </button>
                                         </motion.div>
                                     </>
@@ -211,9 +235,11 @@ const AdminDashboard = () => {
                         <div className="hidden lg:flex items-center gap-4 pl-6 ml-2" style={{ borderLeft: '1px solid var(--divider)' }}>
                             <div className="text-right">
                                 <p className="text-xs font-black uppercase">SR Admin</p>
-                                <p className="text-[10px] font-bold text-[var(--text-muted)]">admin@sellout.ng</p>
+                                <p className="text-[10px] font-bold text-[var(--text-muted)]">hello@sellout.ng</p>
                             </div>
-                            <img src="https://i.pravatar.cc/100?u=admin" className="w-10 h-10 rounded-full border-2" style={{ borderColor: 'var(--bg-primary)', boxShadow: 'var(--card-shadow)' }} alt="" />
+                            <div className="w-10 h-10 rounded-full border-2 shadow-sm bg-white flex items-center justify-center p-1.5 overflow-hidden" style={{ borderColor: 'var(--divider)' }}>
+                                <img src="/images/logo_nobg.png" className="w-full h-auto object-contain" alt="SR Logo" />
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -225,8 +251,16 @@ const AdminDashboard = () => {
                             <p className="text-[var(--text-muted)] text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-1">SR-Cloud Management Portal</p>
                         </div>
                         <AnimatePresence mode="wait">
-                            {activeTab === 'overview' && <OverviewTab key="overview" />}
-                            {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} searchTerm={searchTerm} />}
+                            {activeTab === 'overview' && (
+                                <OverviewTab 
+                                    key="overview" 
+                                    onSelect={setSelectedOrder} 
+                                    dateRange={dateRange} 
+                                    setDateRange={setDateRange}
+                                    searchTerm={searchTerm}
+                                />
+                            )}
+                            {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={exportToCSV} />}
                             {activeTab === 'products' && (
                                 <ProductsTab 
                                     key="products" 
@@ -235,11 +269,14 @@ const AdminDashboard = () => {
                                     onDelete={setProductToDelete} 
                                     onInfo={setSelectedProductInfo}
                                     searchTerm={searchTerm} 
+                                    dateRange={dateRange}
+                                    setDateRange={setDateRange}
+                                    onExport={exportToCSV}
                                 />
                             )}
-                            {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} onSelect={setSelectedOrder} />}
-                            {activeTab === 'customers' && <CustomersTab key="customers" searchTerm={searchTerm} onInfo={setSelectedCustomerInfo} />}
-                            {activeTab === 'stats' && <StatsTab key="stats" />}
+                            {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} onSelect={setSelectedOrder} dateRange={dateRange} setDateRange={setDateRange} onExport={exportToCSV} />}
+                            {activeTab === 'customers' && <CustomersTab key="customers" searchTerm={searchTerm} onInfo={setSelectedCustomerInfo} dateRange={dateRange} setDateRange={setDateRange} onExport={exportToCSV} />}
+                            {activeTab === 'stats' && <StatsTab key="stats" dateRange={dateRange} setDateRange={setDateRange} onExport={exportToCSV} />}
                             {activeTab === 'settings' && <SettingsTab key="settings" />}
                         </AnimatePresence>
                     </div>
@@ -348,29 +385,110 @@ const SidebarLink = ({ icon, label, active, onClick, collapsed }) => (
     </button>
 )
 
-const OverviewTab = () => {
-    const { stats, orders } = useStore()
+const CustomDatePicker = ({ dateRange, setDateRange }) => {
+    const DateButton = ({ value, onClick, label }) => (
+        <button 
+            onClick={onClick}
+            className="flex flex-col items-start bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-2 hover:border-[#F18B24] transition-all min-w-[140px]"
+        >
+            <span className="text-[8px] font-black uppercase text-[var(--text-muted)] tracking-widest">{label}</span>
+            <span className="text-[10px] font-black">{value || 'Select Date'}</span>
+        </button>
+    );
 
-    const deliveredCount = orders.filter(o => o.status === 'delivered' || o.status === 'completed').length
-    const transitCount = orders.filter(o => o.status === 'shipped').length
-    const pendingCount = orders.filter(o => o.status === 'paid' || o.status === 'confirmed').length
-    const total = orders.length || 1
+    return (
+        <div className="flex items-center gap-3">
+            <DatePicker
+                selected={dateRange.start ? new Date(dateRange.start) : null}
+                onChange={(date) => setDateRange({ ...dateRange, start: date ? date.toISOString().split('T')[0] : '' })}
+                customInput={<DateButton label="Start Period" />}
+                dateFormat="MMM d, yyyy"
+                isClearable={!!dateRange.start}
+                placeholderText="Start Date"
+            />
+            <div className="text-[var(--text-muted)] mt-4">
+                <ChevronRight size={14} />
+            </div>
+            <DatePicker
+                selected={dateRange.end ? new Date(dateRange.end) : null}
+                onChange={(date) => setDateRange({ ...dateRange, end: date ? date.toISOString().split('T')[0] : '' })}
+                customInput={<DateButton label="End Period" />}
+                dateFormat="MMM d, yyyy"
+                isClearable={!!dateRange.end}
+                placeholderText="End Date"
+            />
+            {(dateRange.start || dateRange.end) && (
+                <button 
+                    onClick={() => setDateRange({ start: '', end: '' })}
+                    className="mt-4 p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors"
+                    title="Clear All"
+                >
+                    <X size={14} />
+                </button>
+            )}
+        </div>
+    );
+};
 
-    const assistedDeliveryTotal = orders
+const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
+    const { orders, products } = useStore()
+
+    const filteredOrders = useMemo(() => {
+        return orders.filter(o => {
+            // Search term filter
+            const matchesSearch = 
+                o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                o.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                o.productName.toLowerCase().includes(searchTerm.toLowerCase())
+
+            // Date range filter
+            let matchesDate = true
+            if (dateRange.start || dateRange.end) {
+                const orderDate = new Date(o.date)
+                const start = dateRange.start ? new Date(dateRange.start) : new Date(0)
+                const end = dateRange.end ? new Date(dateRange.end) : new Date()
+                end.setHours(23, 59, 59, 999)
+                matchesDate = orderDate >= start && orderDate <= end
+            }
+            return matchesSearch && matchesDate
+        })
+    }, [orders, dateRange, searchTerm])
+
+    const stats = {
+        totalRevenue: filteredOrders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        platformIncome: filteredOrders
+            .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
+            .reduce((sum, o) => sum + (o.commission || Math.round((o.amount || 0) * 0.1)), 0),
+        totalProducts: products.length,
+        deliveredCount: filteredOrders.filter(o => o.status === 'delivered' || o.status === 'completed').length,
+        transitCount: filteredOrders.filter(o => o.status === 'shipped').length,
+        pendingCount: filteredOrders.filter(o => o.status === 'paid' || o.status === 'confirmed').length,
+    }
+
+    const total = filteredOrders.length || 1
+    const assistedDeliveryTotal = filteredOrders
         .filter(o => o.deliveryMethod === 'assisted')
         .reduce((sum, o) => sum + (o.amount || 0), 0)
     
-    const selfPickupTotal = orders
+    const selfPickupTotal = filteredOrders
         .filter(o => o.deliveryMethod === 'self')
         .reduce((sum, o) => sum + (o.amount || 0), 0)
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h3 className="text-xl font-black">Market Overview</h3>
+                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Real-time performance analytics.</p>
+                </div>
+                <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-                <StatCard title="Total Volume" value={`₦${stats.totalRevenue.toLocaleString()}`} trend="+12.5%" isPositive />
+                <StatCard title="Period Volume" value={`₦${stats.totalRevenue.toLocaleString()}`} trend="+12.5%" isPositive />
                 <StatCard title="SR Commission" value={`₦${stats.platformIncome.toLocaleString()}`} trend="+8.4%" isPositive isOrange />
-                <StatCard title="Store Listings" value={stats.totalProducts} trend="+3 New" />
-                <StatCard title="Completion" value={`${Math.round((deliveredCount / total) * 100)}%`} trend="+0.5%" isPositive />
+                <StatCard title="Active Listings" value={stats.totalProducts} trend="+3 New" />
+                <StatCard title="Fullfillment Rate" value={`${Math.round((stats.deliveredCount / total) * 100)}%`} trend="+0.5%" isPositive />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -378,7 +496,7 @@ const OverviewTab = () => {
                     <div className="flex items-center justify-between mb-8">
                         <div>
                             <h3 className="text-xl font-black">Escrow Performance</h3>
-                            <p className="text-xs font-bold text-[var(--text-muted)]">Manual verification and logistics tracking.</p>
+                            <p className="text-xs font-bold text-[var(--text-muted)]">Manual verification and logistics tracking during selected period.</p>
                         </div>
                     </div>
 
@@ -400,7 +518,7 @@ const OverviewTab = () => {
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
                                 <p className="text-xl font-black">₦{Math.round(stats.totalRevenue / 1000)}k</p>
-                                <p className="text-[10px] font-bold text-[var(--text-muted)]">Total GMV</p>
+                                <p className="text-[10px] font-bold text-[var(--text-muted)]">Filtered GMV</p>
                             </div>
                         </div>
 
@@ -420,10 +538,10 @@ const OverviewTab = () => {
                                 <div className="w-3 h-3 rounded-full bg-green-500" />
                                 <span className="text-xs font-bold">Fulfilled</span>
                             </div>
-                            <span className="text-xs font-black">{deliveredCount}/{orders.length}</span>
+                            <span className="text-xs font-black">{stats.deliveredCount}/{filteredOrders.length}</span>
                         </div>
                         <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(deliveredCount / total) * 100}%` } } className="h-full bg-green-500" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.deliveredCount / total) * 100}%` } } className="h-full bg-green-500" />
                         </div>
 
                         <div className="flex justify-between items-center pt-4">
@@ -431,10 +549,10 @@ const OverviewTab = () => {
                                 <div className="w-3 h-3 rounded-full bg-[#F18B24]" />
                                 <span className="text-xs font-bold">In Transit</span>
                             </div>
-                            <span className="text-xs font-black">{transitCount}/{orders.length}</span>
+                            <span className="text-xs font-black">{stats.transitCount}/{filteredOrders.length}</span>
                         </div>
                         <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(transitCount / total) * 100}%` }} className="h-full bg-[#F18B24]" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.transitCount / total) * 100}%` }} className="h-full bg-[#F18B24]" />
                         </div>
 
                         <div className="flex justify-between items-center pt-4">
@@ -442,10 +560,10 @@ const OverviewTab = () => {
                                 <div className="w-3 h-3 rounded-full bg-blue-400" />
                                 <span className="text-xs font-bold">Awaiting Transit</span>
                             </div>
-                            <span className="text-xs font-black">{pendingCount}/{orders.length}</span>
+                            <span className="text-xs font-black">{stats.pendingCount}/{filteredOrders.length}</span>
                         </div>
                         <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(pendingCount / total) * 100}%` }} className="h-full bg-blue-400" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.pendingCount / total) * 100}%` }} className="h-full bg-blue-400" />
                         </div>
                     </div>
                 </div>
@@ -480,7 +598,7 @@ const ProgressRow = ({ label, value, percentage, color }) => (
     </div>
 )
 
-const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
+const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, onExport }) => {
     const { orders } = useStore()
     const [statusFilter, setStatusFilter] = useState('all')
 
@@ -491,13 +609,23 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
                 order.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.productName.toLowerCase().includes(searchTerm.toLowerCase())
             const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-            return matchesSearch && matchesStatus
+            
+            let matchesDate = true
+            if (dateRange.start || dateRange.end) {
+                const orderDate = new Date(order.date)
+                const start = dateRange.start ? new Date(dateRange.start) : new Date(0)
+                const end = dateRange.end ? new Date(dateRange.end) : new Date()
+                end.setHours(23, 59, 59, 999)
+                matchesDate = orderDate >= start && orderDate <= end
+            }
+
+            return matchesSearch && matchesStatus && matchesDate
         })
-    }, [orders, searchTerm, statusFilter])
+    }, [orders, searchTerm, statusFilter, dateRange])
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="flex bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--divider)] overflow-x-auto no-scrollbar">
                     {['all', 'pending', 'paid', 'confirmed', 'shipped', 'delivered'].map((status) => (
                         <button
@@ -511,93 +639,102 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
                         </button>
                     ))}
                 </div>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
+                    <button 
+                        onClick={() => onExport(filteredOrders, 'SR_Orders')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[#F18B24] transition-all shadow-sm"
+                    >
+                        <Download size={14} /> Export Table
+                    </button>
+                </div>
             </div>
 
-            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
-                {/* Desktop View */}
-                <div className="hidden lg:block overflow-x-auto">
-                    <table className="w-full text-left min-w-[800px]">
-                        <thead className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-                            <tr>
-                                <th className="px-10 py-5">Order</th>
-                                <th className="px-10 py-5">Customer</th>
-                                <th className="px-10 py-5">Status</th>
-                                <th className="px-10 py-5">Total</th>
-                                <th className="px-10 py-5 text-right">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
-                            {filteredOrders.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-10 py-20 text-center text-xs font-bold text-[var(--text-muted)]">No orders match your current filters.</td>
-                                </tr>
-                            ) : (
-                                filteredOrders.map(order => (
-                                    <motion.tr
-                                        key={order.id}
-                                        onClick={() => onSelect(order)}
-                                        className={`group cursor-pointer transition-colors ${selectedId === order.id ? 'bg-[#F18B2408]' : 'hover:bg-[var(--bg-secondary)]'}`}
-                                    >
-                                        <td className="px-10 py-6">
-                                            <span className="text-xs font-black">#{order.id.slice(-6)}</span>
-                                        </td>
-                                        <td className="px-10 py-6">
-                                            <div className="flex items-center gap-3">
-                                                <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-9 h-9 rounded-full bg-gray-200" alt="" />
-                                                <span className="text-xs font-black truncate max-w-[120px]">{order.buyerName}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-10 py-6">
-                                            <StatusPill status={order.status} />
-                                        </td>
-                                        <td className="px-10 py-6">
-                                            <span className="text-xs font-black">₦{order.amount.toLocaleString()}</span>
-                                        </td>
-                                        <td className="px-10 py-6 text-right">
-                                            <div className="flex items-center justify-end gap-4">
-                                                <span className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{new Date(order.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
-                                                <MoreHorizontal size={14} className="transition-opacity" style={{ color: 'var(--text-muted)' }} />
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            <div className={`rounded-[20px] shadow-sm transition-colors duration-500 ${filteredOrders.length === 0 ? '' : 'overflow-hidden'}`} style={{ background: filteredOrders.length === 0 ? 'transparent' : 'var(--bg-primary)', border: filteredOrders.length === 0 ? 'none' : '1px solid var(--divider)' }}>
+                {filteredOrders.length === 0 ? (
+                    <EmptyState
+                        icon={ShoppingCart}
+                        title="No orders found"
+                        description="Try adjusting your filters or search query. Orders will appear here as soon as customers checkout."
+                    />
+                ) : (
+                    <>
+                        {/* Desktop View */}
+                        <div className="hidden lg:block overflow-x-auto">
+                            <table className="w-full text-left min-w-[800px]">
+                                <thead className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
+                                    <tr>
+                                        <th className="px-10 py-5">Order</th>
+                                        <th className="px-10 py-5">Customer</th>
+                                        <th className="px-10 py-5">Status</th>
+                                        <th className="px-10 py-5">Total</th>
+                                        <th className="px-10 py-5 text-right">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                                    {filteredOrders.map(order => (
+                                        <motion.tr
+                                            key={order.id}
+                                            onClick={() => onSelect(order)}
+                                            className={`group cursor-pointer transition-colors ${selectedId === order.id ? 'bg-[#F18B2408]' : 'hover:bg-[var(--bg-secondary)]'}`}
+                                        >
+                                            <td className="px-10 py-6">
+                                                <span className="text-xs font-black">#{order.id.slice(-6)}</span>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-9 h-9 rounded-full bg-gray-200" alt="" />
+                                                    <span className="text-xs font-black truncate max-w-[120px]">{order.buyerName}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <StatusPill status={order.status} />
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className="text-xs font-black">₦{order.amount.toLocaleString()}</span>
+                                            </td>
+                                            <td className="px-10 py-6 text-right">
+                                                <div className="flex items-center justify-end gap-4">
+                                                    <span className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{new Date(order.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                                                    <MoreHorizontal size={14} className="transition-opacity" style={{ color: 'var(--text-muted)' }} />
+                                                </div>
+                                            </td>
+                                        </motion.tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                {/* Mobile/Tablet Card Layout */}
-                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
-                    {filteredOrders.length === 0 ? (
-                        <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No orders found.</div>
-                    ) : (
-                        filteredOrders.map(order => (
-                            <div 
-                                key={order.id} 
-                                onClick={() => onSelect(order)}
-                                className="p-5 active:bg-[var(--bg-secondary)] transition-colors"
-                            >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-10 h-10 rounded-full border" style={{ borderColor: 'var(--divider)' }} alt="" />
-                                        <div>
-                                            <p className="text-xs font-black">{order.buyerName}</p>
-                                            <p className="text-[10px] font-bold text-[var(--text-muted)]">#{order.id.slice(-8)}</p>
+                        {/* Mobile/Tablet Card Layout */}
+                        <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
+                            {filteredOrders.map(order => (
+                                <div 
+                                    key={order.id} 
+                                    onClick={() => onSelect(order)}
+                                    className="p-5 active:bg-[var(--bg-secondary)] transition-colors"
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <img src={`https://i.pravatar.cc/100?u=${order.buyerName}`} className="w-10 h-10 rounded-full border" style={{ borderColor: 'var(--divider)' }} alt="" />
+                                            <div>
+                                                <p className="text-xs font-black">{order.buyerName}</p>
+                                                <p className="text-[10px] font-bold text-[var(--text-muted)]">#{order.id.slice(-8)}</p>
+                                            </div>
                                         </div>
+                                        <StatusPill status={order.status} />
                                     </div>
-                                    <StatusPill status={order.status} />
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest mb-1">Total Amount</p>
-                                        <p className="text-sm font-black text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest mb-1">Total Amount</p>
+                                            <p className="text-sm font-black text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-[var(--text-muted)]">{new Date(order.date).toLocaleDateString()}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-[var(--text-muted)]">{new Date(order.date).toLocaleDateString()}</span>
                                 </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
         </motion.div>
     )
@@ -605,19 +742,21 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm }) => {
 
 const StatusPill = ({ status }) => {
     const styles = {
-        pending: 'bg-gray-400/10 text-gray-500',
-        paid: 'bg-yellow-400/10 text-yellow-600',
-        confirmed: 'bg-blue-400/10 text-blue-600',
-        shipped: 'bg-indigo-400/10 text-indigo-600',
-        delivered: 'bg-emerald-400/10 text-emerald-600',
-        completed: 'bg-green-400/10 text-green-600',
-        refunded: 'bg-red-400/10 text-red-600',
+        pending: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500',
+        paid: 'bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-500',
+        confirmed: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-500',
+        awaiting_delivery: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-500',
+        shipped: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500',
+        delivered: 'bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-600',
+        completed: 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
+        refunded: 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-500',
     }
 
     const labels = {
         pending: 'Pending Payment',
-        paid: 'Awaiting Confirmation',
+        paid: 'Paid (Verify ASAP)',
         confirmed: 'Payment Confirmed',
+        awaiting_delivery: 'Awaiting Delivery Selection',
         shipped: 'In Transit',
         delivered: 'Delivered',
         completed: 'Completed (Settled)',
@@ -632,10 +771,24 @@ const StatusPill = ({ status }) => {
 }
 
 const OrderInfoModal = ({ order, onClose }) => {
-    const { updateOrderStatus } = useStore()
+    const { updateOrderStatus, updateOrderDelivery } = useStore()
+    const [isEditinglogistics, setIsEditingLogistics] = useState(false)
+    const [logisticsForm, setLogisticsForm] = useState({
+        delivery_method: order.deliveryMethod || '',
+        delivery_fee: order.deliveryFee || 0,
+        logistics_partner: order.logisticsPartner || '',
+        pickup_location: order.pickupLocation || ''
+    })
 
     const handleUpdateStatus = (newStatus) => {
         updateOrderStatus(order.id, newStatus)
+    }
+
+    const handleSaveLogistics = async () => {
+        // Logic to save the logistics fields to Supabase via StoreContext
+        await updateOrderDelivery(order.id, logisticsForm.delivery_method, logisticsForm.delivery_fee, logisticsForm.logistics_partner)
+        // In a real app, you'd have a specific tool for all these fields, but for now we update local state
+        setIsEditingLogistics(false)
     }
 
     return (
@@ -662,7 +815,9 @@ const OrderInfoModal = ({ order, onClose }) => {
 
                 <div className="p-8 lg:p-10 space-y-10">
                     <div className="text-center">
-                        <img src={`https://i.pravatar.cc/300?u=${order.buyerName}`} className="w-24 h-24 rounded-full mx-auto mb-6 shadow-xl bg-gray-100 border-4 border-[var(--bg-secondary)]" />
+                        <div className="w-24 h-24 rounded-full bg-[#F18B24] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-orange-500/20">
+                            <img src="/images/logo_nobg.png" className="w-16 h-16 object-contain brightness-0 invert" alt="SR Logo" />
+                        </div>
                         <h4 className="text-2xl font-black mb-1">{order.buyerName}</h4>
                         <p className="text-xs font-bold mb-8 uppercase tracking-widest text-[#F18B24]">Verified Customer</p>
 
@@ -692,35 +847,111 @@ const OrderInfoModal = ({ order, onClose }) => {
                     </div>
 
                     <div className="space-y-6">
-                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Order Management</h5>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {['pending', 'paid', 'confirmed', 'shipped', 'delivered', 'completed'].map((status) => (
+                        <div className="flex items-center justify-between">
+                            <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Order Lifecycle Management</h5>
+                            <span className="text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 px-2 py-1 rounded">Human Confirmation Required</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                                { s: 'pending', l: 'Pending' },
+                                { s: 'paid', l: 'Paid' },
+                                { s: 'confirmed', l: 'Confirm Pay' },
+                                { s: 'awaiting_delivery', l: 'Wait Delivery' },
+                                { s: 'shipped', l: 'In Transit' },
+                                { s: 'delivered', l: 'Delivered' },
+                                { s: 'completed', l: 'Complete' },
+                                { s: 'refunded', l: 'Refund' }
+                            ].map((item) => (
                                 <button
-                                    key={status}
-                                    onClick={() => handleUpdateStatus(status)}
-                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${order.status === status 
+                                    key={item.s}
+                                    onClick={() => handleUpdateStatus(item.s)}
+                                    className={`py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${order.status === item.s 
                                         ? 'bg-[#F18B24] text-white border-[#F18B24] shadow-lg shadow-orange-500/20' 
                                         : 'border-[var(--divider)] text-[var(--text-muted)] hover:border-[#F18B24] hover:text-[#F18B24]'}`}
                                 >
-                                    {status}
+                                    {item.l}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <LogisticsCard 
-                            label="Payment" 
-                            value={order.paymentMethod === 'bank' ? 'Bank Transfer' : 'Online'} 
-                            icon={<CreditCard size={14} />} 
-                            color="text-[#F18B24]" 
-                        />
-                        <LogisticsCard 
-                            label="Delivery" 
-                            value={order.deliveryMethod === 'self' ? 'Self-Pickup' : 'SR-Assisted'} 
-                            icon={<Truck size={14} />} 
-                            color="text-indigo-500" 
-                        />
+                    <div className="p-6 rounded-2xl border space-y-6" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--divider)' }}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Truck size={16} className="text-[#F18B24]" />
+                                <h5 className="text-[10px] font-black uppercase tracking-widest">Guided Delivery Coordination</h5>
+                            </div>
+                            <button 
+                                onClick={() => setIsEditingLogistics(!isEditinglogistics)}
+                                className="text-[9px] font-black uppercase text-[#F18B24] hover:underline"
+                            >
+                                {isEditinglogistics ? 'Cancel' : 'Manage Logistics'}
+                            </button>
+                        </div>
+
+                        {isEditinglogistics ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[8px] font-black uppercase text-[var(--text-muted)]">Method</label>
+                                    <select 
+                                        value={logisticsForm.delivery_method}
+                                        onChange={e => setLogisticsForm({...logisticsForm, delivery_method: e.target.value})}
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
+                                    >
+                                        <option value="">Select Method</option>
+                                        <option value="assisted">SR Assisted Delivery</option>
+                                        <option value="self">Self-Arranged Delivery</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[8px] font-black uppercase text-[var(--text-muted)]">Delivery Fee (₦)</label>
+                                    <input 
+                                        type="number"
+                                        value={logisticsForm.delivery_fee}
+                                        onChange={e => setLogisticsForm({...logisticsForm, delivery_fee: e.target.value})}
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
+                                        placeholder="Quote fee manually"
+                                    />
+                                </div>
+                                <div className="space-y-2 lg:col-span-2">
+                                    <label className="text-[8px] font-black uppercase text-[var(--text-muted)]">Logistics Partner</label>
+                                    <input 
+                                        type="text"
+                                        value={logisticsForm.logistics_partner}
+                                        onChange={e => setLogisticsForm({...logisticsForm, logistics_partner: e.target.value})}
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
+                                        placeholder="e.g. Uber, GIG, Private Rider"
+                                    />
+                                </div>
+                                <div className="lg:col-span-2">
+                                    <button 
+                                        onClick={handleSaveLogistics}
+                                        className="w-full py-3 bg-[#F18B24] text-white rounded-xl text-[9px] font-black uppercase tracking-widest"
+                                    >Update Logistics Info</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-6">
+                                <LogisticsCard 
+                                    label="Mode" 
+                                    value={order.deliveryMethod === 'self' ? 'Self-arranged' : order.deliveryMethod === 'assisted' ? 'SR Assisted' : 'Not Selected'} 
+                                    icon={<Truck size={14} />} 
+                                    color="text-[#F18B24]" 
+                                />
+                                <LogisticsCard 
+                                    label="Delivery Fee" 
+                                    value={order.deliveryFee ? `₦${order.deliveryFee.toLocaleString()}` : 'TBD (Manual Quote)'} 
+                                    icon={<CreditCard size={14} />} 
+                                    color="text-indigo-500" 
+                                />
+                                {order.logisticsPartner && (
+                                    <div className="col-span-2 bg-[var(--bg-primary)] p-4 rounded-xl border border-[var(--divider)]">
+                                        <p className="text-[8px] font-black uppercase text-[var(--text-muted)] mb-1">Assigned Partner</p>
+                                        <p className="text-[10px] font-black">{order.logisticsPartner}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="p-6 rounded-2xl border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
@@ -763,125 +994,163 @@ const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[#F18B24]', onClick 
     </button>
 );
 
-const SecondaryBtn = ({ label, full }) => (
-    <button className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors`} style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+const SecondaryBtn = ({ label, full, onClick }) => (
+    <button 
+        onClick={onClick}
+        className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--divider)] hover:border-[#F18B24]`} 
+        style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}
+    >
         {label}
     </button>
 );
 
-const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm }) => {
-    const { products } = useStore()
+const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, dateRange, setDateRange }) => {
+    const { products, categories } = useStore()
     const [activeCategory, setActiveCategory] = useState('All')
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
-            const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 p.location.toLowerCase().includes(searchTerm.toLowerCase())
+            const searchLower = searchTerm.toLowerCase()
+            const matchesSearch = p.name.toLowerCase().includes(searchLower) || 
+                                 p.location.toLowerCase().includes(searchLower) ||
+                                 p.category.toLowerCase().includes(searchLower)
             const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-            return matchesSearch && matchesCategory
+            
+            // Date filter
+            let matchesDate = true
+            if (dateRange.start || dateRange.end) {
+                const productDate = new Date(p.created_at || Date.now()) // Default to now if no created_at
+                const start = dateRange.start ? new Date(dateRange.start) : new Date(0)
+                const end = dateRange.end ? new Date(dateRange.end) : new Date()
+                end.setHours(23, 59, 59, 999)
+                matchesDate = productDate >= start && productDate <= end
+            }
+
+            return matchesSearch && matchesCategory && matchesDate
         })
-    }, [products, searchTerm, activeCategory])
+    }, [products, searchTerm, activeCategory, dateRange])
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="flex gap-2 bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--divider)] overflow-x-auto no-scrollbar">
-                    {['All', ...CATEGORIES.filter(c => c !== 'All')].map(cat => (
+                    {categories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
                             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat 
-                                ? 'bg-[#F18B24] text-white' 
+                                ? 'bg-[#F18B24] text-white shadow-lg shadow-orange-500/20' 
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {cat}
                         </button>
                     ))}
                 </div>
-                <button onClick={onAdd} className="lg:w-auto px-6 py-4 rounded-xl bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform active:scale-95">
-                    <Plus size={16} /> Add New Entry
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
+                    <button 
+                        onClick={() => onExport(filteredProducts, 'SR_Products')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[#F18B24] transition-all"
+                    >
+                        <Download size={14} /> Export
+                    </button>
+                    <button onClick={onAdd} className="px-8 py-4 rounded-xl bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 flex items-center gap-2 hover:scale-[1.02] transition-transform">
+                        <Plus size={18} /> New Listing
+                    </button>
+                </div>
             </div>
 
-            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
-                {/* Desktop view */}
-                <div className="hidden lg:block">
-                    <table className="w-full text-left">
-                        <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
-                            <tr>
-                                <th className="px-10 py-5">Product Details</th>
-                                <th className="px-10 py-5">Category</th>
-                                <th className="px-10 py-5">Price</th>
-                                <th className="px-10 py-5">Status</th>
-                                <th className="px-10 py-5 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+            <div className={`rounded-[20px] shadow-sm transition-colors duration-500 ${filteredProducts.length === 0 ? '' : 'overflow-hidden'}`} style={{ background: filteredProducts.length === 0 ? 'transparent' : 'var(--bg-primary)', border: filteredProducts.length === 0 ? 'none' : '1px solid var(--divider)' }}>
+                {filteredProducts.length === 0 ? (
+                    <EmptyState
+                        icon={Package}
+                        title="No products listed"
+                        description="Your inventory is currently empty. Start by listing a new item for your customers to discover."
+                        actionLabel="Create New Listing"
+                        onAction={onAdd}
+                    />
+                ) : (
+                    <>
+                        {/* Desktop view */}
+                        <div className="hidden lg:block">
+                            <table className="w-full text-left">
+                                <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
+                                    <tr>
+                                        <th className="px-10 py-5">Product Details</th>
+                                        <th className="px-10 py-5">Category</th>
+                                        <th className="px-10 py-5">Price</th>
+                                        <th className="px-10 py-5">Status</th>
+                                        <th className="px-10 py-5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                                    {filteredProducts.map(product => (
+                                        <tr 
+                                            key={product.id} 
+                                            onClick={() => onInfo(product)}
+                                            className="group transition-colors hover:bg-[var(--bg-secondary)] cursor-pointer"
+                                        >
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-6">
+                                                    <img src={product.image} className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" alt="" />
+                                                    <div>
+                                                        <p className="text-sm font-black">{product.name}</p>
+                                                        <p className="text-[10px] font-bold mt-1 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{product.location}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{product.category}</span>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className="text-xs font-black">₦{product.price.toLocaleString()}</span>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
+                                            </td>
+                                            <td className="px-10 py-6 text-right" onClick={(e) => e.stopPropagation()}>
+                                                <div className="flex items-center justify-end gap-2 transition-opacity">
+                                                    <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors hover:bg-[var(--divider)]" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
+                                                    <button onClick={() => onDelete(product)} className="p-2.5 rounded-lg text-red-500 transition-colors hover:bg-red-500/10"><Trash2 size={16} /></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile view */}
+                        <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
                             {filteredProducts.map(product => (
-                                <tr 
+                                <div 
                                     key={product.id} 
                                     onClick={() => onInfo(product)}
-                                    className="group transition-colors hover:bg-[var(--bg-secondary)] cursor-pointer"
+                                    className="p-6 space-y-4 cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
                                 >
-                                    <td className="px-10 py-6">
-                                        <div className="flex items-center gap-6">
-                                            <img src={product.image} className="w-16 h-16 rounded-xl object-cover shrink-0 shadow-sm" alt="" />
-                                            <div>
-                                                <p className="text-sm font-black">{product.name}</p>
-                                                <p className="text-[10px] font-bold mt-1 uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{product.location}</p>
+                                    <div className="flex gap-4">
+                                        <img src={product.image} className="w-20 h-20 rounded-xl object-cover shrink-0 border" style={{ borderColor: 'var(--divider)' }} alt="" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start">
+                                                <p className="text-sm font-black truncate">{product.name}</p>
+                                                <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
                                             </div>
+                                            <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[#F18B24]">{product.category}</p>
+                                            <p className="text-sm font-black mt-2">₦{product.price.toLocaleString()}</p>
                                         </div>
-                                    </td>
-                                    <td className="px-10 py-6">
-                                        <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>{product.category}</span>
-                                    </td>
-                                    <td className="px-10 py-6">
-                                        <span className="text-xs font-black">₦{product.price.toLocaleString()}</span>
-                                    </td>
-                                    <td className="px-10 py-6">
-                                        <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
-                                    </td>
-                                    <td className="px-10 py-6 text-right" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center justify-end gap-2 transition-opacity">
-                                            <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors hover:bg-[var(--divider)]" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
-                                            <button onClick={() => onDelete(product)} className="p-2.5 rounded-lg text-red-500 transition-colors hover:bg-red-500/10"><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Mobile view */}
-                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
-                    {filteredProducts.map(product => (
-                        <div 
-                            key={product.id} 
-                            onClick={() => onInfo(product)}
-                            className="p-6 space-y-4 cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
-                        >
-                            <div className="flex gap-4">
-                                <img src={product.image} className="w-20 h-20 rounded-xl object-cover shrink-0 border" style={{ borderColor: 'var(--divider)' }} alt="" />
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start">
-                                        <p className="text-sm font-black truncate">{product.name}</p>
-                                        <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
                                     </div>
-                                    <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[#F18B24]">{product.category}</p>
-                                    <p className="text-sm font-black mt-2">₦{product.price.toLocaleString()}</p>
+                                    <div className="flex justify-between items-center gap-4">
+                                        <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
+                                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => onEdit(product)} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[var(--text-muted)]"><Edit3 size={14} /></button>
+                                            <button onClick={() => onDelete(product)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex justify-between items-center gap-4">
-                                <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
-                                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                    <button onClick={() => onEdit(product)} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[var(--text-muted)]"><Edit3 size={14} /></button>
-                                    <button onClick={() => onDelete(product)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
-                                </div>
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </>
+                )}
             </div>
         </motion.div>
     )
@@ -897,13 +1166,15 @@ const ProductPill = ({ status }) => {
     )
 };
 
-const LedgerTab = ({ searchTerm, onSelect }) => {
+const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) => {
     const { orders } = useStore()
     const [ledgerFilter, setLedgerFilter] = useState('all')
 
     const confirmedOrders = useMemo(() => {
-        let base = orders.filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
-        
+        let base = orders.filter(o => 
+            ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status)
+        )
+
         if (ledgerFilter !== 'all') {
             base = base.filter(o => o.status === ledgerFilter)
         }
@@ -916,8 +1187,18 @@ const LedgerTab = ({ searchTerm, onSelect }) => {
             )
         }
 
+        if (dateRange.start || dateRange.end) {
+            const start = dateRange.start ? new Date(dateRange.start) : new Date(0)
+            const end = dateRange.end ? new Date(dateRange.end) : new Date()
+            end.setHours(23, 59, 59, 999)
+            base = base.filter(o => {
+                const orderDate = new Date(o.date)
+                return orderDate >= start && orderDate <= end
+            })
+        }
+
         return base
-    }, [orders, searchTerm, ledgerFilter])
+    }, [orders, searchTerm, ledgerFilter, dateRange])
 
     const totalVolume = confirmedOrders.reduce((sum, o) => sum + o.amount, 0)
     const platformIncome = confirmedOrders.reduce((sum, o) => {
@@ -926,38 +1207,9 @@ const LedgerTab = ({ searchTerm, onSelect }) => {
     }, 0)
     const sellerPayouts = totalVolume - platformIncome
 
-    const exportToCSV = () => {
-        const headers = ['Order ID', 'Date', 'Product', 'Seller Name', 'Buyer', 'Total Amount', 'SR Commission', 'Seller Payout', 'Status']
-        const csvData = confirmedOrders.map(o => {
-            const fee = o.commission || Math.round(o.amount * 0.1)
-            return [
-                o.id,
-                new Date(o.date).toLocaleDateString(),
-                o.productName,
-                o.sellerName || 'Platform',
-                o.buyerName,
-                o.amount,
-                fee,
-                o.amount - fee,
-                o.status
-            ]
-        })
-
-        const csvContent = [headers, ...csvData].map(e => e.join(',')).join('\n')
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-        const link = document.createElement('a')
-        const url = URL.createObjectURL(blob)
-        link.setAttribute('href', url)
-        link.setAttribute('download', `SR_Ledger_${new Date().toISOString().split('T')[0]}.csv`)
-        link.style.visibility = 'hidden'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-    }
-
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="flex bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--divider)] overflow-x-auto no-scrollbar">
                     {['all', 'paid', 'confirmed', 'shipped', 'delivered', 'completed'].map((status) => (
                         <button
@@ -971,12 +1223,15 @@ const LedgerTab = ({ searchTerm, onSelect }) => {
                         </button>
                     ))}
                 </div>
-                <button
-                    onClick={exportToCSV}
-                    className="flex items-center justify-center gap-2 px-6 py-4 bg-[#F18B24] rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
-                >
-                    <Download size={14} /> Export CSV Report
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
+                    <button
+                        onClick={() => onExport(confirmedOrders, 'SR_Ledger')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[#F18B24] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
+                    >
+                        <Download size={14} /> Export CSV Report
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1078,15 +1333,15 @@ const LedgerTab = ({ searchTerm, onSelect }) => {
     )
 }
 
-const NotificationItem = ({ title, desc, time, icon, color }) => (
-    <div className="p-4 flex gap-4 hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer border-b border-[var(--divider)]">
-        <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center shrink-0 text-white`}>
+const NotificationItem = ({ title, desc, time, icon, color, onClick }) => (
+    <div onClick={onClick} className="p-4 flex gap-4 hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer border-b border-[var(--divider)] group">
+        <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center shrink-0 text-white group-hover:scale-110 transition-transform`}>
             {icon}
         </div>
-        <div>
-            <p className="text-[11px] font-black">{title}</p>
-            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{desc}</p>
-            <p className="text-[9px] text-[#F18B24] font-bold mt-2 uppercase tracking-widest">{time}</p>
+        <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-black truncate">{title}</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{desc}</p>
+            <p className="text-[9px] text-[#F18B24] font-black mt-2 uppercase tracking-widest">{time}</p>
         </div>
     </div>
 )
@@ -1109,11 +1364,20 @@ const LogoutModal = ({ onConfirm, onCancel }) => (
     </motion.div>
 )
 
-const CustomersTab = ({ searchTerm, onInfo }) => {
+const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport }) => {
     const { orders } = useStore()
     const customers = useMemo(() => {
         const unique = {}
-        orders.forEach(o => {
+        const filteredByDate = orders.filter(o => {
+            if (!dateRange.start && !dateRange.end) return true
+            const orderDate = new Date(o.date)
+            const start = dateRange.start ? new Date(dateRange.start) : new Date(0)
+            const end = dateRange.end ? new Date(dateRange.end) : new Date()
+            end.setHours(23, 59, 59, 999)
+            return orderDate >= start && orderDate <= end
+        })
+
+        filteredByDate.forEach(o => {
             if (!unique[o.buyerEmail]) {
                 unique[o.buyerEmail] = {
                     name: o.buyerName,
@@ -1136,116 +1400,196 @@ const CustomersTab = ({ searchTerm, onInfo }) => {
             )
         }
         return filtered
-    }, [orders, searchTerm])
+    }, [orders, searchTerm, dateRange])
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            <div className="rounded-[20px] shadow-sm overflow-hidden transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
-                {/* Desktop View */}
-                <div className="hidden lg:block overflow-x-auto">
-                    <table className="w-full text-left min-w-[700px]">
-                        <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
-                            <tr>
-                                <th className="px-10 py-5">Customer</th>
-                                <th className="px-10 py-5">Contact Details</th>
-                                <th className="px-10 py-5">History</th>
-                                <th className="px-10 py-5 text-right">Total Life Value</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
-                            {customers.map((c, i) => (
-                                <tr key={i} onClick={() => onInfo(c)} className="group hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
-                                    <td className="px-10 py-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
-                                                {c.name.charAt(0)}
-                                            </div>
-                                            <span className="text-xs font-black">{c.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-10 py-6">
-                                        <p className="text-xs font-bold">{c.email}</p>
-                                        <p className="text-[10px] text-[var(--text-muted)] mt-1">{c.phone}</p>
-                                    </td>
-                                    <td className="px-10 py-6">
-                                        <span className="text-[10px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-3 py-1 rounded-full">{c.orders} Orders</span>
-                                    </td>
-                                    <td className="px-10 py-6 text-right">
-                                        <span className="text-xs font-black">₦{c.spend.toLocaleString()}</span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
+                <button 
+                    onClick={() => onExport(customers, 'SR_Customers')}
+                    className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[#F18B24] transition-all shadow-sm"
+                >
+                    <Download size={14} /> Export Customers
+                </button>
+            </div>
+            <div className={`rounded-[20px] shadow-sm transition-colors duration-500 ${customers.length === 0 ? '' : 'overflow-hidden'}`} style={{ background: customers.length === 0 ? 'transparent' : 'var(--bg-primary)', border: customers.length === 0 ? 'none' : '1px solid var(--divider)' }}>
+                {customers.length === 0 ? (
+                    <EmptyState
+                        icon={Users}
+                        title="No customers found"
+                        description="Try adjusting your filters or search query. Customers will appear here once they complete an order."
+                    />
+                ) : (
+                    <>
+                        {/* Desktop View */}
+                        <div className="hidden lg:block overflow-x-auto">
+                            <table className="w-full text-left min-w-[700px]">
+                                <thead className="text-[10px] font-black uppercase tracking-[0.2em] border-b" style={{ color: 'var(--text-muted)', borderColor: 'var(--divider)' }}>
+                                    <tr>
+                                        <th className="px-10 py-5">Customer</th>
+                                        <th className="px-10 py-5">Contact Details</th>
+                                        <th className="px-10 py-5">History</th>
+                                        <th className="px-10 py-5 text-right">Total Life Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
+                                    {customers.map((c, i) => (
+                                        <tr key={i} onClick={() => onInfo(c)} className="group hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
+                                                        {c.name.charAt(0)}
+                                                    </div>
+                                                    <span className="text-xs font-black">{c.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <p className="text-xs font-bold">{c.email}</p>
+                                                <p className="text-[10px] text-[var(--text-muted)] mt-1">{c.phone}</p>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className="text-[10px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-3 py-1 rounded-full">{c.orders} Orders</span>
+                                            </td>
+                                            <td className="px-10 py-6 text-right">
+                                                <span className="text-xs font-black">₦{c.spend.toLocaleString()}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
 
-                {/* Mobile View */}
-                <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
-                    {customers.length === 0 ? (
-                        <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No customers found.</div>
-                    ) : (
-                        customers.map((c, i) => (
-                            <div key={i} onClick={() => onInfo(c)} className="p-6 space-y-4 active:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-sm font-black shrink-0">
-                                        {c.name.charAt(0)}
+                        {/* Mobile View */}
+                        <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
+                            {customers.map((c, i) => (
+                                <div key={i} onClick={() => onInfo(c)} className="p-6 space-y-4 active:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-sm font-black shrink-0">
+                                            {c.name.charAt(0)}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-black">{c.name}</p>
+                                            <p className="text-[11px] font-bold mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.email}</p>
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase text-[#F18B24]">{c.orders} Orders</span>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-black truncate">{c.name}</p>
-                                        <p className="text-[10px] font-bold text-[var(--text-muted)] truncate">{c.email}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="text-[9px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-2 py-1 rounded-full">{c.orders} Orders</span>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center pt-2">
-                                    <div>
-                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Phone Number</p>
-                                        <p className="text-xs font-bold">{c.phone}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-black uppercase text-[var(--text-muted)] mb-1">Total Life Value</p>
-                                        <p className="text-sm font-black text-[#F18B24]">₦{c.spend.toLocaleString()}</p>
+                                    <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--divider)]">
+                                        <div className="flex items-center gap-2">
+                                            <Phone size={14} className="text-[var(--text-muted)]" />
+                                            <span className="text-[10px] font-bold">{c.phone}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[8px] font-black uppercase text-[var(--text-muted)] mb-0.5">Total Value</p>
+                                            <p className="text-xs font-black">₦{c.spend.toLocaleString()}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
         </motion.div>
     )
 }
 
-const StatsTab = () => {
+const StatsTab = ({ dateRange, setDateRange, onExport }) => {
+    const { orders, products } = useStore()
+
+    const filteredOrders = useMemo(() => {
+        return orders.filter(o => {
+            if (!dateRange.start && !dateRange.end) return true
+            const orderDate = new Date(o.date)
+            const start = dateRange.start ? new Date(dateRange.start) : new Date(0)
+            const end = dateRange.end ? new Date(dateRange.end) : new Date()
+            end.setHours(23, 59, 59, 999)
+            return orderDate >= start && orderDate <= end
+        })
+    }, [orders, dateRange])
+
+    const salesByCategory = useMemo(() => {
+        const cats = {}
+        filteredOrders.forEach(o => {
+            // Find product category for this order
+            const p = products.find(p => p.id === o.productId || p.name === o.productName)
+            const category = p ? p.category : 'Miscellaneous'
+            cats[category] = (cats[category] || 0) + o.amount
+        })
+        return cats
+    }, [filteredOrders, products])
+
+    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.amount, 0) || 1
+
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-            <div>
-                <h2 className="text-2xl font-black">Analytical Reports</h2>
-                <p className="text-xs font-bold text-[var(--text-muted)]">Performance metrics and growth visualizations.</p>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-2xl font-black">Analytical Reports</h2>
+                    <p className="text-xs font-bold text-[var(--text-muted)]">Live performance tracking for configured period.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
+                    <button 
+                        onClick={() => onExport(filteredOrders, 'SR_Stats_Orders')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[#F18B24] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
+                    >
+                        <Download size={14} /> Comprehensive Sheet
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="p-8 rounded-3xl border" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
-                    <p className="text-xs font-black uppercase tracking-widest mb-10">Monthly Revenue Growth</p>
-                    <div className="aspect-video flex items-end gap-2 px-2">
-                        {[40, 60, 45, 90, 65, 80, 100].map((h, i) => (
-                            <motion.div 
-                                key={i} 
-                                initial={{ height: 0 }} 
-                                animate={{ height: `${h}%` }} 
-                                transition={{ delay: i * 0.1 }}
-                                className="flex-1 bg-[#F18B24] rounded-t-lg opacity-80 hover:opacity-100" 
+                    <p className="text-xs font-black uppercase tracking-widest mb-10 text-[var(--text-muted)]">Category Performance</p>
+                    <div className="space-y-6">
+                        {Object.entries(salesByCategory).map(([cat, val], i) => (
+                            <ProgressRow 
+                                key={cat}
+                                label={cat} 
+                                percentage={Math.round((val / totalRevenue) * 100)} 
+                                color={['#F18B24', '#3B82F6', '#10B981', '#A855F7', '#F43F5E'][i % 5]} 
+                                value={`₦${val.toLocaleString()}`} 
                             />
                         ))}
+                        {Object.keys(salesByCategory).length === 0 && (
+                            <p className="text-center py-10 text-xs font-bold text-[var(--text-muted)]">No data for this period.</p>
+                        )}
                     </div>
                 </div>
                 <div className="p-8 rounded-3xl border" style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}>
-                    <p className="text-xs font-black uppercase tracking-widest mb-10">Sales by Category</p>
-                    <div className="space-y-6">
-                        <ProgressRow label="Furniture" percentage={65} color="#F18B24" value="₦4.2M" />
-                        <ProgressRow label="Appliances" percentage={20} color="#3B82F6" value="₦1.1M" />
-                        <ProgressRow label="Gadgets" percentage={15} color="#10B981" value="₦0.8M" />
+                    <p className="text-xs font-black uppercase tracking-widest mb-10 text-[var(--text-muted)]">Transaction Volume Distribution</p>
+                    <div className="aspect-video flex items-end gap-2 px-2">
+                        {filteredOrders.length > 0 ? (
+                            Array.from({ length: 7 }).map((_, i) => {
+                                // Group by 7 buckets
+                                const bucketSize = Math.ceil(filteredOrders.length / 7)
+                                const bucket = filteredOrders.slice(i * bucketSize, (i + 1) * bucketSize)
+                                const volume = bucket.reduce((sum, o) => sum + o.amount, 0)
+                                const maxVolume = Math.max(...Array.from({ length: 7 }).map((_, j) => {
+                                    const b = filteredOrders.slice(j * bucketSize, (j + 1) * bucketSize)
+                                    return b.reduce((s, o) => s + o.amount, 0)
+                                })) || 1
+                                const height = (volume / maxVolume) * 100
+                                return (
+                                    <motion.div 
+                                        key={i} 
+                                        initial={{ height: 0 }} 
+                                        animate={{ height: `${height}%` }} 
+                                        transition={{ delay: i * 0.1 }}
+                                        className="flex-1 bg-[#F18B24] rounded-t-lg opacity-80 hover:opacity-100 relative group"
+                                    >
+                                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            ₦{Math.round(volume / 1000)}k
+                                        </div>
+                                    </motion.div>
+                                )
+                            })
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <p className="text-xs font-bold text-[var(--text-muted)]">No transactions found.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1327,7 +1671,7 @@ const CustomerInfoModal = ({ customer, onClose }) => {
                 <div className="p-8 border-b flex items-center justify-between sticky top-0 z-10" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
-                            {customer.name.charAt(0)}
+                            <img src="/images/logo_nobg.png" className="w-6 h-6 object-contain" alt="" />
                         </div>
                         <h3 className="text-xl font-black">Customer Profile</h3>
                     </div>
@@ -1339,7 +1683,7 @@ const CustomerInfoModal = ({ customer, onClose }) => {
                 <div className="p-8 lg:p-10 space-y-10">
                     <div className="text-center">
                         <div className="w-24 h-24 rounded-full bg-[#F18B24] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-orange-500/20">
-                            {customer.name.charAt(0)}
+                            <img src="/images/logo_nobg.png" alt="SR" className="w-full h-full object-contain" />
                         </div>
                         <h4 className="text-2xl font-black mb-1">{customer.name}</h4>
                         <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{customer.email}</p>
@@ -1428,8 +1772,11 @@ const ProductInfoModal = ({ product, onClose, onEdit }) => (
 )
 
 const ProductModal = ({ product = null, onClose, onSuccess }) => {
-    const { addProduct, updateProduct } = useStore()
+    const { addProduct, updateProduct, categories } = useStore()
     const isEdit = !!product
+    const [isAddingCategory, setIsAddingCategory] = useState(false)
+    const [newCategoryName, setNewCategoryName] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const [form, setForm] = useState({
         name: product?.name || '',
@@ -1438,9 +1785,9 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
         sellerName: product?.sellerName || '',
         description: product?.description || '',
         location: product?.location || '',
-        category: product?.category || 'Furniture',
+        category: product?.category || (categories[1] || 'Furniture'),
         image: product?.image || '',
-        images: product?.images || ['', '', '']
+        images: product?.images || ['']
     })
 
     const handleImageChange = (index, file) => {
@@ -1462,13 +1809,26 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        const primaryImage = form.images[0] || form.image
+        const validImages = form.images.filter(img => img !== '')
+        const primaryImage = validImages[0] || form.image
+        
+        setIsSubmitting(true)
         try {
-            if (isEdit) {
-                await updateProduct(product.id, { ...form, image: primaryImage, price: parseInt(form.price) })
-            } else {
-                await addProduct({ ...form, image: primaryImage, price: parseInt(form.price) })
+            const productData = {
+                ...form,
+                images: validImages,
+                image: primaryImage,
+                price: parseInt(form.price),
+                sellerPrice: parseInt(form.sellerPrice),
+                category: isAddingCategory ? newCategoryName.trim() : form.category
             }
+            
+            if (isEdit) {
+                await updateProduct(product.id, productData)
+            } else {
+                await addProduct(productData)
+            }
+            
             if (!isEdit && onSuccess) {
                 onSuccess()
             } else {
@@ -1477,6 +1837,8 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
         } catch (err) {
             console.error("Submit error:", err)
             onClose()
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -1511,23 +1873,57 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                             <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Listing Price (₦)</label>
                             <input required type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full rounded-xl px-6 py-4 outline-none text-sm font-black transition-colors" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }} placeholder="450000" />
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Category</label>
-                            <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold appearance-none transition-colors" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }}>
-                                {CATEGORIES.filter(c => c !== 'All').map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
+                        <div className="md:col-span-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Category</label>
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsAddingCategory(!isAddingCategory)}
+                                    className="text-[9px] font-black uppercase text-[#F18B24] hover:underline"
+                                >
+                                    {isAddingCategory ? 'Select Existing' : '+ Create New'}
+                                </button>
+                            </div>
+                            
+                            {isAddingCategory ? (
+                                <input 
+                                    autoFocus
+                                    value={newCategoryName}
+                                    onChange={e => {
+                                        setNewCategoryName(e.target.value)
+                                        setForm({ ...form, category: e.target.value })
+                                    }}
+                                    className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold transition-colors" 
+                                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }}
+                                    placeholder="Type new category name..."
+                                />
+                            ) : (
+                                <div className="relative">
+                                    <select 
+                                        value={form.category} 
+                                        onChange={e => setForm({ ...form, category: e.target.value })} 
+                                        className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold appearance-none transition-colors cursor-pointer" 
+                                        style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }}
+                                    >
+                                        {categories.filter(c => c !== 'All').map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
+                                        <ChevronDown size={18} />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="md:col-span-2 space-y-4">
-                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Product Images (3 slots max)</label>
-                            <div className="grid grid-cols-3 gap-4">
-                                {[0, 1, 2].map(i => (
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Product Images</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {form.images.map((img, i) => (
                                     <div key={i} className="relative group aspect-square">
-                                        {form.images[i] ? (
+                                        {img ? (
                                             <div className="w-full h-full rounded-2xl overflow-hidden border-2 relative" style={{ borderColor: i === 0 ? '#F18B24' : 'var(--divider)' }}>
-                                                <img src={form.images[i]} alt="" className="w-full h-full object-cover" />
+                                                <img src={img} alt="" className="w-full h-full object-cover" />
                                                 <button 
                                                     type="button"
                                                     onClick={() => removeImage(i)}
@@ -1552,7 +1948,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                                 }}
                                             >
                                                 <Upload size={20} className="text-[var(--text-muted)] group-hover:text-[#F18B24] transition-colors" />
-                                                <span className="text-[10px] font-bold text-[var(--text-muted)]">Upload</span>
+                                                <span className="text-[8px] lg:text-[10px] font-bold text-[var(--text-muted)]">Upload</span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
@@ -1563,7 +1959,18 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                         )}
                                     </div>
                                 ))}
+                                {form.images.length < 10 && (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setForm({...form, images: [...form.images, '']})}
+                                        className="aspect-square rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[#F18B24] flex flex-col items-center justify-center gap-2 transition-all hover:bg-[var(--bg-secondary)]"
+                                    >
+                                        <Plus size={20} className="text-[var(--text-muted)]" />
+                                        <span className="text-[8px] lg:text-[10px] font-bold">Add Slot</span>
+                                    </button>
+                                )}
                             </div>
+                            <p className="text-[9px] font-bold text-[var(--text-muted)]">* High quality images increase sales conversion.</p>
                         </div>
 
                         <div className="md:col-span-2">
@@ -1577,8 +1984,12 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full py-4 lg:py-5 rounded-xl bg-black dark:bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] transition-transform active:scale-95">
-                        {isEdit ? 'Update Listing' : 'Publish Listing'}
+                    <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className={`w-full py-4 lg:py-5 rounded-xl bg-black dark:bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
+                    >
+                        {isSubmitting ? (isEdit ? 'Updating...' : 'Publishing...') : (isEdit ? 'Update Listing' : 'Publish Listing')}
                     </button>
                 </form>
             </motion.div>

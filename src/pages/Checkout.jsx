@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { CreditCard, User, ShieldCheck, ArrowLeft, ShoppingBag, Trash2, Plus, Minus, ChevronRight, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../context/StoreContext'
+import EmptyState from '../components/EmptyState'
 
 const Checkout = () => {
     const { id } = useParams()
@@ -32,16 +33,14 @@ const Checkout = () => {
     )
 
     if (!isSingleItem && cart.length === 0) return (
-        <div className="pt-48 text-center container min-h-[60vh] flex flex-col items-center justify-center">
-            <ShoppingBag size={64} className="text-[#F18B24] mb-6 opacity-20" />
-            <h2 className="text-3xl font-black mb-4 tracking-tight" style={{ color: 'var(--text-primary)' }}>Your cart is empty</h2>
-            <p className="text-[var(--text-muted)] mb-8 font-medium">Add some amazing items to your cart before checking out.</p>
-            <button 
-                onClick={() => navigate('/')} 
-                className="btn-primary py-4 px-10 text-xs font-black uppercase tracking-widest"
-            >
-                Back to Shop
-            </button>
+        <div className="pt-48 pb-20 flex items-center justify-center min-h-[70vh]">
+            <EmptyState
+                icon={ShoppingBag}
+                title="Your cart is empty"
+                description="Add some amazing items to your cart before checking out. Your treasure is just a click away."
+                actionLabel="Back to Shop"
+                onAction={() => navigate('/shop')}
+            />
         </div>
     )
 
