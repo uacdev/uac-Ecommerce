@@ -51,7 +51,7 @@ const AdminLogin = () => {
             >
                 <div className="text-center mb-10">
                     <img src="/images/logo_nobg.png" alt="Logo" className="h-20 mx-auto mb-6 brightness-0 invert" />
-                    <h1 className="text-3xl font-black text-white tracking-tight mb-2 uppercase">SR-Cloud Portal</h1>
+                    <h1 className="text-3xl font-black text-white tracking-tight mb-2 uppercase">Sellout Admin Portal</h1>
                     <p className="text-white/40 text-xs font-bold uppercase tracking-[0.2em]">Authorized Access Only</p>
                 </div>
 
@@ -97,7 +97,7 @@ const AdminLogin = () => {
                                 <button 
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors z-20"
                                 >
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
