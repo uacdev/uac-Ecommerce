@@ -77,7 +77,11 @@ const AdminLogin = () => {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="admin@sellout.ng"
-                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm font-bold outline-none focus:border-[#F18B24] focus:ring-1 focus:ring-[#F18B24] transition-all"
+                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm font-bold outline-none focus:border-[#F18B24] focus:ring-1 focus:ring-[#F18B24] transition-all autofill:bg-transparent"
+                                    style={{
+                                        WebkitBoxShadow: '0 0 0 1000px #1a1c20 inset',
+                                        WebkitTextFillColor: 'white'
+                                    }}
                                 />
                             </div>
                         </div>
@@ -92,14 +96,18 @@ const AdminLogin = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-white text-sm font-bold outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all"
+                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-white text-sm font-bold outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition-all autofill:bg-transparent"
+                                    style={{
+                                        WebkitBoxShadow: '0 0 0 1000px #1a1c20 inset',
+                                        WebkitTextFillColor: 'white'
+                                    }}
                                 />
                                 <button 
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors z-20"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-[#3B82F6] transition-colors z-20 p-2"
                                 >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
                             </div>
                         </div>
