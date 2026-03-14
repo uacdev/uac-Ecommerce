@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram, ChevronLeft, ChevronRight, Plus, Minus, ShoppingBag, Heart } from 'lucide-react'
+import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram, ChevronLeft, ChevronRight, Plus, Minus, ShoppingBag, Heart, MapPin } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
@@ -19,7 +19,7 @@ const ProductDetails = () => {
     // SEO and Metadata
     useEffect(() => {
         if (product) {
-            document.title = `${product.name} | Sellout & Relocate`
+            document.title = `${product.name} | Sellout`
             
             // Dynamic Meta Tags (Basic)
             const metaDescription = document.querySelector('meta[name="description"]')
@@ -36,7 +36,7 @@ const ProductDetails = () => {
         }
         
         return () => {
-            document.title = 'Sellout & Relocate | Premium Gateway'
+            document.title = 'Sellout | Premium Gateway'
         }
     }, [product, productImages]);
 
@@ -197,7 +197,7 @@ const ProductDetails = () => {
                     </div>
 
                     <div className="flex items-center gap-3 mb-4">
-                        <span className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Delivered by Sellout & Relocate</span>
+                        <span className="px-3 py-1 bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-lg text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Verified Secure Transaction</span>
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
 
@@ -317,11 +317,11 @@ const ProductDetails = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <a href="https://wa.me/+2349098050402" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#25D366] text-[#25D366] rounded-2xl hover:bg-[#25D366] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-green-500/10">
                                     <MessageCircle size={20} />
-                                    WhatsApp SR
+                                    WhatsApp Seller
                                 </a>
                                 <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#E4405F] text-[#E4405F] rounded-2xl hover:bg-[#E4405F] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-pink-500/10">
                                     <Instagram size={20} />
-                                    Instagram SR
+                                    Instagram
                                 </a>
                             </div>
                         </div>

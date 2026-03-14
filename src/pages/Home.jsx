@@ -544,7 +544,7 @@ const Home = () => {
                                     className="flex-1 px-6 py-4 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/30 outline-none focus:border-[#F18B24] transition-colors text-sm"
                                 />
                                 <button className="btn-primary py-4 px-8 shrink-0">
-                                    Join Waitlist <ArrowUpRight size={16} />
+                                    Subscribe to Newsletter <ArrowUpRight size={16} />
                                 </button>
                             </motion.div>
 
