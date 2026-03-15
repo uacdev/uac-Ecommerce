@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Heart } from 'lucide-react'
+import { Heart, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
@@ -50,21 +50,24 @@ const ProductCard = ({ product }) => {
                 />
 
                 {/* Status Overlays */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    {isOutOfStock ? (
-                        <span className="bg-red-500 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
-                            Out of Stock
-                        </span>
-                    ) : isSold ? (
-                        <span className="bg-red-500 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
-                            Sold Out
-                        </span>
-                    ) : isReserved ? (
+                <div className="absolute top-4 left-4 z-20">
+                    {isReserved && !isSold && (
                         <span className="bg-[#F18B24] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
                             Reserved
                         </span>
-                    ) : null}
+                    )}
                 </div>
+
+                {/* Big Out of Stock / Sold Out Center Badge */}
+                {isSold && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
+                        <div className="bg-red-500/90 backdrop-blur-md px-6 py-3 rounded-xl border border-white/20 shadow-2xl transform -rotate-12">
+                            <p className="text-white font-black uppercase tracking-[0.2em] text-xs">
+                                {isOutOfStock ? 'Out of Stock' : 'Sold Out'}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Heart / Like Button */}
                 <button
@@ -106,12 +109,18 @@ const ProductCard = ({ product }) => {
                         ₦{(product.price / 1000).toFixed(0)}k
                     </p>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
                         {product.category}
                     </span>
                     <span className="text-[10px] text-[var(--text-muted)] italic">
                         {product.location.split(',')[0]}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1.5 py-2 px-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--divider)]">
+                    <Clock size={10} className="text-[#F18B24]" />
+                    <span className="text-[9px] font-black uppercase tracking-wider text-[var(--text-primary)]">
+                        {product.delivery_timeframe || "2-3 Working Days"}
                     </span>
                 </div>
             </div>

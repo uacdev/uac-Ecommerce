@@ -6,12 +6,15 @@ import { CATEGORIES } from '../data/products'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
 import ProductCard from '../components/ProductCard'
+import Preloader from '../components/Preloader'
 
 const Home = () => {
     const [activeCategory, setActiveCategory] = useState("All")
     const [flipped, setFlipped] = useState(false)
-    const { products, categories } = useStore()
+    const { products, categories, loading } = useStore()
     const location = useLocation()
+
+    if (loading) return <Preloader />
 
     useEffect(() => {
         const interval = setInterval(() => setFlipped(prev => !prev), 3000)
@@ -62,7 +65,7 @@ const Home = () => {
             p.name.toLowerCase().includes(searchQuery) || 
             p.description.toLowerCase().includes(searchQuery) ||
             p.category.toLowerCase().includes(searchQuery)
-        return matchesCategory && matchesSearch && p.status === 'available'
+        return matchesCategory && matchesSearch && (p.status === 'available' || p.status === 'out_of_stock')
     })
 
     // Featured products (first 4)

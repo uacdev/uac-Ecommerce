@@ -1,17 +1,18 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram, ChevronLeft, ChevronRight, Plus, Minus, ShoppingBag, Heart, MapPin, Clock } from 'lucide-react'
+import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram, ChevronLeft, ChevronRight, Plus, Minus, ShoppingBag, Heart, MapPin, Clock, Package, CheckCircle2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
+import Preloader from '../components/Preloader'
 
 const ProductDetails = () => {
     const { id } = useParams()
     const navigate = useNavigate()
     const [activeImage, setActiveImage] = useState(0)
     const [quantity, setQuantity] = useState(1)
-    const { products, addToCart, toggleFavorite, isFavorite } = useStore()
+    const { products, loading, addToCart, toggleFavorite, isFavorite } = useStore()
 
     const product = products.find(p => p.id === id)
     const productImages = product ? (product.images?.length > 0 ? product.images : [product.image]) : []
@@ -50,16 +51,25 @@ const ProductDetails = () => {
         return () => clearInterval(interval);
     }, [product, productImages.length]);
 
+    if (loading) return <Preloader />
+
     if (!product) {
         return (
-            <div className="pt-40 text-center container" style={{ color: 'var(--text-muted)' }}>
-                <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-                <button onClick={() => navigate('/')} className="text-[#F18B24] hover:underline">
-                    Return Home
+            <div className="pt-40 text-center container" style={{ color: 'var(--text-primary)' }}>
+                <h2 className="text-2xl font-black mb-4 uppercase tracking-widest">Listing Not Found</h2>
+                <p className="text-[var(--text-muted)] mb-8 font-bold">This product may have been removed or is no longer available.</p>
+                <button 
+                    onClick={() => navigate('/shop')} 
+                    className="px-8 py-4 rounded-xl bg-[#F18B24] text-white font-black uppercase tracking-widest text-xs shadow-lg hover:scale-105 transition-all"
+                >
+                    Back to Shop
                 </button>
             </div>
         )
     }
+
+    const isOutOfStock = product.status === 'out_of_stock'
+    const isSold = product.status === 'sold'
 
     const nextImage = () => setActiveImage((prev) => (prev + 1) % productImages.length)
     const prevImage = () => setActiveImage((prev) => (prev - 1 + productImages.length) % productImages.length)
@@ -137,9 +147,20 @@ const ProductDetails = () => {
                                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                                 src={productImages[activeImage]}
                                 alt={product.name}
-                                className="w-full h-full object-cover"
+                                className={`w-full h-full object-cover ${(isOutOfStock || isSold) ? 'grayscale' : ''}`}
                             />
                         </AnimatePresence>
+
+                        {/* Status Badge Over Image */}
+                        {(isOutOfStock || isSold) && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px]">
+                                <div className="bg-red-500/90 backdrop-blur-md px-8 py-4 rounded-2xl border-white/20 shadow-2xl transform -rotate-12 scale-110">
+                                    <p className="text-white font-black uppercase tracking-[0.2em] text-sm">
+                                        {isOutOfStock ? 'Out of Stock' : 'Sold Out'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Premium Gradient Overlay */}
                         <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -246,7 +267,7 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Quantity Selector */}
-                    {product.status !== 'out_of_stock' && product.status !== 'sold' ? (
+                    {(!isOutOfStock && !isSold) && (
                         <div className="mb-12 space-y-4">
                             <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Inventory Count</p>
                             <div className="flex items-center gap-8 w-fit bg-[var(--bg-primary)] p-2 rounded-2xl border-2" style={{ borderColor: 'var(--divider)' }}>
@@ -265,64 +286,59 @@ const ProductDetails = () => {
                                 </button>
                             </div>
                         </div>
-                    ) : (
-                        <div className="mb-12 p-6 rounded-2xl bg-red-500/10 border border-red-500/20">
-                            <p className="text-red-500 font-black uppercase tracking-widest text-[10px]">
-                                {product.status === 'out_of_stock' ? 'Temporarily Out of Stock' : 'This item has been sold'}
-                            </p>
-                        </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-                        <div className="flex items-start gap-4 p-5 rounded-2xl border bg-emerald-500/5 transition-colors border-emerald-500/20">
-                            <Truck size={24} className="text-emerald-500 mt-1" />
-                            <div>
-                                <h4 className="font-black text-[10px] uppercase tracking-widest mb-1 text-emerald-600">Guided Delivery</h4>
-                                <p className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{product.delivery_window || "2-3 Working Days"}</p>
+                    <div className="flex flex-col gap-6 mb-12 py-6 border-y border-[var(--divider)]">
+                        <div className="flex items-center gap-4">
+                            <Truck size={20} className="text-[#F18B24]" />
+                            <div className="flex items-center gap-3">
+                                <span className="font-black text-[10px] uppercase tracking-widest text-[#F18B24]">Guided Delivery:</span>
+                                <span className="text-xs font-bold text-[var(--text-primary)]">{product.delivery_timeframe || "2-3 Working Days"}</span>
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-4 p-5 rounded-2xl border bg-orange-500/5 border-orange-500/20">
-                            <Info size={24} className="text-[#F18B24] mt-1" />
-                            <div>
-                                <h4 className="font-black text-[10px] uppercase tracking-widest mb-1 text-[#F18B24]">Gatekeep Policy</h4>
-                                <p className="text-[10px] font-bold leading-relaxed" style={{ color: 'var(--text-muted)' }}>Physical inspection mandatory before final escrow release.</p>
+                        <div className="flex items-center gap-4">
+                            <Info size={20} className="text-[#F18B24]" />
+                            <div className="flex items-center gap-3">
+                                <span className="font-black text-[10px] uppercase tracking-widest text-[#F18B24]">Gatekeep Policy:</span>
+                                <span className="text-xs font-bold text-[var(--text-muted)]">Physical inspection mandatory before final escrow release.</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Status Banner */}
-                    {product.status === 'sold' && (
+                    {(product.status === 'sold' || product.status === 'out_of_stock') && (
                         <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/20 mb-8 flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                            <p className="text-red-500 font-black text-xs uppercase tracking-widest">Listing Sold Out</p>
+                            <p className="text-red-500 font-black text-xs uppercase tracking-widest">
+                                {product.status === 'out_of_stock' ? 'Currently Out of Stock' : 'Listing Sold Out'}
+                            </p>
                         </div>
                     )}
 
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {product.status === 'sold' ? (
-                                <span className="py-5 text-center rounded-2xl font-black uppercase tracking-widest text-xs bg-red-500/10 text-red-500 border border-red-500/20">
-                                    Sold Out
-                                </span>
-                            ) : (
-                                <button
-                                    onClick={() => navigate(`/checkout/${product.id}`)}
-                                    className="btn-primary py-5 text-center font-black uppercase tracking-widest text-xs cursor-pointer hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-orange-500/20"
-                                >
-                                    Instant Buy
-                                </button>
-                            )}
+                            <button
+                                onClick={() => !isSold && !isOutOfStock && navigate(`/checkout/${product.id}`)}
+                                disabled={isSold || isOutOfStock}
+                                className={`py-5 text-center font-black uppercase tracking-widest text-xs transition-all shadow-xl rounded-2xl ${
+                                    (isSold || isOutOfStock)
+                                        ? 'bg-red-500/10 text-red-500 border border-red-500/20 cursor-not-allowed opacity-50'
+                                        : 'btn-primary cursor-pointer hover:scale-[1.02] active:scale-95 shadow-orange-500/20'
+                                }`}
+                            >
+                                {isOutOfStock ? 'Out of Stock' : isSold ? 'Sold Out' : 'Instant Buy'}
+                            </button>
                             <button
                                 onClick={handleAddToCart}
-                                className={`flex items-center justify-center gap-3 py-5 rounded-2xl transition-all font-black uppercase tracking-widest text-xs border-2 cursor-pointer active:scale-95 hover:bg-[#F18B24] hover:text-white ${product.status === 'sold' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`flex items-center justify-center gap-3 py-5 rounded-2xl transition-all font-black uppercase tracking-widest text-xs border-2 ${(isSold || isOutOfStock) ? 'opacity-30 cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-95 hover:bg-[#F18B24] hover:text-white'}`}
                                 style={{ 
                                     borderColor: '#F18B24', 
                                     color: '#F18B24',
                                     background: 'transparent'
                                 }}
-                                disabled={product.status === 'sold'}
+                                disabled={isSold || isOutOfStock}
                             >
                                 <ShoppingBag size={20} />
                                 Add to Cart

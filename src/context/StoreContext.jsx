@@ -191,7 +191,8 @@ export const StoreProvider = ({ children }) => {
             category: product.category || 'Furniture',
             image: product.image,
             images: product.images || [],
-            status: 'available',
+            status: product.status || 'available',
+            delivery_timeframe: product.delivery_timeframe || '',
             is_reserved: false
         }
 
@@ -215,8 +216,22 @@ export const StoreProvider = ({ children }) => {
     }
 
     const updateProduct = async (id, updates) => {
+        // Map camelCase to snake_case for DB
+        const dbUpdates = { ...updates }
+        if (updates.sellerPrice !== undefined) {
+            dbUpdates.seller_price = updates.sellerPrice
+            delete dbUpdates.sellerPrice
+        }
+        if (updates.sellerName !== undefined) {
+            dbUpdates.seller_name = updates.sellerName
+            delete dbUpdates.sellerName
+        }
+        if (updates.delivery_timeframe !== undefined) {
+            dbUpdates.delivery_timeframe = updates.delivery_timeframe
+        }
+        
         try {
-            const { error } = await supabase.from('products').update(updates).eq('id', id)
+            const { error } = await supabase.from('products').update(dbUpdates).eq('id', id)
             if (error) throw error
             setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p))
         } catch (err) {

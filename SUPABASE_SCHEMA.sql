@@ -14,7 +14,8 @@ CREATE TABLE products (
     category TEXT DEFAULT 'Furniture',
     image TEXT,
     images JSONB DEFAULT '[]'::jsonb,
-    status TEXT DEFAULT 'available', -- 'available', 'reserved', 'sold'
+    status TEXT DEFAULT 'available', -- 'available', 'reserved', 'sold', 'out_of_stock'
+    delivery_timeframe TEXT,
     is_reserved BOOLEAN DEFAULT false
 );
 

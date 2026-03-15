@@ -4,14 +4,17 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useStore } from '../context/StoreContext'
 import ProductCard from '../components/ProductCard'
 import EmptyState from '../components/EmptyState'
+import Preloader from '../components/Preloader'
 
 const Products = () => {
-    const { products, categories } = useStore()
+    const { products, categories, loading } = useStore()
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState('All')
     const [sortBy, setSortBy] = useState('latest') // latest, price-low, price-high
     const [sortOpen, setSortOpen] = useState(false)
     const sortRef = useRef(null)
+
+    if (loading) return <Preloader />
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
@@ -19,7 +22,7 @@ const Products = () => {
             const matchesSearch = !searchQuery || 
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                 p.description.toLowerCase().includes(searchQuery.toLowerCase())
-            return matchesCategory && matchesSearch && p.status === 'available'
+            return matchesCategory && matchesSearch && (p.status === 'available' || p.status === 'out_of_stock')
         }).sort((a, b) => {
             if (sortBy === 'price-low') return a.price - b.price
             if (sortBy === 'price-high') return b.price - a.price

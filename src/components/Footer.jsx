@@ -7,7 +7,7 @@ const Footer = () => {
             <div className="container">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
                     <div className="lg:col-span-1">
-                        <img src="/images/logo_nobg.png" alt="Logo" className="h-32 lg:h-40 w-auto mb-8" style={{ filter: 'brightness(0) invert(1) drop-shadow(0 2px 10px rgba(241,139,36,0.5))' }} />
+                        <img src="/images/logo_nobg.png" alt="Logo" className="h-36 lg:h-44 w-auto mb-8" style={{ filter: 'brightness(0) invert(1) drop-shadow(0 4px 14px rgba(241,139,36,0.6))' }} />
                         <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-xs">
                             The premium transaction gateway and logistics partner for Instagram sellers.
                         </p>

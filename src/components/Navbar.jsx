@@ -57,7 +57,7 @@ const Navbar = () => {
                         <img 
                             src="/images/logo_nobg.png" 
                             alt="Logo" 
-                            className="h-24 md:h-32 lg:h-36 w-auto group-hover:scale-110 transition-transform duration-500 object-contain" 
+                            className="h-20 md:h-28 lg:h-32 w-auto group-hover:scale-105 transition-transform duration-500 object-contain -my-4 md:-my-6" 
                             style={{ 
                                 filter: isDark 
                                     ? 'brightness(0) invert(1) drop-shadow(0 2px 12px rgba(241,139,36,0.85))' 
@@ -136,7 +136,7 @@ const Navbar = () => {
                         </button>
 
                         {/* Favorites Icon */}
-                        <Link to="/favorites" className="p-3 rounded-2xl hover:bg-red-50 transition-colors relative group">
+                        <Link to="/favorites" className="p-3 rounded-2xl hover:bg-red-500/10 transition-colors relative group">
                             <Heart size={22} strokeWidth={2.5} style={{ color: 'var(--text-primary)' }} className="group-hover:text-red-500 transition-colors" />
                             {favorites.length > 0 && (
                                 <motion.span

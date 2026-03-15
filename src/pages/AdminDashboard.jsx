@@ -16,6 +16,7 @@ import DatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css"
 import { format } from 'date-fns'
 import EmptyState from '../components/EmptyState'
+import Preloader from '../components/Preloader'
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview')
@@ -34,8 +35,10 @@ const AdminDashboard = () => {
 
     const [dateRange, setDateRange] = useState({ start: '', end: '' })
     const { isDark, toggleTheme } = useTheme()
-    const { loading, removeProduct, orders, products } = useStore()
+    const { loading, removeProduct, updateProduct, orders, products } = useStore()
     const { signOut: logout } = useAuth()
+
+    if (loading) return <Preloader />
 
     const exportToCSV = (data, filename) => {
         if (!data || !data.length) return;
@@ -94,9 +97,9 @@ const AdminDashboard = () => {
                 style={{ background: isDark ? '#000000' : '#0F1115', borderRight: '1px solid rgba(255,255,255,0.06)' }}
             >
                 {/* Brand */}
-                <div className={`flex items-center border-b border-white/5 shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center p-4 h-28' : 'justify-between p-8 h-28'}`}>
-                    {!sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-24 w-auto brightness-0 invert" />}
-                    {sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-12 w-auto brightness-0 invert opacity-60" />}
+                <div className={`flex items-center border-b border-white/5 shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center p-4 h-36' : 'justify-between px-6 py-4 h-36'}`}>
+                    {!sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-28 w-auto brightness-0 invert" style={{ filter: 'brightness(0) invert(1) drop-shadow(0 2px 8px rgba(241,139,36,0.4))' }} />}
+                    {sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-14 w-auto brightness-0 invert opacity-70" />}
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
                             <X size={20} />
@@ -272,6 +275,12 @@ const AdminDashboard = () => {
                                     dateRange={dateRange}
                                     setDateRange={setDateRange}
                                     onExport={exportToCSV}
+                                    onToggleStock={(product) => {
+                                        const newStatus = product.status === 'out_of_stock' ? 'available' : 'out_of_stock'
+                                        updateProduct(product.id, { status: newStatus })
+                                            .then(() => toast.success(`Product marked as ${newStatus.replace('_', ' ')}`))
+                                            .catch(() => toast.error('Failed to update product'))
+                                    }}
                                 />
                             )}
                             {activeTab === 'ledger' && <LedgerTab key="ledger" searchTerm={searchTerm} onSelect={setSelectedOrder} dateRange={dateRange} setDateRange={setDateRange} onExport={exportToCSV} />}
@@ -1004,7 +1013,7 @@ const SecondaryBtn = ({ label, full, onClick }) => (
     </button>
 );
 
-const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, dateRange, setDateRange }) => {
+const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTerm, onExport, dateRange, setDateRange }) => {
     const { products, categories } = useStore()
     const [activeCategory, setActiveCategory] = useState('All')
 
@@ -1083,12 +1092,13 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
                                         <th className="px-10 py-5 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y" style={{ borderColor: 'var(--divider)' }}>
-                                    {filteredProducts.map(product => (
+                                <tbody>
+                                    {filteredProducts.map((product, idx) => (
                                         <tr 
                                             key={product.id} 
                                             onClick={() => onInfo(product)}
                                             className="group transition-colors hover:bg-[var(--bg-secondary)] cursor-pointer"
+                                            style={idx > 0 ? { borderTop: '1px solid var(--divider)' } : {}}
                                         >
                                             <td className="px-10 py-6">
                                                 <div className="flex items-center gap-6">
@@ -1110,6 +1120,13 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
                                             </td>
                                             <td className="px-10 py-6 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-2 transition-opacity">
+                                                    <button 
+                                                        onClick={() => onToggleStock(product)} 
+                                                        title={product.status === 'out_of_stock' ? 'Mark as In Stock' : 'Mark as Out of Stock'}
+                                                        className={`p-2.5 rounded-lg transition-colors ${product.status === 'out_of_stock' ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-amber-500 hover:bg-amber-500/10'}`}
+                                                    >
+                                                        <Package size={16} />
+                                                    </button>
                                                     <button onClick={() => onEdit(product)} className="p-2.5 rounded-lg transition-colors hover:bg-[var(--divider)]" style={{ color: 'var(--text-muted)' }}><Edit3 size={16} /></button>
                                                     <button onClick={() => onDelete(product)} className="p-2.5 rounded-lg text-red-500 transition-colors hover:bg-red-500/10"><Trash2 size={16} /></button>
                                                 </div>
@@ -1121,12 +1138,13 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
                         </div>
 
                         {/* Mobile view */}
-                        <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
-                            {filteredProducts.map(product => (
+                        <div className="lg:hidden">
+                            {filteredProducts.map((product, idx) => (
                                 <div 
                                     key={product.id} 
                                     onClick={() => onInfo(product)}
                                     className="p-6 space-y-4 cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
+                                    style={idx > 0 ? { borderTop: '1px solid var(--divider)' } : {}}
                                 >
                                     <div className="flex gap-4">
                                         <img src={product.image} className="w-20 h-20 rounded-xl object-cover shrink-0 border" style={{ borderColor: 'var(--divider)' }} alt="" />
@@ -1142,6 +1160,13 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
                                     <div className="flex justify-between items-center gap-4">
                                         <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
                                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <button 
+                                                onClick={() => onToggleStock(product)} 
+                                                title={product.status === 'out_of_stock' ? 'Mark as In Stock' : 'Mark as Out of Stock'}
+                                                className={`p-3 rounded-xl border ${product.status === 'out_of_stock' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}
+                                            >
+                                                <Package size={14} />
+                                            </button>
                                             <button onClick={() => onEdit(product)} className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[var(--text-muted)]"><Edit3 size={14} /></button>
                                             <button onClick={() => onDelete(product)} className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500"><Trash2 size={14} /></button>
                                         </div>
@@ -1798,7 +1823,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
         location: product?.location || '',
         category: product?.category || (categories[1] || 'Furniture'),
         delivery_timeframe: product?.delivery_timeframe || '',
-        status: product?.status || 'active',
+        status: product?.status || 'available',
         image: product?.image || '',
         images: product?.images || ['']
     })
