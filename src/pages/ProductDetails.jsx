@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram, ChevronLeft, ChevronRight, Plus, Minus, ShoppingBag, Heart, MapPin } from 'lucide-react'
+import { ShieldCheck, MessageCircle, ArrowLeft, Truck, Info, Instagram, ChevronLeft, ChevronRight, Plus, Minus, ShoppingBag, Heart, MapPin, Clock } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
@@ -203,16 +203,25 @@ const ProductDetails = () => {
 
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 font-heading tracking-tighter" style={{ color: 'var(--text-primary)' }}>{product.name}</h1>
 
-                    <div className="flex items-center gap-6 mb-8">
+                    <div className="flex items-center gap-6 mb-8 flex-wrap">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Selling Price</p>
                             <p className="text-4xl font-black text-[#F18B24]">₦{product.price.toLocaleString()}</p>
                         </div>
-                        <div className="h-10 w-[1px]" style={{ background: 'var(--divider)' }} />
+                        <div className="h-10 w-[1px] hidden sm:block" style={{ background: 'var(--divider)' }} />
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Pick up from</p>
                             <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}><MapPin size={16} className="text-[#F18B24]" /> {product.location}</p>
                         </div>
+                        {product.delivery_timeframe && (
+                            <>
+                                <div className="h-10 w-[1px] hidden sm:block" style={{ background: 'var(--divider)' }} />
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Delivery Time</p>
+                                    <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}><Clock size={16} className="text-[#F18B24]" /> {product.delivery_timeframe}</p>
+                                </div>
+                            </>
+                        )}
                         <button
                             onClick={handleFavorite}
                             className={`ml-auto w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 cursor-pointer active:scale-90 shadow-xl ${
@@ -237,24 +246,32 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Quantity Selector */}
-                    <div className="mb-12 space-y-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Inventory Count</p>
-                        <div className="flex items-center gap-8 w-fit bg-[var(--bg-primary)] p-2 rounded-2xl border-2" style={{ borderColor: 'var(--divider)' }}>
-                            <button 
-                                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                                className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-[var(--bg-secondary)] active:scale-95 transition-all cursor-pointer text-[var(--text-primary)]"
-                            >
-                                <Minus size={20} />
-                            </button>
-                            <span className="text-2xl font-black w-8 text-center" style={{ color: 'var(--text-primary)' }}>{quantity}</span>
-                            <button 
-                                onClick={() => setQuantity(q => q + 1)}
-                                className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-[var(--bg-secondary)] active:scale-95 transition-all cursor-pointer text-[var(--text-primary)]"
-                            >
-                                <Plus size={20} />
-                            </button>
+                    {product.status !== 'out_of_stock' && product.status !== 'sold' ? (
+                        <div className="mb-12 space-y-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Inventory Count</p>
+                            <div className="flex items-center gap-8 w-fit bg-[var(--bg-primary)] p-2 rounded-2xl border-2" style={{ borderColor: 'var(--divider)' }}>
+                                <button 
+                                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                    className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-[var(--bg-secondary)] active:scale-95 transition-all cursor-pointer text-[var(--text-primary)]"
+                                >
+                                    <Minus size={20} />
+                                </button>
+                                <span className="text-2xl font-black w-8 text-center" style={{ color: 'var(--text-primary)' }}>{quantity}</span>
+                                <button 
+                                    onClick={() => setQuantity(q => q + 1)}
+                                    className="w-12 h-12 rounded-xl flex items-center justify-center hover:bg-[var(--bg-secondary)] active:scale-95 transition-all cursor-pointer text-[var(--text-primary)]"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="mb-12 p-6 rounded-2xl bg-red-500/10 border border-red-500/20">
+                            <p className="text-red-500 font-black uppercase tracking-widest text-[10px]">
+                                {product.status === 'out_of_stock' ? 'Temporarily Out of Stock' : 'This item has been sold'}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
                         <div className="flex items-start gap-4 p-5 rounded-2xl border bg-emerald-500/5 transition-colors border-emerald-500/20">

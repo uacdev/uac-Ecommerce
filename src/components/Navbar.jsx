@@ -57,8 +57,12 @@ const Navbar = () => {
                         <img 
                             src="/images/logo_nobg.png" 
                             alt="Logo" 
-                            className="h-16 md:h-24 lg:h-28 w-auto group-hover:scale-110 transition-transform duration-500 object-contain" 
-                            style={{ filter: 'drop-shadow(0 2px 12px rgba(241,139,36,0.55)) drop-shadow(0 1px 4px rgba(0,0,0,0.18))' }}
+                            className="h-24 md:h-32 lg:h-36 w-auto group-hover:scale-110 transition-transform duration-500 object-contain" 
+                            style={{ 
+                                filter: isDark 
+                                    ? 'brightness(0) invert(1) drop-shadow(0 2px 12px rgba(241,139,36,0.85))' 
+                                    : 'drop-shadow(0 2px 12px rgba(241,139,36,0.55)) drop-shadow(0 1px 4px rgba(0,0,0,0.18))' 
+                            }}
                         />
                     </Link>
 

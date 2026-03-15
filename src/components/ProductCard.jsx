@@ -5,7 +5,8 @@ import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
-    const isSold = product.status === 'sold'
+    const isSold = product.status === 'sold' || product.status === 'out_of_stock'
+    const isOutOfStock = product.status === 'out_of_stock'
     const isReserved = product.is_reserved || product.status === 'reserved'
     const { toggleFavorite, isFavorite } = useStore()
     const liked = isFavorite(product.id)
@@ -50,7 +51,11 @@ const ProductCard = ({ product }) => {
 
                 {/* Status Overlays */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    {isSold ? (
+                    {isOutOfStock ? (
+                        <span className="bg-red-500 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
+                            Out of Stock
+                        </span>
+                    ) : isSold ? (
                         <span className="bg-red-500 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
                             Sold Out
                         </span>

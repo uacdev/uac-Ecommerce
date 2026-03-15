@@ -94,9 +94,9 @@ const AdminDashboard = () => {
                 style={{ background: isDark ? '#000000' : '#0F1115', borderRight: '1px solid rgba(255,255,255,0.06)' }}
             >
                 {/* Brand */}
-                <div className={`flex items-center border-b border-white/5 shrink-0 ${sidebarCollapsed ? 'justify-center p-4 h-20' : 'justify-between p-6 h-20'}`}>
-                    {!sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-14 w-auto brightness-0 invert" />}
-                    {sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-8 w-auto brightness-0 invert opacity-60" />}
+                <div className={`flex items-center border-b border-white/5 shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center p-4 h-28' : 'justify-between p-8 h-28'}`}>
+                    {!sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-24 w-auto brightness-0 invert" />}
+                    {sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-12 w-auto brightness-0 invert opacity-60" />}
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
                             <X size={20} />
@@ -1106,7 +1106,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
                                                 <span className="text-xs font-black">₦{product.price.toLocaleString()}</span>
                                             </td>
                                             <td className="px-10 py-6">
-                                                <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
+                                                <ProductPill status={product.status === 'out_of_stock' ? 'Out of Stock' : product.status === 'sold' ? 'Sold Out' : 'Active'} />
                                             </td>
                                             <td className="px-10 py-6 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-2 transition-opacity">
@@ -1133,7 +1133,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-start">
                                                 <p className="text-sm font-black truncate">{product.name}</p>
-                                                <ProductPill status={product.status === 'sold' ? 'Sold Out' : 'Active'} />
+                                                <ProductPill status={product.status === 'out_of_stock' ? 'Out of Stock' : product.status === 'sold' ? 'Sold Out' : 'Active'} />
                                             </div>
                                             <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[#F18B24]">{product.category}</p>
                                             <p className="text-sm font-black mt-2">₦{product.price.toLocaleString()}</p>
@@ -1158,9 +1158,14 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, searchTerm, onExport, da
 
 const ProductPill = ({ status }) => {
     const isSuccess = status === 'Active'
+    const isOut = status === 'Out of Stock'
     return (
-        <span className="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit" style={{ background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: isSuccess ? '#10B981' : '#EF4444' }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: isSuccess ? '#10B981' : '#EF4444' }} />
+        <span className="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit" 
+              style={{ 
+                  background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : isOut ? 'rgba(239, 68, 68, 0.1)' : 'rgba(241, 139, 36, 0.1)', 
+                  color: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#F18B24' 
+              }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#F18B24' }} />
             {status}
         </span>
     )
@@ -1752,6 +1757,12 @@ const ProductInfoModal = ({ product, onClose, onEdit }) => (
                             <span>Seller Payout</span>
                             <span>₦{product.sellerPrice?.toLocaleString() || 'N/A'}</span>
                         </div>
+                        {product.delivery_timeframe && (
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] pt-2 border-t border-[var(--divider)]">
+                                <span>Delivery Window</span>
+                                <span className="text-[var(--text-primary)]">{product.delivery_timeframe}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-1">
                         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Description</p>
@@ -1786,6 +1797,8 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
         description: product?.description || '',
         location: product?.location || '',
         category: product?.category || (categories[1] || 'Furniture'),
+        delivery_timeframe: product?.delivery_timeframe || '',
+        status: product?.status || 'active',
         image: product?.image || '',
         images: product?.images || ['']
     })
@@ -1872,6 +1885,26 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Listing Price (₦)</label>
                             <input required type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full rounded-xl px-6 py-4 outline-none text-sm font-black transition-colors" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }} placeholder="450000" />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Delivery Time Frame</label>
+                            <input value={form.delivery_timeframe} onChange={e => setForm({ ...form, delivery_timeframe: e.target.value })} className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold transition-colors" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }} placeholder="e.g. 2-3 Working Days" />
+                        </div>
+                        <div className="md:col-span-2 flex items-center gap-4 p-4 rounded-2xl bg-[var(--bg-secondary)] border" style={{ borderColor: 'var(--divider)' }}>
+                            <div className="flex-1">
+                                <p className="text-sm font-black">Out of Stock</p>
+                                <p className="text-[10px] font-bold text-[var(--text-muted)]">Mark this item as currently unavailable</p>
+                            </div>
+                            <button 
+                                type="button"
+                                onClick={() => setForm({ ...form, status: form.status === 'out_of_stock' ? 'active' : 'out_of_stock' })}
+                                className={`w-14 h-8 rounded-full transition-all relative ${form.status === 'out_of_stock' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                            >
+                                <motion.div 
+                                    animate={{ x: form.status === 'out_of_stock' ? 26 : 4 }}
+                                    className="absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm"
+                                />
+                            </button>
                         </div>
                         <div className="md:col-span-2">
                             <div className="flex items-center justify-between mb-2">
@@ -1989,7 +2022,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                         disabled={isSubmitting}
                         className={`w-full py-4 lg:py-5 rounded-xl bg-black dark:bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
                     >
-                        {isSubmitting ? (isEdit ? 'Updating...' : 'Publishing...') : (isEdit ? 'Update Listing' : 'Publish Listing')}
+                        {isSubmitting ? (isEdit ? 'Updating...' : 'Adding Listing...') : (isEdit ? 'Update Listing' : 'Add Listing')}
                     </button>
                 </form>
             </motion.div>
