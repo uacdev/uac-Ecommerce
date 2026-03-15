@@ -13,9 +13,6 @@ const Products = () => {
     const [sortBy, setSortBy] = useState('latest') // latest, price-low, price-high
     const [sortOpen, setSortOpen] = useState(false)
     const sortRef = useRef(null)
-
-    if (loading) return <Preloader />
-
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
             const matchesCategory = activeCategory === 'All' || p.category === activeCategory
@@ -40,6 +37,8 @@ const Products = () => {
         document.addEventListener("mousedown", handleClickOutside)
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
+
+    if (loading) return <Preloader />
 
     return (
         <div className="min-h-screen pt-44 pb-20 px-4 md:px-8">

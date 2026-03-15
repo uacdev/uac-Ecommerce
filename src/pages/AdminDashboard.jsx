@@ -38,8 +38,6 @@ const AdminDashboard = () => {
     const { loading, removeProduct, updateProduct, orders, products } = useStore()
     const { signOut: logout } = useAuth()
 
-    if (loading) return <Preloader />
-
     const exportToCSV = (data, filename) => {
         if (!data || !data.length) return;
         const headers = Object.keys(data[0]).filter(k => typeof data[0][k] !== 'object').join(',');
@@ -59,20 +57,7 @@ const AdminDashboard = () => {
         document.body.removeChild(link);
     }
 
-    if (loading) {
-        return (
-            <div className="fixed inset-0 flex items-center justify-center bg-[var(--bg-primary)] z-[99999]">
-                <div className="flex flex-col items-center gap-6">
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-12 h-12 border-4 border-[#F18B24] border-t-transparent rounded-full"
-                    />
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Cloud Sync Active</p>
-                </div>
-            </div>
-        )
-    }
+    if (loading) return <Preloader />
 
     return (
         <div className="fixed inset-0 flex overflow-hidden z-[9999] transition-all duration-500" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>

@@ -14,8 +14,6 @@ const Home = () => {
     const { products, categories, loading } = useStore()
     const location = useLocation()
 
-    if (loading) return <Preloader />
-
     useEffect(() => {
         const interval = setInterval(() => setFlipped(prev => !prev), 3000)
         return () => clearInterval(interval)
@@ -23,6 +21,7 @@ const Home = () => {
 
     const { isDark } = useTheme()
     const heroRef = useRef(null)
+
     const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] })
     const heroY = useTransform(scrollYProgress, [0, 1], [0, 150])
 
@@ -33,6 +32,9 @@ const Home = () => {
             metaDescription.setAttribute('content', 'The premium transaction gateway for buying and selling vetted furniture, appliances and gadgets securely with human confirmation.')
         }
     }, [])
+
+    if (loading) return <Preloader />
+
 
     const queryParams = new URLSearchParams(location.search)
     const searchQuery = queryParams.get('search')?.toLowerCase() || ''
