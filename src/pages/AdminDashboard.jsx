@@ -83,8 +83,8 @@ const AdminDashboard = () => {
             >
                 {/* Brand */}
                 <div className={`flex items-center border-b border-white/5 shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center p-4 h-36' : 'justify-between px-6 py-4 h-36'}`}>
-                    {!sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-28 w-auto brightness-0 invert" style={{ filter: 'brightness(0) invert(1) drop-shadow(0 2px 8px rgba(241,139,36,0.4))' }} />}
-                    {sidebarCollapsed && <img src="/images/logo_nobg.png" alt="Logo" className="h-14 w-auto brightness-0 invert opacity-70" />}
+                    {!sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-24 w-auto brightness-0 invert" style={{ filter: 'brightness(0) invert(1) drop-shadow(0 2px 8px rgba(255,255,255,0.1))' }} />}
+                    {sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-14 w-auto brightness-0 invert opacity-70" />}
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
                             <X size={20} />
@@ -146,19 +146,19 @@ const AdminDashboard = () => {
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
                             <Menu size={20} />
                         </button>
-                        <img src="/images/logo_nobg.png" alt="Logo" className="h-12 lg:h-16 w-auto hidden md:block dark:brightness-0 dark:invert" />
+                        <img src="/images/uac_logo.png" alt="UAC Foods" className="h-10 lg:h-12 w-auto hidden md:block dark:brightness-0 dark:invert" />
                     </div>
 
                     {/* Search Field - Middle */}
                     <div className="flex-1 max-w-sm lg:max-w-md">
                         <div className="relative group">
-                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[#F18B24] transition-colors" />
+                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--test-muted)] group-focus-within:text-[var(--brand-red)] transition-colors" />
                             <input
                                 type="text"
                                 placeholder={`Search in ${activeTab}...`}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] shadow-sm rounded-xl pl-11 pr-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-[#F18B2420] focus:border-[#F18B24] transition-all"
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] shadow-sm rounded-xl pl-11 pr-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-[var(--brand-red)]/20 focus:border-[var(--brand-red)] transition-all"
                                 style={{ color: 'var(--text-primary)' }}
                             />
                         </div>
@@ -168,12 +168,12 @@ const AdminDashboard = () => {
                         <div className="relative">
                             <button 
                                 onClick={() => setShowNotifications(!showNotifications)}
-                                className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center relative transition-colors bg-[var(--bg-secondary)] border border-[var(--divider)] hover:border-[#F18B2420]"
+                                className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center relative transition-colors bg-[var(--bg-secondary)] border border-[var(--divider)] hover:border-[var(--brand-red)]/20"
                                 style={{ color: 'var(--text-primary)' }}
                             >
                                 <Bell size={20} />
                                 {orders.filter(o => o.status === 'pending' || o.status === 'paid').length > 0 && (
-                                    <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-[#F18B24] rounded-full border-2 border-[var(--bg-secondary)] animate-pulse" />
+                                    <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-[var(--brand-red)] rounded-full border-2 border-[var(--bg-secondary)] animate-pulse" />
                                 )}
                             </button>
 
@@ -190,7 +190,7 @@ const AdminDashboard = () => {
                                         >
                                             <div className="p-4 border-b border-[var(--divider)] flex justify-between items-center bg-[var(--bg-primary)]">
                                                 <p className="text-xs font-black uppercase tracking-widest">Recent Activity</p>
-                                                <button className="text-[10px] text-[#F18B24] font-bold">Mark all read</button>
+                                                <button className="text-[10px] text-[var(--brand-red)] font-bold">Mark all read</button>
                                             </div>
                                             <div className="max-h-[400px] overflow-y-auto no-scrollbar">
                                                 {orders.slice(0, 10).map((order) => (
@@ -200,7 +200,7 @@ const AdminDashboard = () => {
                                                         desc={`${order.buyerName} - ${order.productName}`} 
                                                         time={new Date(order.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 
                                                         icon={<ShoppingCart size={14}/>} 
-                                                        color={order.status === 'pending' || order.status === 'paid' ? "bg-orange-500" : "bg-blue-500"}
+                                                        color={order.status === 'pending' || order.status === 'paid' ? "bg-red-500" : "bg-blue-500"}
                                                         onClick={() => { setSelectedOrder(order); setShowNotifications(false); }}
                                                     />
                                                 ))}
@@ -222,11 +222,11 @@ const AdminDashboard = () => {
 
                         <div className="hidden lg:flex items-center gap-4 pl-6 ml-2" style={{ borderLeft: '1px solid var(--divider)' }}>
                             <div className="text-right">
-                                <p className="text-xs font-black uppercase">SR Admin</p>
-                                <p className="text-[10px] font-bold text-[var(--text-muted)]">hello@sellout.ng</p>
+                                <p className="text-xs font-black uppercase">UFL Admin</p>
+                                <p className="text-[10px] font-bold text-[var(--text-muted)]">info@uacfoodsng.com</p>
                             </div>
                             <div className="w-10 h-10 rounded-full border-2 shadow-sm bg-white flex items-center justify-center p-1.5 overflow-hidden" style={{ borderColor: 'var(--divider)' }}>
-                                <img src="/images/logo_nobg.png" className="w-full h-auto object-contain" alt="SR Logo" />
+                                <img src="/images/uac_logo.png" className="w-full h-auto object-contain" alt="UFL Logo" />
                             </div>
                         </div>
                     </div>
@@ -236,7 +236,7 @@ const AdminDashboard = () => {
                     <div className="flex-1 overflow-y-auto px-6 lg:px-10 pb-10 custom-scrollbar">
                         <div className="py-8">
                             <h2 className="text-2xl lg:text-4xl font-black font-heading tracking-tight capitalize">{activeTab}</h2>
-                            <p className="text-[var(--text-muted)] text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-1">SR-Cloud Management Portal</p>
+                            <p className="text-[var(--text-muted)] text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-1">UAC-Portal Management System</p>
                         </div>
                         <AnimatePresence mode="wait">
                             {activeTab === 'overview' && (
@@ -308,7 +308,7 @@ const AdminDashboard = () => {
                 {showSuccessModal && (
                     <SuccessMessage 
                         title="Listing Published!" 
-                        subtitle="Your new entry is now live on the SR-Cloud Gateway." 
+                        subtitle="Your new entry is now live on the UAC-Portal." 
                         onClose={() => setShowSuccessModal(false)} 
                     />
                 )}
@@ -383,7 +383,7 @@ const CustomDatePicker = ({ dateRange, setDateRange }) => {
     const DateButton = ({ value, onClick, label }) => (
         <button 
             onClick={onClick}
-            className="flex flex-col items-start bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-2 hover:border-[#F18B24] transition-all min-w-[140px]"
+            className="flex flex-col items-start bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-2 hover:border-[var(--brand-red)] transition-all min-w-[140px]"
         >
             <span className="text-[8px] font-black uppercase text-[var(--text-muted)] tracking-widest">{label}</span>
             <span className="text-[10px] font-black">{value || 'Select Date'}</span>
@@ -480,7 +480,7 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                 <StatCard title="Period Volume" value={`₦${stats.totalRevenue.toLocaleString()}`} trend="+12.5%" isPositive />
-                <StatCard title="SR Commission" value={`₦${stats.platformIncome.toLocaleString()}`} trend="+8.4%" isPositive isOrange />
+                <StatCard title="UAC Income" value={`₦${stats.platformIncome.toLocaleString()}`} trend="+8.4%" isPositive isRed />
                 <StatCard title="Active Listings" value={stats.totalProducts} trend="+3 New" />
                 <StatCard title="Fullfillment Rate" value={`${Math.round((stats.deliveredCount / total) * 100)}%`} trend="+0.5%" isPositive />
             </div>
@@ -499,7 +499,7 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
                             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                                 <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="opacity-10" />
                                 <circle 
-                                    cx="50" cy="50" r="45" fill="none" stroke="#F18B24" strokeWidth="8" 
+                                    cx="50" cy="50" r="45" fill="none" stroke="var(--brand-red)" strokeWidth="8" 
                                     strokeDasharray={`${(assistedDeliveryTotal / (stats.totalRevenue || 1)) * 283} 283`} 
                                     strokeLinecap="round" 
                                 />
@@ -517,7 +517,7 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
                         </div>
 
                         <div className="flex-1 w-full space-y-6">
-                            <ProgressRow label="Assisted Delivery" value={`₦${assistedDeliveryTotal.toLocaleString()}`} percentage={Math.round((assistedDeliveryTotal / (stats.totalRevenue || 1)) * 100)} color="#F18B24" />
+                            <ProgressRow label="Assisted Delivery" value={`₦${assistedDeliveryTotal.toLocaleString()}`} percentage={Math.round((assistedDeliveryTotal / (stats.totalRevenue || 1)) * 100)} color="var(--brand-red)" />
                             <ProgressRow label="Self-Arranged" value={`₦${selfPickupTotal.toLocaleString()}`} percentage={Math.round((selfPickupTotal / (stats.totalRevenue || 1)) * 100)} color="#10B981" />
                             <ProgressRow label="Escrow Margin" value={`₦${stats.platformIncome.toLocaleString()}`} percentage={Math.round((stats.platformIncome / (stats.totalRevenue || 1)) * 100)} color="#3B82F6" />
                         </div>
@@ -540,13 +540,13 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
 
                         <div className="flex justify-between items-center pt-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 rounded-full bg-[#F18B24]" />
+                                <div className="w-3 h-3 rounded-full bg-[var(--brand-red)]" />
                                 <span className="text-xs font-bold">In Transit</span>
                             </div>
                             <span className="text-xs font-black">{stats.transitCount}/{filteredOrders.length}</span>
                         </div>
                         <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.transitCount / total) * 100}%` }} className="h-full bg-[#F18B24]" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.transitCount / total) * 100}%` }} className="h-full bg-[var(--brand-red)]" />
                         </div>
 
                         <div className="flex justify-between items-center pt-4">
@@ -566,10 +566,10 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
     )
 }
 
-const StatCard = ({ title, value, trend, isPositive, isOrange }) => (
+const StatCard = ({ title, value, trend, isPositive, isRed }) => (
     <div className="rounded-[20px] p-6 shadow-sm transition-colors duration-500" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}>
         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">{title}</p>
-        <p className={`text-2xl font-black font-heading ${isOrange ? 'text-[#F18B24]' : ''}`}>{value}</p>
+        <p className={`text-2xl font-black font-heading ${isRed ? 'text-[var(--brand-red)]' : ''}`}>{value}</p>
         <div className={`mt-2 flex items-center gap-1 text-[10px] font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
             <TrendingUp size={12} className={!isPositive ? 'rotate-180' : ''} />
             {trend}
@@ -626,7 +626,7 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                             key={status}
                             onClick={() => setStatusFilter(status)}
                             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${statusFilter === status 
-                                ? 'bg-[#F18B24] text-white shadow-lg shadow-orange-500/20' 
+                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20' 
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {status}
@@ -636,8 +636,8 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
                     <button 
-                        onClick={() => onExport(filteredOrders, 'SR_Orders')}
-                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[#F18B24] transition-all shadow-sm"
+                        onClick={() => onExport(filteredOrders, 'UAC_Orders')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)] transition-all shadow-sm"
                     >
                         <Download size={14} /> Export Table
                     </button>
@@ -670,7 +670,7 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                                         <motion.tr
                                             key={order.id}
                                             onClick={() => onSelect(order)}
-                                            className={`group cursor-pointer transition-colors ${selectedId === order.id ? 'bg-[#F18B2408]' : 'hover:bg-[var(--bg-secondary)]'}`}
+                                            className={`group cursor-pointer transition-colors ${selectedId === order.id ? 'bg-[var(--brand-red)]/5' : 'hover:bg-[var(--bg-secondary)]'}`}
                                         >
                                             <td className="px-10 py-6">
                                                 <span className="text-xs font-black">#{order.id.slice(-6)}</span>
@@ -720,7 +720,7 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest mb-1">Total Amount</p>
-                                            <p className="text-sm font-black text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
+                                            <p className="text-sm font-black text-[var(--brand-red)]">₦{order.amount.toLocaleString()}</p>
                                         </div>
                                         <span className="text-[10px] font-bold text-[var(--text-muted)]">{new Date(order.date).toLocaleDateString()}</span>
                                     </div>
@@ -736,8 +736,8 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
 
 const StatusPill = ({ status }) => {
     const styles = {
-        pending: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500',
-        paid: 'bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-500',
+        pending: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-500',
+        paid: 'bg-[var(--brand-red)]/10 text-[var(--brand-red)] dark:bg-[var(--brand-red)]/20 dark:text-[var(--brand-red)]',
         confirmed: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-500',
         awaiting_delivery: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-500',
         shipped: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500',
@@ -809,11 +809,11 @@ const OrderInfoModal = ({ order, onClose }) => {
 
                 <div className="p-8 lg:p-10 space-y-10">
                     <div className="text-center">
-                        <div className="w-24 h-24 rounded-full bg-[#F18B24] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-orange-500/20">
-                            <img src="/images/logo_nobg.png" className="w-16 h-16 object-contain brightness-0 invert" alt="SR Logo" />
+                        <div className="w-24 h-24 rounded-full bg-[var(--brand-red)] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-[var(--brand-red)]/20">
+                            <img src="/images/uac_logo.png" className="w-16 h-16 object-contain brightness-0 invert" alt="UFL Logo" />
                         </div>
                         <h4 className="text-2xl font-black mb-1">{order.buyerName}</h4>
-                        <p className="text-xs font-bold mb-8 uppercase tracking-widest text-[#F18B24]">Verified Customer</p>
+                        <p className="text-xs font-bold mb-8 uppercase tracking-widest text-[var(--brand-red)]">Verified Customer</p>
 
                         <div className="flex justify-center gap-4">
                             <SocialAction icon={<Mail size={18} />} label="Email" />
@@ -829,7 +829,7 @@ const OrderInfoModal = ({ order, onClose }) => {
                                 <img src={order.productImage} className="w-12 h-12 rounded-lg object-cover" />
                                 <div>
                                     <p className="text-sm font-black truncate">{order.productName}</p>
-                                    <p className="text-xs font-bold text-[#F18B24]">₦{order.amount.toLocaleString()}</p>
+                                    <p className="text-xs font-bold text-[var(--brand-red)]">₦{order.amount.toLocaleString()}</p>
                                 </div>
                             </div>
                         </div>
@@ -860,8 +860,8 @@ const OrderInfoModal = ({ order, onClose }) => {
                                     key={item.s}
                                     onClick={() => handleUpdateStatus(item.s)}
                                     className={`py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${order.status === item.s 
-                                        ? 'bg-[#F18B24] text-white border-[#F18B24] shadow-lg shadow-orange-500/20' 
-                                        : 'border-[var(--divider)] text-[var(--text-muted)] hover:border-[#F18B24] hover:text-[#F18B24]'}`}
+                                        ? 'bg-[var(--brand-red)] text-white border-[var(--brand-red)] shadow-lg shadow-[var(--brand-red)]/20' 
+                                        : 'border-[var(--divider)] text-[var(--text-muted)] hover:border-[var(--brand-red)] hover:text-[var(--brand-red)]'}`}
                                 >
                                     {item.l}
                                 </button>
@@ -872,12 +872,12 @@ const OrderInfoModal = ({ order, onClose }) => {
                     <div className="p-6 rounded-2xl border space-y-6" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--divider)' }}>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <Truck size={16} className="text-[#F18B24]" />
+                                <Truck size={16} className="text-[var(--brand-red)]" />
                                 <h5 className="text-[10px] font-black uppercase tracking-widest">Guided Delivery Coordination</h5>
                             </div>
                             <button 
                                 onClick={() => setIsEditingLogistics(!isEditinglogistics)}
-                                className="text-[9px] font-black uppercase text-[#F18B24] hover:underline"
+                                className="text-[9px] font-black uppercase text-[var(--brand-red)] hover:underline"
                             >
                                 {isEditinglogistics ? 'Cancel' : 'Manage Logistics'}
                             </button>
@@ -893,7 +893,7 @@ const OrderInfoModal = ({ order, onClose }) => {
                                         className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
                                     >
                                         <option value="">Select Method</option>
-                                        <option value="assisted">SR Assisted Delivery</option>
+                                        <option value="assisted">UAC Logistics Fleet</option>
                                         <option value="self">Self-Arranged Delivery</option>
                                     </select>
                                 </div>
@@ -920,7 +920,7 @@ const OrderInfoModal = ({ order, onClose }) => {
                                 <div className="lg:col-span-2">
                                     <button 
                                         onClick={handleSaveLogistics}
-                                        className="w-full py-3 bg-[#F18B24] text-white rounded-xl text-[9px] font-black uppercase tracking-widest"
+                                        className="w-full py-3 bg-[var(--brand-red)] text-white rounded-xl text-[9px] font-black uppercase tracking-widest"
                                     >Update Logistics Info</button>
                                 </div>
                             </div>
@@ -928,9 +928,9 @@ const OrderInfoModal = ({ order, onClose }) => {
                             <div className="grid grid-cols-2 gap-6">
                                 <LogisticsCard 
                                     label="Mode" 
-                                    value={order.deliveryMethod === 'self' ? 'Self-arranged' : order.deliveryMethod === 'assisted' ? 'SR Assisted' : 'Not Selected'} 
+                                    value={order.deliveryMethod === 'self' ? 'Self-arranged' : order.deliveryMethod === 'assisted' ? 'UAC Direct' : 'Not Selected'} 
                                     icon={<Truck size={14} />} 
-                                    color="text-[#F18B24]" 
+                                    color="text-[var(--brand-red)]" 
                                 />
                                 <LogisticsCard 
                                     label="Delivery Fee" 
@@ -963,7 +963,7 @@ const OrderInfoModal = ({ order, onClose }) => {
 
 const SocialAction = ({ icon, label }) => (
     <div className="flex flex-col items-center gap-2">
-        <button className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border border-transparent hover:border-[#F18B2420] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[#F18B24] hover:bg-[var(--bg-primary)]">
+        <button className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border border-transparent hover:border-[var(--brand-red)]/20 bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--brand-red)] hover:bg-[var(--bg-primary)]">
             {icon}
         </button>
         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">{label}</span>
@@ -979,7 +979,7 @@ const LogisticsCard = ({ label, value, icon, color }) => (
     </div>
 );
 
-const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[#F18B24]', onClick }) => (
+const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[var(--brand-red)]', onClick }) => (
     <button
         onClick={onClick}
         className={`${full ? 'w-full' : ''} py-4 rounded-xl ${color} text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg transition-transform active:scale-95`}
@@ -991,7 +991,7 @@ const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[#F18B24]', onClick 
 const SecondaryBtn = ({ label, full, onClick }) => (
     <button 
         onClick={onClick}
-        className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--divider)] hover:border-[#F18B24]`} 
+        className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--divider)] hover:border-[var(--brand-red)]`} 
         style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}
     >
         {label}
@@ -1033,7 +1033,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
                             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat 
-                                ? 'bg-[#F18B24] text-white shadow-lg shadow-orange-500/20' 
+                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20' 
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {cat}
@@ -1043,12 +1043,12 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
                     <button 
-                        onClick={() => onExport(filteredProducts, 'SR_Products')}
-                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[#F18B24] transition-all"
+                        onClick={() => onExport(filteredProducts, 'UAC_Products')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)] transition-all"
                     >
                         <Download size={14} /> Export
                     </button>
-                    <button onClick={onAdd} className="px-8 py-4 rounded-xl bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 flex items-center gap-2 hover:scale-[1.02] transition-transform">
+                    <button onClick={onAdd} className="px-8 py-4 rounded-xl bg-[var(--brand-red)] text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[var(--brand-red)]/20 flex items-center gap-2 hover:scale-[1.02] transition-transform">
                         <Plus size={18} /> New Listing
                     </button>
                 </div>
@@ -1108,7 +1108,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                                                     <button 
                                                         onClick={() => onToggleStock(product)} 
                                                         title={product.status === 'out_of_stock' ? 'Mark as In Stock' : 'Mark as Out of Stock'}
-                                                        className={`p-2.5 rounded-lg transition-colors ${product.status === 'out_of_stock' ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-amber-500 hover:bg-amber-500/10'}`}
+                                                        className={`p-2.5 rounded-lg transition-colors ${product.status === 'out_of_stock' ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10'}`}
                                                     >
                                                         <Package size={16} />
                                                     </button>
@@ -1138,7 +1138,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                                                 <p className="text-sm font-black truncate">{product.name}</p>
                                                 <ProductPill status={product.status === 'out_of_stock' ? 'Out of Stock' : product.status === 'sold' ? 'Sold Out' : 'Active'} />
                                             </div>
-                                            <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[#F18B24]">{product.category}</p>
+                                            <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-[var(--brand-red)]">{product.category}</p>
                                             <p className="text-sm font-black mt-2">₦{product.price.toLocaleString()}</p>
                                         </div>
                                     </div>
@@ -1148,7 +1148,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                                             <button 
                                                 onClick={() => onToggleStock(product)} 
                                                 title={product.status === 'out_of_stock' ? 'Mark as In Stock' : 'Mark as Out of Stock'}
-                                                className={`p-3 rounded-xl border ${product.status === 'out_of_stock' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}
+                                                className={`p-3 rounded-xl border ${product.status === 'out_of_stock' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-[var(--brand-red)]/10 border-[var(--brand-red)]/20 text-[var(--brand-red)]'}`}
                                             >
                                                 <Package size={14} />
                                             </button>
@@ -1172,10 +1172,10 @@ const ProductPill = ({ status }) => {
     return (
         <span className="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit" 
               style={{ 
-                  background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : isOut ? 'rgba(239, 68, 68, 0.1)' : 'rgba(241, 139, 36, 0.1)', 
-                  color: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#F18B24' 
+                  background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : isOut ? 'rgba(239, 68, 68, 0.1)' : 'rgba(192, 57, 43, 0.1)', 
+                  color: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#C0392B' 
               }}>
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#F18B24' }} />
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#C0392B' }} />
             {status}
         </span>
     )
@@ -1231,7 +1231,7 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
                             key={status}
                             onClick={() => setLedgerFilter(status)}
                             className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${ledgerFilter === status 
-                                ? 'bg-[#F18B24] text-white shadow-lg shadow-orange-500/20' 
+                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20' 
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {status}
@@ -1241,8 +1241,8 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
                     <button
-                        onClick={() => onExport(confirmedOrders, 'SR_Ledger')}
-                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[#F18B24] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
+                        onClick={() => onExport(confirmedOrders, 'UAC_Ledger')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--brand-red)] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-[var(--brand-red)]/20"
                     >
                         <Download size={14} /> Export CSV Report
                     </button>
@@ -1263,7 +1263,7 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
                             <tr className="border-b" style={{ borderColor: 'var(--divider)', background: 'var(--bg-secondary)' }}>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Order ID</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Product</th>
-                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[#F18B24]" style={{ color: 'var(--text-muted)' }}>Seller Payable</th>
+                                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-[var(--brand-red)]" style={{ color: 'var(--text-muted)' }}>Seller Payable</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-emerald-500" style={{ color: 'var(--text-muted)' }}>Platform Income</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Status</th>
                                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-right" style={{ color: 'var(--text-muted)' }}>Date</th>
@@ -1283,9 +1283,9 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
                                             <td className="px-6 py-4 font-mono text-[10px] font-bold">#{order.id.slice(-8)}</td>
                                             <td className="px-6 py-4">
                                                 <div className="text-xs font-black">{order.productName}</div>
-                                                <div className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{order.sellerName || 'S&R Seller'}</div>
+                                                <div className="text-[10px] font-bold" style={{ color: 'var(--text-muted)' }}>{order.sellerName || 'UFL Seller'}</div>
                                             </td>
-                                            <td className="px-6 py-4 text-[11px] font-black text-[#F18B24]">₦{sellerPayout.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-[11px] font-black text-[var(--brand-red)]">₦{sellerPayout.toLocaleString()}</td>
                                             <td className="px-6 py-4 text-[11px] font-black text-emerald-500">₦{fee.toLocaleString()}</td>
                                             <td className="px-6 py-4">
                                                 <StatusPill status={order.status} />
@@ -1315,8 +1315,8 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 pt-2">
                                     <div>
-                                        <p className="text-[9px] font-black uppercase text-[#F18B24] mb-1">Seller Payable</p>
-                                        <p className="text-xs font-black text-[#F18B24]">₦{payout.toLocaleString()}</p>
+                                        <p className="text-[9px] font-black uppercase text-[var(--brand-red)] mb-1">Seller Payable</p>
+                                        <p className="text-xs font-black text-[var(--brand-red)]">₦{payout.toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-black uppercase text-emerald-500 mb-1">Platform Income</p>
@@ -1338,7 +1338,7 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
             </div>
 
             <div className="p-8 rounded-3xl border border-dashed text-center space-y-3" style={{ borderColor: 'var(--divider)' }}>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#F18B24]">Platform Disclosure & Compliance</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--brand-red)]">Platform Disclosure & Compliance</p>
                 <p className="text-xs font-bold leading-relaxed max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
                     Transactions are processed through verified gateways. Platform income facilitates 
                     human-assisted inspection and verified delivery logistics.
@@ -1356,7 +1356,7 @@ const NotificationItem = ({ title, desc, time, icon, color, onClick }) => (
         <div className="flex-1 min-w-0">
             <p className="text-[11px] font-black truncate">{title}</p>
             <p className="text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{desc}</p>
-            <p className="text-[9px] text-[#F18B24] font-black mt-2 uppercase tracking-widest">{time}</p>
+            <p className="text-[9px] text-[var(--brand-red)] font-black mt-2 uppercase tracking-widest">{time}</p>
         </div>
     </div>
 )
@@ -1369,7 +1369,7 @@ const LogoutModal = ({ onConfirm, onCancel }) => (
             </div>
             <div>
                 <h3 className="text-xl font-black mb-2">Terminate Session?</h3>
-                <p className="text-xs font-bold text-[var(--text-muted)] leading-relaxed">You will be logged out of the SR-Cloud administrator panel.</p>
+                <p className="text-xs font-bold text-[var(--text-muted)] leading-relaxed">You will be logged out of the UAC Portal administrator panel.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <button onClick={onCancel} className="py-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-[var(--bg-secondary)]" style={{ color: 'var(--text-muted)' }}>Stay logged in</button>
@@ -1422,8 +1422,8 @@ const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport })
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
                 <button 
-                    onClick={() => onExport(customers, 'SR_Customers')}
-                    className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[#F18B24] transition-all shadow-sm"
+                    onClick={() => onExport(customers, 'UAC_Customers')}
+                    className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)] transition-all shadow-sm"
                 >
                     <Download size={14} /> Export Customers
                 </button>
@@ -1453,7 +1453,7 @@ const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport })
                                         <tr key={i} onClick={() => onInfo(c)} className="group hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
                                             <td className="px-10 py-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
+                                                    <div className="w-10 h-10 rounded-full bg-[var(--brand-red)]/10 text-[var(--brand-red)] flex items-center justify-center text-xs font-black">
                                                         {c.name.charAt(0)}
                                                     </div>
                                                     <span className="text-xs font-black">{c.name}</span>
@@ -1464,7 +1464,7 @@ const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport })
                                                 <p className="text-[10px] text-[var(--text-muted)] mt-1">{c.phone}</p>
                                             </td>
                                             <td className="px-10 py-6">
-                                                <span className="text-[10px] font-black uppercase bg-[#F18B24]/10 text-[#F18B24] px-3 py-1 rounded-full">{c.orders} Orders</span>
+                                                <span className="text-[10px] font-black uppercase bg-[var(--brand-red)]/10 text-[var(--brand-red)] px-3 py-1 rounded-full">{c.orders} Orders</span>
                                             </td>
                                             <td className="px-10 py-6 text-right">
                                                 <span className="text-xs font-black">₦{c.spend.toLocaleString()}</span>
@@ -1480,14 +1480,14 @@ const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport })
                             {customers.map((c, i) => (
                                 <div key={i} onClick={() => onInfo(c)} className="p-6 space-y-4 active:bg-[var(--bg-secondary)] cursor-pointer transition-colors">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-sm font-black shrink-0">
+                                        <div className="w-12 h-12 rounded-full bg-[var(--brand-red)]/10 text-[var(--brand-red)] flex items-center justify-center text-sm font-black shrink-0">
                                             {c.name.charAt(0)}
                                         </div>
                                         <div className="flex-1">
                                             <p className="text-sm font-black">{c.name}</p>
                                             <p className="text-[11px] font-bold mt-0.5" style={{ color: 'var(--text-muted)' }}>{c.email}</p>
                                         </div>
-                                        <span className="text-[10px] font-black uppercase text-[#F18B24]">{c.orders} Orders</span>
+                                        <span className="text-[10px] font-black uppercase text-[var(--brand-red)]">{c.orders} Orders</span>
                                     </div>
                                     <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--divider)]">
                                         <div className="flex items-center gap-2">
@@ -1546,8 +1546,8 @@ const StatsTab = ({ dateRange, setDateRange, onExport }) => {
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
                     <button 
-                        onClick={() => onExport(filteredOrders, 'SR_Stats_Orders')}
-                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[#F18B24] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-orange-500/20"
+                        onClick={() => onExport(filteredOrders, 'UAC_Stats_Orders')}
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--brand-red)] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-[var(--brand-red)]/20"
                     >
                         <Download size={14} /> Comprehensive Sheet
                     </button>
@@ -1563,7 +1563,7 @@ const StatsTab = ({ dateRange, setDateRange, onExport }) => {
                                 key={cat}
                                 label={cat} 
                                 percentage={Math.round((val / totalRevenue) * 100)} 
-                                color={['#F18B24', '#3B82F6', '#10B981', '#A855F7', '#F43F5E'][i % 5]} 
+                                color={['#C0392B', '#3B82F6', '#10B981', '#A855F7', '#F43F5E'][i % 5]} 
                                 value={`₦${val.toLocaleString()}`} 
                             />
                         ))}
@@ -1592,7 +1592,7 @@ const StatsTab = ({ dateRange, setDateRange, onExport }) => {
                                         initial={{ height: 0 }} 
                                         animate={{ height: `${height}%` }} 
                                         transition={{ delay: i * 0.1 }}
-                                        className="flex-1 bg-[#F18B24] rounded-t-lg opacity-80 hover:opacity-100 relative group"
+                                        className="flex-1 bg-[var(--brand-red)] rounded-t-lg opacity-80 hover:opacity-100 relative group"
                                     >
                                         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                             ₦{Math.round(volume / 1000)}k
@@ -1622,25 +1622,25 @@ const SettingsTab = () => {
 
             <div className="space-y-8">
                 <section className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#F18B24]">Store Identity</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--brand-red)]">Store Identity</h3>
                     <div className="grid gap-4">
                         <div className="p-6 rounded-2xl bg-[var(--bg-primary)] border" style={{ borderColor: 'var(--divider)' }}>
                             <label className="block text-[10px] font-black uppercase mb-2">Store Name</label>
-                            <input readOnly value="Sellout & Relocate" className="w-full bg-transparent outline-none text-xs font-bold" />
+                            <input readOnly value="UAC Foods Limited" className="w-full bg-transparent outline-none text-xs font-bold" />
                         </div>
                         <div className="p-6 rounded-2xl bg-[var(--bg-primary)] border" style={{ borderColor: 'var(--divider)' }}>
                             <label className="block text-[10px] font-black uppercase mb-2">Support Email</label>
-                            <input readOnly value="hello@sellout.ng" className="w-full bg-transparent outline-none text-xs font-bold" />
+                            <input readOnly value="info@uacfoodsng.com" className="w-full bg-transparent outline-none text-xs font-bold" />
                         </div>
                     </div>
                 </section>
 
                 <section className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#F18B24]">Commission Strategy</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--brand-red)]">Commission Strategy</h3>
                     <div className="p-6 rounded-2xl bg-[var(--bg-primary)] border flex justify-between items-center" style={{ borderColor: 'var(--divider)' }}>
                         <div>
                             <p className="text-xs font-black">Fixed Platform Fee</p>
-                            <p className="text-[10px] text-[var(--text-muted)] mt-1">Unified commission for all relocation sales.</p>
+                            <p className="text-[10px] text-[var(--text-muted)] mt-1">Unified commission for all UFL sales.</p>
                         </div>
                         <span className="text-xl font-black">10%</span>
                     </div>
@@ -1685,8 +1685,8 @@ const CustomerInfoModal = ({ customer, onClose }) => {
             >
                 <div className="p-8 border-b flex items-center justify-between sticky top-0 z-10" style={{ borderColor: 'var(--divider)', background: 'var(--bg-primary)' }}>
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#F18B24]/10 text-[#F18B24] flex items-center justify-center text-xs font-black">
-                            <img src="/images/logo_nobg.png" className="w-6 h-6 object-contain" alt="" />
+                        <div className="w-8 h-8 rounded-lg bg-[var(--brand-red)]/10 text-[var(--brand-red)] flex items-center justify-center text-xs font-black">
+                            <img src="/images/uac_logo.png" className="w-6 h-6 object-contain" alt="" />
                         </div>
                         <h3 className="text-xl font-black">Customer Profile</h3>
                     </div>
@@ -1697,8 +1697,8 @@ const CustomerInfoModal = ({ customer, onClose }) => {
 
                 <div className="p-8 lg:p-10 space-y-10">
                     <div className="text-center">
-                        <div className="w-24 h-24 rounded-full bg-[#F18B24] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-orange-500/20">
-                            <img src="/images/logo_nobg.png" alt="SR" className="w-full h-full object-contain" />
+                        <div className="w-24 h-24 rounded-full bg-[var(--brand-red)] text-white flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-xl shadow-[var(--brand-red)]/20">
+                            <img src="/images/uac_logo.png" alt="SR" className="w-full h-full object-contain" />
                         </div>
                         <h4 className="text-2xl font-black mb-1">{customer.name}</h4>
                         <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{customer.email}</p>
@@ -1707,7 +1707,7 @@ const CustomerInfoModal = ({ customer, onClose }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--divider)]">
                             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Total Activity</p>
-                            <p className="text-xl font-black text-[#F18B24]">{customer.orders} Orders</p>
+                            <p className="text-xl font-black text-[var(--brand-red)]">{customer.orders} Orders</p>
                         </div>
                         <div className="p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--divider)]">
                             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Customer Value</p>
@@ -1719,18 +1719,18 @@ const CustomerInfoModal = ({ customer, onClose }) => {
                         <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">Contact Information</h5>
                         <div className="space-y-4">
                             <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-secondary)]">
-                                <Mail size={16} className="text-[#F18B24]" />
+                                <Mail size={16} className="text-[var(--brand-red)]" />
                                 <p className="text-sm font-bold">{customer.email}</p>
                             </div>
                             <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-secondary)]">
-                                <Phone size={16} className="text-[#F18B24]" />
+                                <Phone size={16} className="text-[var(--brand-red)]" />
                                 <p className="text-sm font-bold">{customer.phone}</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="pt-4 flex gap-4">
-                        <button className="flex-1 py-4 rounded-xl bg-black dark:bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-widest shadow-lg">View Order History</button>
+                        <button className="flex-1 py-4 rounded-xl bg-black dark:bg-[var(--brand-red)] text-white text-[10px] font-black uppercase tracking-widest shadow-lg">View Order History</button>
                         <button onClick={onClose} className="px-8 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest border border-[var(--divider)]" style={{ color: 'var(--text-muted)' }}>Close</button>
                     </div>
                 </div>
@@ -1749,19 +1749,19 @@ const FinancialCard = ({ title, value, isSuccess, isIndigo }) => (
 const ProductInfoModal = ({ product, onClose, onEdit }) => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="p-8 rounded-[24px] w-full max-w-xl relative overflow-hidden" style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }} onClick={e => e.stopPropagation()}>
-            <button onClick={onClose} className="absolute top-6 right-6 text-[var(--text-muted)] hover:text-[#F18B24] transition-colors"><X size={20} /></button>
+            <button onClick={onClose} className="absolute top-6 right-6 text-[var(--text-muted)] hover:text-[var(--brand-red)] transition-colors"><X size={20} /></button>
             <div className="flex flex-col md:flex-row gap-8">
                 <img src={product.image} className="w-full md:w-48 h-48 rounded-2xl object-cover shadow-sm border" style={{ borderColor: 'var(--divider)' }} alt="" />
                 <div className="flex-1 space-y-4">
                     <div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-[#F18B24]">{product.category}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-red)]">{product.category}</span>
                         <h3 className="text-2xl font-black mt-1 leading-tight">{product.name}</h3>
                         <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mt-2 flex items-center gap-2"><MapPin size={12} /> {product.location}</p>
                     </div>
                     <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border space-y-2" style={{ borderColor: 'var(--divider)' }}>
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
                             <span>Listing Price</span>
-                            <span className="text-[#F18B24]">₦{product.price.toLocaleString()}</span>
+                            <span className="text-[var(--brand-red)]">₦{product.price.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
                             <span>Seller Payout</span>
@@ -1781,7 +1781,7 @@ const ProductInfoModal = ({ product, onClose, onEdit }) => (
                     <div className="flex gap-4 pt-4">
                         <button 
                             onClick={() => { onEdit(product); onClose(); }}
-                            className="flex-1 py-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[10px] font-black uppercase tracking-widest hover:border-[#F18B2420] transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)]/20 transition-all flex items-center justify-center gap-2"
                         >
                             <Edit3 size={14} /> Edit Listing
                         </button>
@@ -1922,7 +1922,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                 <button 
                                     type="button"
                                     onClick={() => setIsAddingCategory(!isAddingCategory)}
-                                    className="text-[9px] font-black uppercase text-[#F18B24] hover:underline"
+                                    className="text-[9px] font-black uppercase text-[var(--brand-red)] hover:underline"
                                 >
                                     {isAddingCategory ? 'Select Existing' : '+ Create New'}
                                 </button>
@@ -1965,7 +1965,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                 {form.images.map((img, i) => (
                                     <div key={i} className="relative group aspect-square">
                                         {img ? (
-                                            <div className="w-full h-full rounded-2xl overflow-hidden border-2 relative" style={{ borderColor: i === 0 ? '#F18B24' : 'var(--divider)' }}>
+                                            <div className="w-full h-full rounded-2xl overflow-hidden border-2 relative" style={{ borderColor: i === 0 ? 'var(--brand-red)' : 'var(--divider)' }}>
                                                 <img src={img} alt="" className="w-full h-full object-cover" />
                                                 <button 
                                                     type="button"
@@ -1975,12 +1975,12 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                                     <X size={12} />
                                                 </button>
                                                 {i === 0 && (
-                                                    <div className="absolute top-2 left-2 bg-[#F18B24] text-white text-[8px] font-black px-2 py-1 rounded-full uppercase">Primary</div>
+                                                    <div className="absolute top-2 left-2 bg-[var(--brand-red)] text-white text-[8px] font-black px-2 py-1 rounded-full uppercase">Primary</div>
                                                 )}
                                             </div>
                                         ) : (
                                             <label 
-                                                className="w-full h-full rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[#F18B24] transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer group-hover:bg-[var(--bg-secondary)]"
+                                                className="w-full h-full rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[var(--brand-red)] transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer group-hover:bg-[var(--bg-secondary)]"
                                                 onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
                                                 onDrop={e => {
                                                     e.preventDefault();
@@ -1990,7 +1990,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                                     }
                                                 }}
                                             >
-                                                <Upload size={20} className="text-[var(--text-muted)] group-hover:text-[#F18B24] transition-colors" />
+                                                <Upload size={20} className="text-[var(--text-muted)] group-hover:text-[var(--brand-red)] transition-colors" />
                                                 <span className="text-[8px] lg:text-[10px] font-bold text-[var(--text-muted)]">Upload</span>
                                                 <input
                                                     type="file"
@@ -2006,7 +2006,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                     <button 
                                         type="button" 
                                         onClick={() => setForm({...form, images: [...form.images, '']})}
-                                        className="aspect-square rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[#F18B24] flex flex-col items-center justify-center gap-2 transition-all hover:bg-[var(--bg-secondary)]"
+                                        className="aspect-square rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[var(--brand-red)] flex flex-col items-center justify-center gap-2 transition-all hover:bg-[var(--bg-secondary)]"
                                     >
                                         <Plus size={20} className="text-[var(--text-muted)]" />
                                         <span className="text-[8px] lg:text-[10px] font-bold">Add Slot</span>
@@ -2030,7 +2030,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                     <button 
                         type="submit" 
                         disabled={isSubmitting}
-                        className={`w-full py-4 lg:py-5 rounded-xl bg-black dark:bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
+                        className={`w-full py-4 lg:py-5 rounded-xl bg-black dark:bg-[var(--brand-red)] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
                     >
                         {isSubmitting ? (isEdit ? 'Updating...' : 'Adding Listing...') : (isEdit ? 'Update Listing' : 'Add Listing')}
                     </button>
@@ -2046,11 +2046,11 @@ const SuccessMessage = ({ title, subtitle, onClose }) => (
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
-            className="bg-[var(--bg-primary)] border border-[#F18B24] p-8 rounded-[32px] shadow-2xl flex flex-col items-center text-center max-w-sm mx-4 pointer-events-auto"
-            style={{ boxShadow: '0 20px 50px rgba(241, 139, 36, 0.15)' }}
+            className="bg-[var(--bg-primary)] border border-[var(--brand-red)] p-8 rounded-[32px] shadow-2xl flex flex-col items-center text-center max-w-sm mx-4 pointer-events-auto"
+            style={{ boxShadow: '0 20px 50px rgba(192, 57, 43, 0.15)' }}
         >
-            <div className="w-20 h-20 bg-[#F18B2410] rounded-full flex items-center justify-center mb-6 border border-[#F18B2420]">
-                <CheckCircle2 size={40} className="text-[#F18B24]" />
+            <div className="w-20 h-20 bg-[var(--brand-red)]/10 rounded-full flex items-center justify-center mb-6 border border-[var(--brand-red)]/20">
+                <CheckCircle2 size={40} className="text-[var(--brand-red)]" />
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
             <p className="text-xs font-bold leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>

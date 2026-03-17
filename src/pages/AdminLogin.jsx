@@ -40,7 +40,7 @@ const AdminLogin = () => {
         <div className="min-h-screen flex items-center justify-center p-4 bg-[#0F1115]">
             {/* Background elements */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#F18B2410] blur-[120px]" />
+                <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[var(--brand-red)]/5 blur-[120px]" />
                 <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#3B82F608] blur-[120px]" />
             </div>
 
@@ -50,8 +50,8 @@ const AdminLogin = () => {
                 className="w-full max-w-md relative z-10"
             >
                 <div className="text-center mb-10">
-                    <img src="/images/logo_nobg.png" alt="Logo" className="h-20 mx-auto mb-6 brightness-0 invert" />
-                    <h1 className="text-3xl font-black text-white tracking-tight mb-2 uppercase">Sellout Admin Portal</h1>
+                    <img src="/images/uac_logo.png" alt="Logo" className="h-16 mx-auto mb-6 brightness-0 invert" />
+                    <h1 className="text-3xl font-black text-white tracking-tight mb-2 uppercase">UAC Portal</h1>
                     <p className="text-white/40 text-xs font-bold uppercase tracking-[0.2em]">Authorized Access Only</p>
                 </div>
 
@@ -70,14 +70,14 @@ const AdminLogin = () => {
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-white/40 ml-1">Admin Email</label>
                             <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#F18B24] transition-colors" size={18} />
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[var(--brand-red)] transition-colors" size={18} />
                                 <input 
                                     required
                                     type="email" 
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="admin@sellout.ng"
-                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm font-bold outline-none focus:border-[#F18B24] focus:ring-1 focus:ring-[#F18B24] transition-all autofill:bg-transparent"
+                                    placeholder="admin@uacfoodsng.com"
+                                    className="w-full bg-white/[0.05] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-sm font-bold outline-none focus:border-[var(--brand-red)] focus:ring-1 focus:ring-[var(--brand-red)] transition-all autofill:bg-transparent"
                                     style={{
                                         WebkitBoxShadow: '0 0 0 1000px #1a1c20 inset',
                                         WebkitTextFillColor: 'white'
@@ -115,7 +115,7 @@ const AdminLogin = () => {
                         <button 
                             disabled={loading}
                             type="submit"
-                            className="w-full py-4 rounded-2xl bg-[#F18B24] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:hover:scale-100"
+                            className="w-full py-4 rounded-2xl bg-[var(--brand-red)] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-[var(--brand-red)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:hover:scale-100"
                         >
                             {loading ? (
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

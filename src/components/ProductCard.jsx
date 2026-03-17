@@ -20,7 +20,7 @@ const ProductCard = ({ product }) => {
             style: {
                 background: 'var(--bg-primary, #fff)',
                 color: 'var(--text-primary, #111)',
-                border: '1px solid #F18B24',
+                border: '1px solid var(--brand-red)',
                 fontWeight: 'bold',
                 borderRadius: '16px',
                 fontSize: '13px',
@@ -52,7 +52,7 @@ const ProductCard = ({ product }) => {
                 {/* Status Overlays */}
                 <div className="absolute top-4 left-4 z-20">
                     {isReserved && !isSold && (
-                        <span className="bg-[#F18B24] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
+                        <span className="bg-[var(--brand-red)] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg">
                             Reserved
                         </span>
                     )}
@@ -105,8 +105,8 @@ const ProductCard = ({ product }) => {
                     <h3 className={`text-sm font-bold tracking-tight leading-tight ${isSold ? 'text-gray-400 line-through' : 'text-[var(--text-primary)]'}`}>
                         {product.name}
                     </h3>
-                    <p className={`text-sm font-black ${isSold ? 'text-gray-300' : 'text-[#F18B24]'}`}>
-                        ₦{(product.price / 1000).toFixed(0)}k
+                    <p className={`text-sm font-black ${isSold ? 'text-gray-300' : 'text-[var(--brand-red)]'}`}>
+                        ₦{product.price.toLocaleString()}
                     </p>
                 </div>
                 <div className="flex justify-between items-center mb-1">
@@ -114,13 +114,13 @@ const ProductCard = ({ product }) => {
                         {product.category}
                     </span>
                     <span className="text-[10px] text-[var(--text-muted)] italic">
-                        {product.location.split(',')[0]}
+                        {product.location ? product.location.split(',')[0] : "Ikeja, Lagos"}
                     </span>
                 </div>
                 <div className="flex items-center gap-1.5 py-2 px-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--divider)]">
-                    <Clock size={10} className="text-[#F18B24]" />
+                    <Clock size={10} className="text-[var(--brand-red)]" />
                     <span className="text-[9px] font-black uppercase tracking-wider text-[var(--text-primary)]">
-                        {product.delivery_timeframe || "2-3 Working Days"}
+                        {product.delivery_timeframe || "24-48 Hours Tracking"}
                     </span>
                 </div>
             </div>

@@ -36,35 +36,16 @@ export const StoreProvider = ({ children }) => {
         const fetchData = async () => {
             setLoading(true)
             
-            // Ensure Supabase is initialized
+            // NOTE: For UAC Demo, we use INITIAL_PRODUCTS to ensure official branding
+            setProducts(INITIAL_PRODUCTS);
+
             if (!supabase.supabaseUrl) {
-                console.warn('Supabase URL not found. Ensure VITE_SUPABASE_URL is set in .env');
-                setProducts(INITIAL_PRODUCTS);
                 setLoading(false);
                 return;
             }
 
             try {
-                // Fetch Products
-                const { data: dbProducts, error: pError } = await supabase
-                    .from('products')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-
-                if (pError) throw pError
-                
-                if (dbProducts && dbProducts.length > 0) {
-                    setProducts(dbProducts.map(p => ({
-                        ...p,
-                        sellerPrice: p.seller_price,
-                        sellerName: p.seller_name,
-                        isReserved: p.is_reserved || false
-                    })))
-                } else {
-                    setProducts([]) // Start with empty if no DB products
-                }
-
-                // Fetch Orders
+                // We still fetch orders to keep the admin functionality working
                 const { data: dbOrders, error: oError } = await supabase
                     .from('orders')
                     .select('*')
@@ -86,42 +67,8 @@ export const StoreProvider = ({ children }) => {
                     sellerAgreedPrice: o.seller_agreed_price
                 })))
 
-                // Setup Real-time Subscriptions
-                const productSubscription = supabase
-                    .channel('public:products')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-                        console.log('Product change detected:', payload)
-                        fetchData() // Refresh everything or specifically update products
-                    })
-                    .subscribe()
-
-                const orderSubscription = supabase
-                    .channel('public:orders')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-                        console.log('Order change detected:', payload)
-                        fetchData() // Refresh everything or specifically update orders
-                    })
-                    .subscribe()
-
-                return () => {
-                    supabase.removeChannel(productSubscription)
-                    supabase.removeChannel(orderSubscription)
-                }
-
             } catch (err) {
                 console.error('Supabase fetch error:', err)
-                // Fallback to localStorage if Supabase fails
-                const savedProducts = localStorage.getItem('sr_products')
-                const savedOrders = localStorage.getItem('sr_orders')
-                if (savedProducts) {
-                    const local = JSON.parse(savedProducts)
-                    setProducts(local.map(p => {
-                        const initial = INITIAL_PRODUCTS.find(i => i.id === p.id);
-                        return (p.id === 'prod-002' || p.id === 'prod-006') ? { ...p, image: initial.image } : p;
-                    }))
-                }
-                else setProducts(INITIAL_PRODUCTS)
-                if (savedOrders) setOrders(JSON.parse(savedOrders))
             } finally {
                 setLoading(false)
             }

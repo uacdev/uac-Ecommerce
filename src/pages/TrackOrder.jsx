@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Package, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Mail, Hash, ChevronLeft } from 'lucide-react'
+import { Search, Package, MapPin, Calendar, Clock, ArrowRight, ShieldCheck, Mail, Hash, ChevronLeft, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useStore } from '../context/StoreContext'
 import { Link, useNavigate } from 'react-router-dom'
@@ -36,10 +36,10 @@ const TrackOrder = () => {
 
     const steps = [
         { id: 'pending', label: 'Processing', desc: 'Awaiting payment verification' },
-        { id: 'paid', label: 'Payment Received', desc: 'Securely held in escrow' },
+        { id: 'paid', label: 'Payment Received', desc: 'Order confirmed' },
         { id: 'shipped', label: 'In Transit', desc: 'Out for delivery' },
         { id: 'delivered', label: 'Arrived', desc: 'Item reached destination' },
-        { id: 'completed', label: 'Settled', desc: 'Funds released to seller' }
+        { id: 'completed', label: 'Settled', desc: 'Order completed' }
     ]
 
     const getStatusIndex = (status) => {
@@ -51,7 +51,7 @@ const TrackOrder = () => {
         <div className="pt-48 pb-20 container max-w-4xl min-h-screen">
             <button 
                 onClick={() => navigate('/')}
-                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] mb-12 transition-colors hover:text-[var(--brand-orange)]"
+                className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] mb-12 transition-colors hover:text-[var(--brand-red)]"
                 style={{ color: 'var(--text-muted)' }}
             >
                 <ChevronLeft size={16} /> Back to Shop
@@ -61,12 +61,12 @@ const TrackOrder = () => {
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="w-16 h-16 rounded-3xl bg-[#F18B2410] flex items-center justify-center mx-auto mb-6 border border-[#F18B2420]"
+                    className="w-16 h-16 rounded-3xl bg-[var(--brand-red)]/10 flex items-center justify-center mx-auto mb-6 border border-[var(--brand-red)]/20"
                 >
-                    <Package className="text-[#F18B24]" size={32} />
+                    <Package className="text-[var(--brand-red)]" size={32} />
                 </motion.div>
                 <h1 className="text-4xl md:text-5xl font-black font-heading mb-4 tracking-tighter" style={{ color: 'var(--text-primary)' }}>Track Your Order</h1>
-                <p className="max-w-md mx-auto" style={{ color: 'var(--text-muted)' }}>Enter your order details to see real-time updates from Sellout Cloud Logistics.</p>
+                <p className="max-w-md mx-auto" style={{ color: 'var(--text-muted)' }}>Enter your order details to see real-time updates from UAC Portal Logistics.</p>
             </div>
 
             {!foundOrder ? (
@@ -83,10 +83,10 @@ const TrackOrder = () => {
                                 <input 
                                     required
                                     type="text" 
-                                    placeholder="SR-2026-XXXX" 
+                                    placeholder="UAC-2026-XXXX" 
                                     value={orderId}
                                     onChange={e => setOrderId(e.target.value)}
-                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl pl-12 pr-4 py-4 text-sm font-bold outline-none focus:border-[#F18B24] transition-all"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl pl-12 pr-4 py-4 text-sm font-bold outline-none focus:border-[var(--brand-red)] transition-all"
                                     style={{ color: 'var(--text-primary)' }}
                                 />
                             </div>
@@ -102,7 +102,7 @@ const TrackOrder = () => {
                                     placeholder="your@email.com" 
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
-                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl pl-12 pr-4 py-4 text-sm font-bold outline-none focus:border-[#F18B24] transition-all"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl pl-12 pr-4 py-4 text-sm font-bold outline-none focus:border-[var(--brand-red)] transition-all"
                                     style={{ color: 'var(--text-primary)' }}
                                 />
                             </div>
@@ -112,7 +112,7 @@ const TrackOrder = () => {
 
                         <button 
                             disabled={searching}
-                            className="w-full btn-primary py-5 rounded-xl shadow-xl shadow-orange-500/10 flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                            className="w-full btn-primary py-5 rounded-xl shadow-xl shadow-[var(--brand-red)]/10 flex items-center justify-center gap-3 active:scale-95 transition-transform"
                         >
                             {searching ? (
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
@@ -126,7 +126,7 @@ const TrackOrder = () => {
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
                     {/* Order Status Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="glass p-6 border-l-4 border-l-[#F18B24]">
+                        <div className="glass p-6 border-l-4 border-l-[var(--brand-red)]">
                             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Item Purchase</p>
                             <p className="text-sm font-black truncate" style={{ color: 'var(--text-primary)' }}>{foundOrder.productName}</p>
                         </div>
@@ -142,16 +142,16 @@ const TrackOrder = () => {
 
                     {/* Detailed Logistics Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="glass p-8 md:p-10 transition-all hover:border-[#F18B24]">
+                        <div className="glass p-8 md:p-10 transition-all hover:border-[var(--brand-red)]">
                             <h3 className="text-lg font-black mb-10 flex items-center gap-3">
-                                <Clock className="text-[#F18B24]" />
+                                <Clock className="text-[var(--brand-red)]" />
                                 Logistics Timeline
                             </h3>
                             
                             <div className="relative">
                                 {/* Connector Line */}
                                 <div className="absolute left-[11px] top-0 bottom-0 w-[2px] bg-[var(--divider)] -translate-x-1/2" />
-                                <div className="absolute left-[11px] top-0 w-[2px] bg-[#F18B24] transition-all duration-1000 -translate-x-1/2" style={{ height: `${(getStatusIndex(foundOrder.status) / (steps.length - 1)) * 100}%` }} />
+                                <div className="absolute left-[11px] top-0 w-[2px] bg-[var(--brand-red)] transition-all duration-1000 -translate-x-1/2" style={{ height: `${(getStatusIndex(foundOrder.status) / (steps.length - 1)) * 100}%` }} />
 
                                 <div className="space-y-12">
                                     {steps.map((step, idx) => {
@@ -161,12 +161,12 @@ const TrackOrder = () => {
                                         return (
                                             <div key={idx} className="relative flex items-center">
                                                 {/* dot */}
-                                                <div className={`absolute left-0 w-6 h-6 rounded-full border-4 -translate-x-[7px] z-10 transition-colors duration-500 ${isActive ? 'bg-[#F18B24] border-[#F18B2430]' : 'bg-[var(--bg-secondary)] border-[var(--divider)]'}`}>
-                                                    {isLastActive && <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="w-full h-full rounded-full bg-[#F18B2440]" />}
+                                                <div className={`absolute left-0 w-6 h-6 rounded-full border-4 -translate-x-[7px] z-10 transition-colors duration-500 ${isActive ? 'bg-[var(--brand-red)] border-[var(--brand-red)]/30' : 'bg-[var(--bg-secondary)] border-[var(--divider)]'}`}>
+                                                    {isLastActive && <motion.div animate={{ scale: [1, 1.5, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="w-full h-full rounded-full bg-[var(--brand-red)]/40" />}
                                                 </div>
 
                                                 <div className="pl-12">
-                                                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isActive ? 'text-[#F18B24]' : 'text-[var(--text-muted)]'}`}>
+                                                    <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isActive ? 'text-[var(--brand-red)]' : 'text-[var(--text-muted)]'}`}>
                                                         {step.label}
                                                     </p>
                                                     <p className="text-xs font-bold mt-1" style={{ color: 'var(--text-muted)' }}>{step.desc}</p>
@@ -186,7 +186,7 @@ const TrackOrder = () => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Delivery Method</p>
-                                        <p className="text-sm font-black uppercase">{foundOrder.deliveryMethod === 'assisted' ? 'SR-Cloud Assisted' : 'Self-Arranged Pick-up'}</p>
+                                        <p className="text-sm font-black uppercase">{foundOrder.deliveryMethod === 'assisted' ? 'UAC Direct Logistics' : 'Self-Arranged Pick-up'}</p>
                                     </div>
                                 </div>
 
@@ -196,25 +196,25 @@ const TrackOrder = () => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Logistics Partner</p>
-                                        <p className="text-sm font-black">{foundOrder.logisticsPartner || 'Awaiting Assignment'}</p>
+                                        <p className="text-sm font-black">{foundOrder.logisticsPartner || 'UAC Foods Logistics'}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-[#F18B2410] flex items-center justify-center text-[#F18B24]">
+                                    <div className="w-12 h-12 rounded-2xl bg-[var(--brand-red)]/10 flex items-center justify-center text-[var(--brand-red)]">
                                         <MapPin size={24} />
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Destination</p>
-                                        <p className="text-sm font-black truncate">{foundOrder.shippingAddress || 'Verified Pickup Hub'}</p>
+                                        <p className="text-sm font-black truncate">{foundOrder.shippingAddress || 'Verified Distribution Center'}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="glass p-8 border-t-4 border-t-emerald-500">
                                 <div className="flex justify-between items-center mb-6">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Escrow Breakdown</p>
-                                    <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase">Secured</span>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Payment Breakdown</p>
+                                    <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase">Verified</span>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex justify-between">
@@ -226,8 +226,8 @@ const TrackOrder = () => {
                                         <span className="text-xs font-black">₦{(foundOrder.deliveryFee || 0).toLocaleString()}</span>
                                     </div>
                                     <div className="pt-4 border-t flex justify-between" style={{ borderColor: 'var(--divider)' }}>
-                                        <span className="text-sm font-black">Total Secured</span>
-                                        <span className="text-sm font-black text-[#F18B24]">₦{(foundOrder.amount + (foundOrder.deliveryFee || 0)).toLocaleString()}</span>
+                                        <span className="text-sm font-black">Total Paid</span>
+                                        <span className="text-sm font-black text-[var(--brand-red)]">₦{(foundOrder.amount + (foundOrder.deliveryFee || 0)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
@@ -235,14 +235,6 @@ const TrackOrder = () => {
                     </div>
 
                     <div className="flex flex-col md:flex-row justify-center gap-6 pt-10 border-t" style={{ borderColor: 'var(--divider)' }}>
-                        <a 
-                            href={`https://wa.me/2349098050402?text=Hi, i am tracking Order ${foundOrder.id}. I need some help.`} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-3 px-8 py-5 border-2 border-[#25D366] text-[#25D366] rounded-2xl hover:bg-[#25D366] hover:text-white transition-all font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-500/10"
-                        >
-                            <MessageCircle size={20} /> Contact SR Logistics
-                        </a>
                         <button 
                             onClick={() => setFoundOrder(null)} 
                             className="bg-[var(--bg-primary)] border border-[var(--divider)] px-8 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-colors"

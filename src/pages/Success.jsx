@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 const Success = () => {
     const location = useLocation()
-    const orderId = location.state?.orderId || 'SR-2026-0000'
+    const orderId = location.state?.orderId || 'UAC-2026-0000'
     const paymentMethod = location.state?.paymentMethod || 'paystack'
     const [copied, setCopied] = useState(false)
 
@@ -22,8 +22,8 @@ const Success = () => {
             className="pt-48 pb-20 container max-w-2xl text-center"
         >
             <div className="flex justify-center mb-8">
-                <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: 'var(--badge-bg)', border: '1px solid rgba(241,139,36,0.3)' }}>
-                    <CheckCircle size={48} className="text-[#F18B24]" />
+                <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: 'var(--badge-bg)', border: '1px solid rgba(192,57,43,0.3)' }}>
+                    <CheckCircle size={48} className="text-[var(--brand-red)]" />
                 </div>
             </div>
 
@@ -38,10 +38,10 @@ const Success = () => {
             </p>
 
             <div className="glass p-8 mb-12 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-[#F18B24]" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-[var(--brand-red)]" />
                 <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>Your Order ID</p>
                 <div className="flex items-center justify-center gap-4">
-                    <span className="text-4xl font-black font-heading tracking-tighter text-[#F18B24]">
+                    <span className="text-4xl font-black font-heading tracking-tighter text-[var(--brand-red)]">
                         {orderId}
                     </span>
                     <button
@@ -59,7 +59,7 @@ const Success = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <a
-                        href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn"
+                        href="https://www.instagram.com/uacfoodslimited"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-3 py-4 glass transition-all font-bold group"
@@ -86,7 +86,7 @@ const Success = () => {
                     </Link>
                 </div>
 
-                <Link to="/" className="inline-block mt-4 text-sm font-medium transition-colors hover:text-[#F18B24]" style={{ color: 'var(--text-muted)' }}>
+                <Link to="/" className="inline-block mt-4 text-sm font-medium transition-colors hover:text-[var(--brand-red)]" style={{ color: 'var(--text-muted)' }}>
                     Return to Homepage
                 </Link>
             </div>

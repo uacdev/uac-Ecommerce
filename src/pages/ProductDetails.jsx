@@ -20,7 +20,7 @@ const ProductDetails = () => {
     // SEO and Metadata
     useEffect(() => {
         if (product) {
-            document.title = `${product.name} | Sellout`
+            document.title = `${product.name} | UAC Foods`
             
             // Dynamic Meta Tags (Basic)
             const metaDescription = document.querySelector('meta[name="description"]')
@@ -37,7 +37,7 @@ const ProductDetails = () => {
         }
         
         return () => {
-            document.title = 'Sellout | Premium Gateway'
+            document.title = 'UAC Foods | Tasty · Nourishing · Trusted'
         }
     }, [product, productImages]);
 
@@ -60,7 +60,7 @@ const ProductDetails = () => {
                 <p className="text-[var(--text-muted)] mb-8 font-bold">This product may have been removed or is no longer available.</p>
                 <button 
                     onClick={() => navigate('/shop')} 
-                    className="px-8 py-4 rounded-xl bg-[#F18B24] text-white font-black uppercase tracking-widest text-xs shadow-lg hover:scale-105 transition-all"
+                    className="px-8 py-4 rounded-xl bg-[var(--brand-red)] text-white font-black uppercase tracking-widest text-xs shadow-lg hover:scale-105 transition-all text-white"
                 >
                     Back to Shop
                 </button>
@@ -83,7 +83,7 @@ const ProductDetails = () => {
             particleCount: 120,
             spread: 80,
             origin: { y: 0.55 },
-            colors: ['#F18B24', '#ffffff', '#000000']
+            colors: ['#C0392B', '#ffffff', '#000000']
         })
 
         toast.success(`${quantity}x ${product.name} added to cart!`, {
@@ -91,7 +91,7 @@ const ProductDetails = () => {
             style: {
                 background: 'var(--bg-primary)',
                 color: 'var(--text-primary)',
-                border: '1px solid #F18B24',
+                border: '1px solid var(--brand-red)',
                 fontSize: '14px',
                 fontWeight: 'bold',
                 borderRadius: '16px',
@@ -106,7 +106,7 @@ const ProductDetails = () => {
             style: {
                 background: 'var(--bg-primary)',
                 color: 'var(--text-primary)',
-                border: '1px solid #F18B24',
+                border: '1px solid var(--brand-red)',
                 fontWeight: 'bold',
                 borderRadius: '16px',
                 fontSize: '13px',
@@ -122,12 +122,12 @@ const ProductDetails = () => {
             className="pt-48 pb-20 container"
         >
             <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 mb-8 transition-colors group text-sm font-bold uppercase tracking-widest"
+                onClick={() => navigate('/shop')}
+                className="flex items-center gap-2 mb-8 transition-colors group text-sm font-bold uppercase tracking-widest hover:text-[var(--brand-red)]"
                 style={{ color: 'var(--text-muted)' }}
             >
                 <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                Back to Gallery
+                Back
             </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
@@ -169,13 +169,13 @@ const ProductDetails = () => {
                         <div className="absolute inset-0 flex items-center justify-between px-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             <button 
                                 onClick={(e) => { e.preventDefault(); prevImage(); }}
-                                className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[#F18B24] transition-all transform hover:scale-110 active:scale-90"
+                                className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[var(--brand-red)] transition-all transform hover:scale-110 active:scale-90"
                             >
                                 <ChevronLeft size={28} />
                             </button>
                             <button 
                                 onClick={(e) => { e.preventDefault(); nextImage(); }}
-                                className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[#F18B24] transition-all transform hover:scale-110 active:scale-90"
+                                className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white pointer-events-auto hover:bg-[var(--brand-red)] transition-all transform hover:scale-110 active:scale-90"
                             >
                                 <ChevronRight size={28} />
                             </button>
@@ -187,7 +187,7 @@ const ProductDetails = () => {
                                 <button 
                                     key={i} 
                                     onClick={() => setActiveImage(i)}
-                                    className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${activeImage === i ? 'w-10 bg-[#F18B24]' : 'w-3 bg-white/40 hover:bg-white/60'}`}
+                                    className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${activeImage === i ? 'w-10 bg-[var(--brand-red)]' : 'w-3 bg-white/40 hover:bg-white/60'}`}
                                 />
                             ))}
                         </div>
@@ -198,7 +198,7 @@ const ProductDetails = () => {
                             <button
                                 key={i}
                                 onClick={() => setActiveImage(i)}
-                                className={`aspect-square glass rounded-2xl overflow-hidden border-2 transition-all duration-300 transform hover:scale-105 ${activeImage === i ? 'border-[#F18B24] shadow-lg shadow-orange-500/20' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                                className={`aspect-square glass rounded-2xl overflow-hidden border-2 transition-all duration-300 transform hover:scale-105 ${activeImage === i ? 'border-[var(--brand-red)] shadow-lg shadow-[var(--brand-red)]/20' : 'border-transparent opacity-60 hover:opacity-100'}`}
                             >
                                 <img
                                     src={img}
@@ -212,9 +212,9 @@ const ProductDetails = () => {
 
                 {/* Right: Product Info */}
                 <div className="flex flex-col">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full w-fit mb-6" style={{ background: 'var(--badge-bg)', border: '1px solid var(--brand-orange)' }}>
-                        <ShieldCheck size={14} className="text-[#F18B24]" />
-                        <span className="text-[10px] font-black text-[#F18B24] uppercase tracking-[0.2em]">Verified Transaction Gateway</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full w-fit mb-6" style={{ background: 'var(--badge-bg)', border: '1px solid var(--brand-red)' }}>
+                        <ShieldCheck size={14} className="text-[var(--brand-red)]" />
+                        <span className="text-[10px] font-black text-[var(--brand-red)] uppercase tracking-[0.2em]">Verified D2C Transaction Gateway</span>
                     </div>
 
                     <div className="flex items-center gap-3 mb-4">
@@ -227,7 +227,7 @@ const ProductDetails = () => {
                     <div className="flex items-center gap-6 mb-8 flex-wrap">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Selling Price</p>
-                            <p className="text-4xl font-black text-[#F18B24]">₦{product.price.toLocaleString()}</p>
+                            <p className="text-4xl font-black text-[var(--brand-red)]">₦{product.price.toLocaleString()}</p>
                         </div>
                         <div className="h-10 w-[1px] hidden sm:block" style={{ background: 'var(--divider)' }} />
                         <div>
@@ -239,7 +239,7 @@ const ProductDetails = () => {
                                 <div className="h-10 w-[1px] hidden sm:block" style={{ background: 'var(--divider)' }} />
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">Delivery Time</p>
-                                    <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}><Clock size={16} className="text-[#F18B24]" /> {product.delivery_timeframe}</p>
+                                    <p className="text-sm font-black flex items-center gap-2" style={{ color: 'var(--text-primary)' }}><Clock size={16} className="text-[var(--brand-red)]" /> {product.delivery_timeframe}</p>
                                 </div>
                             </>
                         )}
@@ -290,17 +290,17 @@ const ProductDetails = () => {
 
                     <div className="flex flex-col gap-6 mb-12 py-6 border-y border-[var(--divider)]">
                         <div className="flex items-center gap-4">
-                            <Truck size={20} className="text-[#F18B24]" />
+                            <Truck size={20} className="text-[var(--brand-red)]" />
                             <div className="flex items-center gap-3">
-                                <span className="font-black text-[10px] uppercase tracking-widest text-[#F18B24]">Guided Delivery:</span>
+                                <span className="font-black text-[10px] uppercase tracking-widest text-[var(--brand-red)]">Standard Delivery:</span>
                                 <span className="text-xs font-bold text-[var(--text-primary)]">{product.delivery_timeframe || "2-3 Working Days"}</span>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <Info size={20} className="text-[#F18B24]" />
+                            <Info size={20} className="text-[var(--brand-red)]" />
                             <div className="flex items-center gap-3">
-                                <span className="font-black text-[10px] uppercase tracking-widest text-[#F18B24]">Gatekeep Policy:</span>
+                                <span className="font-black text-[10px] uppercase tracking-widest text-[var(--brand-red)]">UAC Policy:</span>
                                 <span className="text-xs font-bold text-[var(--text-muted)]">Physical inspection mandatory before final escrow release.</span>
                             </div>
                         </div>
@@ -325,17 +325,17 @@ const ProductDetails = () => {
                                 className={`py-5 text-center font-black uppercase tracking-widest text-xs transition-all shadow-xl rounded-2xl ${
                                     (isSold || isOutOfStock)
                                         ? 'bg-red-500/10 text-red-500 border border-red-500/20 cursor-not-allowed opacity-50'
-                                        : 'btn-primary cursor-pointer hover:scale-[1.02] active:scale-95 shadow-orange-500/20'
+                                        : 'btn-primary cursor-pointer hover:scale-[1.02] active:scale-95 shadow-[var(--brand-red)]/20'
                                 }`}
                             >
                                 {isOutOfStock ? 'Out of Stock' : isSold ? 'Sold Out' : 'Instant Buy'}
                             </button>
                             <button
                                 onClick={handleAddToCart}
-                                className={`flex items-center justify-center gap-3 py-5 rounded-2xl transition-all font-black uppercase tracking-widest text-xs border-2 ${(isSold || isOutOfStock) ? 'opacity-30 cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-95 hover:bg-[#F18B24] hover:text-white'}`}
+                                className={`flex items-center justify-center gap-3 py-5 rounded-2xl transition-all font-black uppercase tracking-widest text-xs border-2 ${(isSold || isOutOfStock) ? 'opacity-30 cursor-not-allowed pointer-events-none' : 'cursor-pointer active:scale-95 hover:bg-[var(--brand-red)] hover:text-white'}`}
                                 style={{ 
-                                    borderColor: '#F18B24', 
-                                    color: '#F18B24',
+                                    borderColor: 'var(--brand-red)', 
+                                    color: 'var(--brand-red)',
                                     background: 'transparent'
                                 }}
                                 disabled={isSold || isOutOfStock}
@@ -346,13 +346,13 @@ const ProductDetails = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Human Confirmation Required</p>
+                            <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">D2C Customer Support</p>
                             <div className="grid grid-cols-2 gap-4">
                                 <a href="https://wa.me/+2349098050402" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#25D366] text-[#25D366] rounded-2xl hover:bg-[#25D366] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-green-500/10">
                                     <MessageCircle size={20} />
-                                    WhatsApp Seller
+                                    WhatsApp Support
                                 </a>
-                                <a href="https://www.instagram.com/selloutandrelocate.ng?igsh=djByMTlvb21sMmVn" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#E4405F] text-[#E4405F] rounded-2xl hover:bg-[#E4405F] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-pink-500/10">
+                                <a href="https://www.instagram.com/uacfoodslimited" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-5 border-2 border-[#E4405F] text-[#E4405F] rounded-2xl hover:bg-[#E4405F] hover:text-white active:scale-95 transition-all cursor-pointer font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-pink-500/10">
                                     <Instagram size={20} />
                                     Instagram
                                 </a>

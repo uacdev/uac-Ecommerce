@@ -3,14 +3,15 @@
 /* ─── LIGHT THEME (Default) ─── */
 @layer base {
   :root {
-    --brand-orange: #F18B24;
+    --brand-red: #C0392B;
+    --brand-navy: #0D1B2A;
     --brand-black: #000000;
     --brand-gray: #D6D5D4;
 
-    --font-main: 'Inter', sans-serif;
-    --font-heading: 'Outfit', sans-serif;
+    --font-main: 'Avenirltstd book', 'Inter', sans-serif;
+    --font-heading: 'Avenirltstd book', 'Inter', sans-serif;
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    --orange-glow: rgba(241, 139, 36, 0.3);
+    --red-glow: rgba(192, 57, 43, 0.3);
   }
 
   /* Light theme colors */
@@ -30,8 +31,8 @@
     --input-border: #E0E0E0;
     --divider: rgba(0, 0, 0, 0.06);
     --nav-bg: rgba(255, 255, 255, 0.85);
-    --badge-bg: rgba(241, 139, 36, 0.08);
-    --badge-text: #F18B24;
+    --badge-bg: rgba(192, 57, 43, 0.08);
+    --badge-text: #C0392B;
   }
 
   /* Dark theme colors */
@@ -51,8 +52,8 @@
     --input-border: rgba(255, 255, 255, 0.1);
     --divider: rgba(255, 255, 255, 0.1);
     --nav-bg: rgba(0, 0, 0, 0.85);
-    --badge-bg: rgba(241, 139, 36, 0.15);
-    --badge-text: #F18B24;
+    --badge-bg: rgba(192, 57, 43, 0.15);
+    --badge-text: #C0392B;
   }
 
   * {
@@ -101,7 +102,7 @@
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--brand-orange);
+    background: var(--brand-red);
   }
 
   /* Utilities */
@@ -119,7 +120,7 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: var(--brand-orange);
+    background: var(--brand-red);
   }
 
   .scrollbar-hide {
@@ -143,7 +144,7 @@
 
   .glass-hover:hover {
     background: var(--glass-bg);
-    border-color: var(--brand-orange);
+    border-color: var(--brand-red);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     transform: translateY(-8px);
   }
@@ -163,7 +164,7 @@
     align-items: center;
     justify-content: center;
     padding: 14px 28px;
-    background-color: var(--brand-orange);
+    background-color: var(--brand-red);
     color: white;
     border: none;
     border-radius: 12px;
@@ -177,9 +178,9 @@
   }
 
   .btn-primary:hover {
-    background-color: #d17a1f;
+    background-color: #a93226;
     transform: scale(1.02);
-    box-shadow: 0 0 20px var(--orange-glow);
+    box-shadow: 0 0 20px var(--red-glow);
   }
 
   .btn-primary:active {
@@ -204,19 +205,19 @@
 
   .btn-outline:hover {
     background: var(--glass-bg);
-    border-color: var(--brand-orange);
+    border-color: var(--brand-red);
   }
 
   /* Typography */
   .gradient-text {
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--brand-orange) 100%);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--brand-red) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  .text-orange {
-    color: var(--brand-orange);
+  .text-red {
+    color: var(--brand-red);
   }
 
   /* Layout */
@@ -285,11 +286,11 @@
   border-top-right-radius: 20px !important;
 }
 .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
-  background-color: #F18B24 !important;
+  background-color: #C0392B !important;
   border-radius: 50% !important;
 }
 .react-datepicker__day:hover {
-  background-color: rgba(241, 139, 36, 0.1) !important;
+  background-color: rgba(192, 57, 43, 0.1) !important;
   border-radius: 50% !important;
 }
 .react-datepicker__current-month, .react-datepicker__day-name {

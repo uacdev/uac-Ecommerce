@@ -17,7 +17,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 async function createAdmin() {
-    const email = 'hello@sellout.ng';
+    const email = 'info@uacfoodsng.com';
     const password = 'AdminPassword123!'; // User can change this later
 
     console.log(`Creating/Updating admin user: ${email}...`);

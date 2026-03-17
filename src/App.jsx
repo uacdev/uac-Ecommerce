@@ -15,6 +15,7 @@ import AdminLogin from './pages/AdminLogin'
 import TrackOrder from './pages/TrackOrder'
 import Favorites from './pages/Favorites'
 import Products from './pages/Products'
+import AboutUs from './pages/AboutUs'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
@@ -49,6 +50,7 @@ function Layout() {
             <Route path="/deliver-selection" element={<DeliverySelection />} />
             <Route path="/success-delivery" element={<SuccessDelivery />} />
             <Route path="/track-order" element={<TrackOrder />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/favorites" element={<Favorites />} />
             
             <Route path="/admin/login" element={<AdminLogin />} />

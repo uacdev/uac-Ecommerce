@@ -28,7 +28,7 @@ const Checkout = () => {
     if (isSingleItem && !singleProduct) return (
         <div className="pt-48 text-center container">
             <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Product not found</h2>
-            <button onClick={() => navigate('/')} className="text-[#F18B24] hover:underline">Return Home</button>
+            <button onClick={() => navigate('/')} className="text-[var(--brand-red)] hover:underline">Return Home</button>
         </div>
     )
 
@@ -95,7 +95,7 @@ const Checkout = () => {
         >
             <button 
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-12 transition-colors hover:text-[#F18B24]"
+                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-12 transition-colors hover:text-[var(--brand-red)]"
                 style={{ color: 'var(--text-muted)' }}
             >
                 <ArrowLeft size={16} /> Continue Shopping
@@ -113,7 +113,7 @@ const Checkout = () => {
                         {/* Buyer Info */}
                         <div className="p-8 md:p-10 rounded-[32px] border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
                             <h2 className="text-xl font-black uppercase tracking-widest flex items-center gap-3 mb-8" style={{ color: 'var(--text-primary)' }}>
-                                <User size={20} className="text-[#F18B24]" />
+                                <User size={20} className="text-[var(--brand-red)]" />
                                 Shipping Info
                             </h2>
 
@@ -126,7 +126,7 @@ const Checkout = () => {
                                         value={buyer.name}
                                         onChange={e => updateBuyer('name', e.target.value)}
                                         placeholder="Enter your full name"
-                                        className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold"
+                                        className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[var(--brand-red)] border transition-all font-bold"
                                         style={inputStyle}
                                     />
                                 </div>
@@ -140,7 +140,7 @@ const Checkout = () => {
                                             value={buyer.phone}
                                             onChange={e => updateBuyer('phone', e.target.value)}
                                             placeholder="+234..."
-                                            className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold"
+                                            className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[var(--brand-red)] border transition-all font-bold"
                                             style={inputStyle}
                                         />
                                     </div>
@@ -152,7 +152,7 @@ const Checkout = () => {
                                             value={buyer.email}
                                             onChange={e => updateBuyer('email', e.target.value)}
                                             placeholder="your@email.com"
-                                            className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold"
+                                            className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[var(--brand-red)] border transition-all font-bold"
                                             style={inputStyle}
                                         />
                                     </div>
@@ -166,7 +166,7 @@ const Checkout = () => {
                                         value={buyer.address}
                                         onChange={e => updateBuyer('address', e.target.value)}
                                         placeholder="Flat number, building name, street, area..."
-                                        className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[#F18B24] border transition-all font-bold resize-none"
+                                        className="w-full rounded-2xl px-6 py-4 outline-none focus:border-[var(--brand-red)] border transition-all font-bold resize-none"
                                         style={inputStyle}
                                     ></textarea>
                                 </div>
@@ -176,7 +176,7 @@ const Checkout = () => {
                         {/* Payment Method */}
                         <div className="p-8 md:p-10 rounded-[32px] border bg-[var(--bg-secondary)]" style={{ borderColor: 'var(--divider)' }}>
                             <h2 className="text-xl font-black uppercase tracking-widest flex items-center gap-3 mb-8" style={{ color: 'var(--text-primary)' }}>
-                                <CreditCard size={20} className="text-[#F18B24]" />
+                                <CreditCard size={20} className="text-[var(--brand-red)]" />
                                 Payment Method
                             </h2>
 
@@ -186,12 +186,12 @@ const Checkout = () => {
                                     onClick={() => setPaymentMethod('paystack')}
                                     className="w-full p-6 rounded-2xl flex justify-between items-center transition-all border-2"
                                     style={{
-                                        borderColor: paymentMethod === 'paystack' ? '#F18B24' : 'transparent',
+                                        borderColor: paymentMethod === 'paystack' ? 'var(--brand-red)' : 'transparent',
                                         background: paymentMethod === 'paystack' ? 'var(--badge-bg)' : 'var(--bg-primary)'
                                     }}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-5 h-5 rounded-full border-4 ${paymentMethod === 'paystack' ? 'border-[#F18B24]' : 'border-[var(--divider)]'}`} />
+                                        <div className={`w-5 h-5 rounded-full border-4 ${paymentMethod === 'paystack' ? 'border-[var(--brand-red)]' : 'border-[var(--divider)]'}`} />
                                         <div className="text-left">
                                             <p className="font-black text-sm uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Paystack</p>
                                             <p className="text-[10px] font-bold text-[var(--text-muted)]">Card, Transfer, USSD, Bank</p>
@@ -205,12 +205,12 @@ const Checkout = () => {
                                     onClick={() => setPaymentMethod('bank')}
                                     className="w-full p-6 rounded-2xl flex justify-between items-center transition-all border-2"
                                     style={{
-                                        borderColor: paymentMethod === 'bank' ? '#F18B24' : 'transparent',
+                                        borderColor: paymentMethod === 'bank' ? 'var(--brand-red)' : 'transparent',
                                         background: paymentMethod === 'bank' ? 'var(--badge-bg)' : 'var(--bg-primary)'
                                     }}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className={`w-5 h-5 rounded-full border-4 ${paymentMethod === 'bank' ? 'border-[#F18B24]' : 'border-[var(--divider)]'}`} />
+                                        <div className={`w-5 h-5 rounded-full border-4 ${paymentMethod === 'bank' ? 'border-[var(--brand-red)]' : 'border-[var(--divider)]'}`} />
                                         <div className="text-left">
                                             <p className="font-black text-sm uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Direct Bank Transfer</p>
                                             <p className="text-[10px] font-bold text-red-400">Manual Confirmation Required</p>
@@ -226,7 +226,7 @@ const Checkout = () => {
                 <div className="lg:col-span-5">
                     <div className="sticky top-40 space-y-6">
                         <div className="glass p-8 md:p-10 rounded-[40px] border-none shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#F18B24]/5 rounded-bl-full -z-10" />
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand-red)]/5 rounded-bl-full -z-10" />
                             
                             <h2 className="text-xl font-black uppercase tracking-widest mb-8" style={{ color: 'var(--text-primary)' }}>Order Summary</h2>
                             
@@ -249,14 +249,14 @@ const Checkout = () => {
                                             <div className="flex items-center justify-between mt-2">
                                                 {!isSingleItem ? (
                                                     <div className="flex items-center gap-3 bg-[var(--bg-secondary)] px-2 py-1 rounded-lg border border-[var(--divider)]">
-                                                        <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="text-[var(--text-muted)] hover:text-[#F18B24]"><Minus size={14}/></button>
+                                                        <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="text-[var(--text-muted)] hover:text-[var(--brand-red)]"><Minus size={14}/></button>
                                                         <span className="text-xs font-black">{item.quantity}</span>
-                                                        <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="text-[var(--text-muted)] hover:text-[#F18B24]"><Plus size={14}/></button>
+                                                        <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="text-[var(--text-muted)] hover:text-[var(--brand-red)]"><Plus size={14}/></button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-xs font-bold text-[var(--text-muted)]">Qty: 1</span>
                                                 )}
-                                                <p className="font-black text-[#F18B24]">₦{(item.price * item.quantity).toLocaleString()}</p>
+                                                <p className="font-black text-[var(--brand-red)]">₦{(item.price * item.quantity).toLocaleString()}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -274,14 +274,14 @@ const Checkout = () => {
                                 </div>
                                 <div className="flex justify-between items-center pt-4 border-t border-[var(--divider)]">
                                     <span className="text-lg font-black uppercase tracking-widest" style={{ color: 'var(--text-primary)' }}>Total</span>
-                                    <span className="text-3xl font-black text-[#F18B24]">₦{totalAmount.toLocaleString()}</span>
+                                    <span className="text-3xl font-black text-[var(--brand-red)]">₦{totalAmount.toLocaleString()}</span>
                                 </div>
                             </div>
 
                             <button
                                 form="checkout-form"
                                 disabled={loading}
-                                className="w-full btn-primary py-5 mt-10 text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-[#F18B2430] flex items-center justify-center gap-3 group"
+                                className="w-full btn-primary py-5 mt-10 text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-[var(--brand-red)]/30 flex items-center justify-center gap-3 group"
                             >
                                 {loading ? (
                                     <div className="flex items-center gap-3">
@@ -296,10 +296,10 @@ const Checkout = () => {
                                 )}
                             </button>
 
-                            <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-[#F18B2405] border border-[#F18B2410]">
-                                <ShieldCheck size={20} className="text-[#F18B24] shrink-0" />
+                            <div className="mt-8 flex items-center gap-3 p-4 rounded-2xl bg-[var(--brand-red)]/5 border border-[var(--brand-red)]/10">
+                                <ShieldCheck size={20} className="text-[var(--brand-red)] shrink-0" />
                                 <p className="text-[10px] font-bold leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                                    Your transaction is protected by Sellout & Relocate's secure escrow gateway.
+                                    Your transaction is protected by UAC Foods' secure escrow system.
                                 </p>
                             </div>
                         </div>
