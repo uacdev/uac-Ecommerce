@@ -83,8 +83,8 @@ const AdminDashboard = () => {
             >
                 {/* Brand */}
                 <div className={`flex items-center border-b border-white/5 shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center p-4 h-36' : 'justify-between px-6 py-4 h-36'}`}>
-                    {!sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-24 w-auto brightness-0 invert" style={{ filter: 'brightness(0) invert(1) drop-shadow(0 2px 8px rgba(255,255,255,0.1))' }} />}
-                    {sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-14 w-auto brightness-0 invert opacity-70" />}
+                    {!sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-24 w-auto object-contain" />}
+                    {sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-14 w-auto object-contain" />}
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
                             <X size={20} />
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
                             <Menu size={20} />
                         </button>
-                        <img src="/images/uac_logo.png" alt="UAC Foods" className="h-10 lg:h-12 w-auto hidden md:block dark:brightness-0 dark:invert" />
+                        <img src="/images/uac_logo.png" alt="UAC Foods" className="h-10 lg:h-12 w-auto hidden md:block" />
                     </div>
 
                     {/* Search Field - Middle */}
