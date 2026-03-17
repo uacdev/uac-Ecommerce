@@ -7,7 +7,7 @@ const Footer = () => {
             <div className="container">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
                     <div className="lg:col-span-1">
-                        <img src="/images/uac_logo.png" alt="UAC Foods" className="h-28 lg:h-36 w-auto mb-8 object-contain" />
+                        <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-28 lg:h-36 w-auto mb-8 object-contain" />
                         <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-xs">
                             UAC Foods Limited: Creating Valuable Foods For Life. Leading manufacturer of tasty, nourishing convenience foods.
                         </p>

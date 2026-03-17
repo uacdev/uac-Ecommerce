@@ -41,7 +41,7 @@ const AdminDashboard = () => {
     const exportToCSV = (data, filename) => {
         if (!data || !data.length) return;
         const headers = Object.keys(data[0]).filter(k => typeof data[0][k] !== 'object').join(',');
-        const rows = data.map(obj => 
+        const rows = data.map(obj =>
             Object.keys(obj).filter(k => typeof obj[k] !== 'object').map(k => {
                 const val = obj[k];
                 return typeof val === 'string' ? `"${val.replace(/"/g, '""')}"` : val;
@@ -75,7 +75,7 @@ const AdminDashboard = () => {
             </AnimatePresence>
 
             {/* ════ LEFT SIDEBAR ════ */}
-            <motion.aside 
+            <motion.aside
                 animate={{ width: sidebarCollapsed ? 72 : 256 }}
                 transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                 className={`fixed lg:static inset-y-0 left-0 flex flex-col shrink-0 overflow-hidden transition-transform duration-300 z-[101] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
@@ -83,8 +83,8 @@ const AdminDashboard = () => {
             >
                 {/* Brand */}
                 <div className={`flex items-center border-b border-white/5 shrink-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center p-4 h-36' : 'justify-between px-6 py-4 h-36'}`}>
-                    {!sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-24 w-auto object-contain" />}
-                    {sidebarCollapsed && <img src="/images/uac_logo.png" alt="UAC Foods" className="h-14 w-auto object-contain" />}
+                    {!sidebarCollapsed && <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-24 w-auto object-contain" />}
+                    {sidebarCollapsed && <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-14 w-auto object-contain" />}
                     <div className="flex items-center gap-2">
                         <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-white/40 hover:text-white">
                             <X size={20} />
@@ -146,7 +146,6 @@ const AdminDashboard = () => {
                         <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)]" style={{ color: 'var(--text-primary)' }}>
                             <Menu size={20} />
                         </button>
-                        <img src="/images/uac_logo.png" alt="UAC Foods" className="h-10 lg:h-12 w-auto hidden md:block" />
                     </div>
 
                     {/* Search Field - Middle */}
@@ -166,7 +165,7 @@ const AdminDashboard = () => {
 
                     <div className="flex items-center gap-2 lg:gap-4">
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => setShowNotifications(!showNotifications)}
                                 className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center relative transition-colors bg-[var(--bg-secondary)] border border-[var(--divider)] hover:border-[var(--brand-red)]/20"
                                 style={{ color: 'var(--text-primary)' }}
@@ -194,12 +193,12 @@ const AdminDashboard = () => {
                                             </div>
                                             <div className="max-h-[400px] overflow-y-auto no-scrollbar">
                                                 {orders.slice(0, 10).map((order) => (
-                                                    <NotificationItem 
+                                                    <NotificationItem
                                                         key={order.id}
-                                                        title={order.status === 'pending' || order.status === 'paid' ? "New Order" : "Order Update"} 
-                                                        desc={`${order.buyerName} - ${order.productName}`} 
-                                                        time={new Date(order.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} 
-                                                        icon={<ShoppingCart size={14}/>} 
+                                                        title={order.status === 'pending' || order.status === 'paid' ? "New Order" : "Order Update"}
+                                                        desc={`${order.buyerName} - ${order.productName}`}
+                                                        time={new Date(order.date).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        icon={<ShoppingCart size={14} />}
                                                         color={order.status === 'pending' || order.status === 'paid' ? "bg-red-500" : "bg-blue-500"}
                                                         onClick={() => { setSelectedOrder(order); setShowNotifications(false); }}
                                                     />
@@ -208,7 +207,7 @@ const AdminDashboard = () => {
                                                     <div className="p-10 text-center text-xs font-bold text-[var(--text-muted)]">No activity found.</div>
                                                 )}
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => { setActiveTab('orders'); setShowNotifications(false); }}
                                                 className="w-full py-4 text-[10px] font-black uppercase tracking-widest border-t border-[var(--divider)] hover:bg-[var(--bg-secondary)] transition-colors"
                                             >
@@ -240,23 +239,23 @@ const AdminDashboard = () => {
                         </div>
                         <AnimatePresence mode="wait">
                             {activeTab === 'overview' && (
-                                <OverviewTab 
-                                    key="overview" 
-                                    onSelect={setSelectedOrder} 
-                                    dateRange={dateRange} 
+                                <OverviewTab
+                                    key="overview"
+                                    onSelect={setSelectedOrder}
+                                    dateRange={dateRange}
                                     setDateRange={setDateRange}
                                     searchTerm={searchTerm}
                                 />
                             )}
                             {activeTab === 'orders' && <OrdersTab key="orders" onSelect={setSelectedOrder} selectedId={selectedOrder?.id} searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={exportToCSV} />}
                             {activeTab === 'products' && (
-                                <ProductsTab 
-                                    key="products" 
-                                    onEdit={setEditingProduct} 
-                                    onAdd={() => setShowAddProduct(true)} 
-                                    onDelete={setProductToDelete} 
+                                <ProductsTab
+                                    key="products"
+                                    onEdit={setEditingProduct}
+                                    onAdd={() => setShowAddProduct(true)}
+                                    onDelete={setProductToDelete}
                                     onInfo={setSelectedProductInfo}
-                                    searchTerm={searchTerm} 
+                                    searchTerm={searchTerm}
                                     dateRange={dateRange}
                                     setDateRange={setDateRange}
                                     onExport={exportToCSV}
@@ -290,9 +289,9 @@ const AdminDashboard = () => {
                 {(showAddProduct || editingProduct) && (
                     <ProductModal
                         product={editingProduct}
-                        onClose={() => { 
-                            setShowAddProduct(false); 
-                            setEditingProduct(null); 
+                        onClose={() => {
+                            setShowAddProduct(false);
+                            setEditingProduct(null);
                         }}
                         onSuccess={() => {
                             setShowAddProduct(false);
@@ -306,31 +305,31 @@ const AdminDashboard = () => {
 
             <AnimatePresence>
                 {showSuccessModal && (
-                    <SuccessMessage 
-                        title="Listing Published!" 
-                        subtitle="Your new entry is now live on the UAC-Portal." 
-                        onClose={() => setShowSuccessModal(false)} 
+                    <SuccessMessage
+                        title="Listing Published!"
+                        subtitle="Your new entry is now live on the UAC-Portal."
+                        onClose={() => setShowSuccessModal(false)}
                     />
                 )}
             </AnimatePresence>
 
             <AnimatePresence>
                 {productToDelete && (
-                    <DeleteConfirmModal 
-                        product={productToDelete} 
+                    <DeleteConfirmModal
+                        product={productToDelete}
                         onConfirm={() => {
                             removeProduct(productToDelete.id)
                             setProductToDelete(null)
-                        }} 
-                        onCancel={() => setProductToDelete(null)} 
+                        }}
+                        onCancel={() => setProductToDelete(null)}
                     />
                 )}
             </AnimatePresence>
 
             <AnimatePresence>
                 {selectedProductInfo && (
-                    <ProductInfoModal 
-                        product={selectedProductInfo} 
+                    <ProductInfoModal
+                        product={selectedProductInfo}
                         onClose={() => setSelectedProductInfo(null)}
                         onEdit={setEditingProduct}
                     />
@@ -339,9 +338,9 @@ const AdminDashboard = () => {
 
             <AnimatePresence>
                 {selectedCustomerInfo && (
-                    <CustomerInfoModal 
-                        customer={selectedCustomerInfo} 
-                        onClose={() => setSelectedCustomerInfo(null)} 
+                    <CustomerInfoModal
+                        customer={selectedCustomerInfo}
+                        onClose={() => setSelectedCustomerInfo(null)}
                     />
                 )}
             </AnimatePresence>
@@ -367,9 +366,8 @@ const SidebarLink = ({ icon, label, active, onClick, collapsed }) => (
     <button
         onClick={onClick}
         title={collapsed ? label : undefined}
-        className={`w-full flex items-center py-3 rounded-xl transition-all ${
-            collapsed ? 'justify-center px-2' : 'gap-3 px-4'
-        } ${active
+        className={`w-full flex items-center py-3 rounded-xl transition-all ${collapsed ? 'justify-center px-2' : 'gap-3 px-4'
+            } ${active
                 ? 'bg-white text-black shadow-lg shadow-black/10'
                 : 'text-white/40 hover:text-white hover:bg-white/5'
             }`}
@@ -381,7 +379,7 @@ const SidebarLink = ({ icon, label, active, onClick, collapsed }) => (
 
 const CustomDatePicker = ({ dateRange, setDateRange }) => {
     const DateButton = ({ value, onClick, label }) => (
-        <button 
+        <button
             onClick={onClick}
             className="flex flex-col items-start bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-2 hover:border-[var(--brand-red)] transition-all min-w-[140px]"
         >
@@ -412,7 +410,7 @@ const CustomDatePicker = ({ dateRange, setDateRange }) => {
                 placeholderText="End Date"
             />
             {(dateRange.start || dateRange.end) && (
-                <button 
+                <button
                     onClick={() => setDateRange({ start: '', end: '' })}
                     className="mt-4 p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors"
                     title="Clear All"
@@ -430,7 +428,7 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
     const filteredOrders = useMemo(() => {
         return orders.filter(o => {
             // Search term filter
-            const matchesSearch = 
+            const matchesSearch =
                 o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 o.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 o.productName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -463,7 +461,7 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
     const assistedDeliveryTotal = filteredOrders
         .filter(o => o.deliveryMethod === 'assisted')
         .reduce((sum, o) => sum + (o.amount || 0), 0)
-    
+
     const selfPickupTotal = filteredOrders
         .filter(o => o.deliveryMethod === 'self')
         .reduce((sum, o) => sum + (o.amount || 0), 0)
@@ -498,16 +496,16 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
                         <div className="relative w-56 h-56 shrink-0">
                             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                                 <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="opacity-10" />
-                                <circle 
-                                    cx="50" cy="50" r="45" fill="none" stroke="var(--brand-red)" strokeWidth="8" 
-                                    strokeDasharray={`${(assistedDeliveryTotal / (stats.totalRevenue || 1)) * 283} 283`} 
-                                    strokeLinecap="round" 
+                                <circle
+                                    cx="50" cy="50" r="45" fill="none" stroke="var(--brand-red)" strokeWidth="8"
+                                    strokeDasharray={`${(assistedDeliveryTotal / (stats.totalRevenue || 1)) * 283} 283`}
+                                    strokeLinecap="round"
                                 />
-                                <circle 
-                                    cx="50" cy="50" r="45" fill="none" stroke="#10B981" strokeWidth="8" 
-                                    strokeDasharray={`${(selfPickupTotal / (stats.totalRevenue || 1)) * 283} 283`} 
-                                    strokeDashoffset={`-${(assistedDeliveryTotal / (stats.totalRevenue || 1)) * 283}`} 
-                                    strokeLinecap="round" 
+                                <circle
+                                    cx="50" cy="50" r="45" fill="none" stroke="#10B981" strokeWidth="8"
+                                    strokeDasharray={`${(selfPickupTotal / (stats.totalRevenue || 1)) * 283} 283`}
+                                    strokeDashoffset={`-${(assistedDeliveryTotal / (stats.totalRevenue || 1)) * 283}`}
+                                    strokeLinecap="round"
                                 />
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
@@ -535,7 +533,7 @@ const OverviewTab = ({ dateRange, setDateRange, searchTerm }) => {
                             <span className="text-xs font-black">{stats.deliveredCount}/{filteredOrders.length}</span>
                         </div>
                         <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden">
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.deliveredCount / total) * 100}%` } } className="h-full bg-green-500" />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${(stats.deliveredCount / total) * 100}%` }} className="h-full bg-green-500" />
                         </div>
 
                         <div className="flex justify-between items-center pt-4">
@@ -598,12 +596,12 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
 
     const filteredOrders = useMemo(() => {
         return orders.filter(order => {
-            const matchesSearch = 
+            const matchesSearch =
                 order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.buyerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 order.productName.toLowerCase().includes(searchTerm.toLowerCase())
             const matchesStatus = statusFilter === 'all' || order.status === statusFilter
-            
+
             let matchesDate = true
             if (dateRange.start || dateRange.end) {
                 const orderDate = new Date(order.date)
@@ -625,8 +623,8 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                         <button
                             key={status}
                             onClick={() => setStatusFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${statusFilter === status 
-                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20' 
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${statusFilter === status
+                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20'
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {status}
@@ -635,7 +633,7 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
-                    <button 
+                    <button
                         onClick={() => onExport(filteredOrders, 'UAC_Orders')}
                         className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)] transition-all shadow-sm"
                     >
@@ -702,8 +700,8 @@ const OrdersTab = ({ onSelect, selectedId, searchTerm, dateRange, setDateRange, 
                         {/* Mobile/Tablet Card Layout */}
                         <div className="lg:hidden divide-y" style={{ borderColor: 'var(--divider)' }}>
                             {filteredOrders.map(order => (
-                                <div 
-                                    key={order.id} 
+                                <div
+                                    key={order.id}
                                     onClick={() => onSelect(order)}
                                     className="p-5 active:bg-[var(--bg-secondary)] transition-colors"
                                 >
@@ -786,12 +784,12 @@ const OrderInfoModal = ({ order, onClose }) => {
     }
 
     return (
-        <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+        <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
             onClick={onClose}
         >
-            <motion.div 
+            <motion.div
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                 className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl transition-colors duration-500 custom-scrollbar relative"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}
@@ -859,8 +857,8 @@ const OrderInfoModal = ({ order, onClose }) => {
                                 <button
                                     key={item.s}
                                     onClick={() => handleUpdateStatus(item.s)}
-                                    className={`py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${order.status === item.s 
-                                        ? 'bg-[var(--brand-red)] text-white border-[var(--brand-red)] shadow-lg shadow-[var(--brand-red)]/20' 
+                                    className={`py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border ${order.status === item.s
+                                        ? 'bg-[var(--brand-red)] text-white border-[var(--brand-red)] shadow-lg shadow-[var(--brand-red)]/20'
                                         : 'border-[var(--divider)] text-[var(--text-muted)] hover:border-[var(--brand-red)] hover:text-[var(--brand-red)]'}`}
                                 >
                                     {item.l}
@@ -875,7 +873,7 @@ const OrderInfoModal = ({ order, onClose }) => {
                                 <Truck size={16} className="text-[var(--brand-red)]" />
                                 <h5 className="text-[10px] font-black uppercase tracking-widest">Guided Delivery Coordination</h5>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setIsEditingLogistics(!isEditinglogistics)}
                                 className="text-[9px] font-black uppercase text-[var(--brand-red)] hover:underline"
                             >
@@ -887,9 +885,9 @@ const OrderInfoModal = ({ order, onClose }) => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[8px] font-black uppercase text-[var(--text-muted)]">Method</label>
-                                    <select 
+                                    <select
                                         value={logisticsForm.delivery_method}
-                                        onChange={e => setLogisticsForm({...logisticsForm, delivery_method: e.target.value})}
+                                        onChange={e => setLogisticsForm({ ...logisticsForm, delivery_method: e.target.value })}
                                         className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
                                     >
                                         <option value="">Select Method</option>
@@ -899,26 +897,26 @@ const OrderInfoModal = ({ order, onClose }) => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[8px] font-black uppercase text-[var(--text-muted)]">Delivery Fee (₦)</label>
-                                    <input 
+                                    <input
                                         type="number"
                                         value={logisticsForm.delivery_fee}
-                                        onChange={e => setLogisticsForm({...logisticsForm, delivery_fee: e.target.value})}
+                                        onChange={e => setLogisticsForm({ ...logisticsForm, delivery_fee: e.target.value })}
                                         className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
                                         placeholder="Quote fee manually"
                                     />
                                 </div>
                                 <div className="space-y-2 lg:col-span-2">
                                     <label className="text-[8px] font-black uppercase text-[var(--text-muted)]">Logistics Partner</label>
-                                    <input 
+                                    <input
                                         type="text"
                                         value={logisticsForm.logistics_partner}
-                                        onChange={e => setLogisticsForm({...logisticsForm, logistics_partner: e.target.value})}
+                                        onChange={e => setLogisticsForm({ ...logisticsForm, logistics_partner: e.target.value })}
                                         className="w-full bg-[var(--bg-primary)] border border-[var(--divider)] rounded-lg p-3 text-[10px] font-black outline-none"
                                         placeholder="e.g. Uber, GIG, Private Rider"
                                     />
                                 </div>
                                 <div className="lg:col-span-2">
-                                    <button 
+                                    <button
                                         onClick={handleSaveLogistics}
                                         className="w-full py-3 bg-[var(--brand-red)] text-white rounded-xl text-[9px] font-black uppercase tracking-widest"
                                     >Update Logistics Info</button>
@@ -926,17 +924,17 @@ const OrderInfoModal = ({ order, onClose }) => {
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 gap-6">
-                                <LogisticsCard 
-                                    label="Mode" 
-                                    value={order.deliveryMethod === 'self' ? 'Self-arranged' : order.deliveryMethod === 'assisted' ? 'UAC Direct' : 'Not Selected'} 
-                                    icon={<Truck size={14} />} 
-                                    color="text-[var(--brand-red)]" 
+                                <LogisticsCard
+                                    label="Mode"
+                                    value={order.deliveryMethod === 'self' ? 'Self-arranged' : order.deliveryMethod === 'assisted' ? 'UAC Direct' : 'Not Selected'}
+                                    icon={<Truck size={14} />}
+                                    color="text-[var(--brand-red)]"
                                 />
-                                <LogisticsCard 
-                                    label="Delivery Fee" 
-                                    value={order.deliveryFee ? `₦${order.deliveryFee.toLocaleString()}` : 'TBD (Manual Quote)'} 
-                                    icon={<CreditCard size={14} />} 
-                                    color="text-indigo-500" 
+                                <LogisticsCard
+                                    label="Delivery Fee"
+                                    value={order.deliveryFee ? `₦${order.deliveryFee.toLocaleString()}` : 'TBD (Manual Quote)'}
+                                    icon={<CreditCard size={14} />}
+                                    color="text-indigo-500"
                                 />
                                 {order.logisticsPartner && (
                                     <div className="col-span-2 bg-[var(--bg-primary)] p-4 rounded-xl border border-[var(--divider)]">
@@ -989,9 +987,9 @@ const ActionBtn = ({ label, full, color = 'bg-black dark:bg-[var(--brand-red)]',
 );
 
 const SecondaryBtn = ({ label, full, onClick }) => (
-    <button 
+    <button
         onClick={onClick}
-        className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--divider)] hover:border-[var(--brand-red)]`} 
+        className={`${full ? 'w-full' : ''} py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-[var(--divider)] hover:border-[var(--brand-red)]`}
         style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}
     >
         {label}
@@ -1005,11 +1003,11 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
             const searchLower = searchTerm.toLowerCase()
-            const matchesSearch = p.name.toLowerCase().includes(searchLower) || 
-                                 p.location.toLowerCase().includes(searchLower) ||
-                                 p.category.toLowerCase().includes(searchLower)
+            const matchesSearch = p.name.toLowerCase().includes(searchLower) ||
+                p.location.toLowerCase().includes(searchLower) ||
+                p.category.toLowerCase().includes(searchLower)
             const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-            
+
             // Date filter
             let matchesDate = true
             if (dateRange.start || dateRange.end) {
@@ -1032,8 +1030,8 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat 
-                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20' 
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat
+                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20'
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {cat}
@@ -1042,7 +1040,7 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
-                    <button 
+                    <button
                         onClick={() => onExport(filteredProducts, 'UAC_Products')}
                         className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)] transition-all"
                     >
@@ -1079,8 +1077,8 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                                 </thead>
                                 <tbody>
                                     {filteredProducts.map((product, idx) => (
-                                        <tr 
-                                            key={product.id} 
+                                        <tr
+                                            key={product.id}
                                             onClick={() => onInfo(product)}
                                             className="group transition-colors hover:bg-[var(--bg-secondary)] cursor-pointer"
                                             style={idx > 0 ? { borderTop: '1px solid var(--divider)' } : {}}
@@ -1105,8 +1103,8 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                                             </td>
                                             <td className="px-10 py-6 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-2 transition-opacity">
-                                                    <button 
-                                                        onClick={() => onToggleStock(product)} 
+                                                    <button
+                                                        onClick={() => onToggleStock(product)}
                                                         title={product.status === 'out_of_stock' ? 'Mark as In Stock' : 'Mark as Out of Stock'}
                                                         className={`p-2.5 rounded-lg transition-colors ${product.status === 'out_of_stock' ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-[var(--brand-red)] hover:bg-[var(--brand-red)]/10'}`}
                                                     >
@@ -1125,8 +1123,8 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                         {/* Mobile view */}
                         <div className="lg:hidden">
                             {filteredProducts.map((product, idx) => (
-                                <div 
-                                    key={product.id} 
+                                <div
+                                    key={product.id}
                                     onClick={() => onInfo(product)}
                                     className="p-6 space-y-4 cursor-pointer hover:bg-[var(--bg-secondary)] transition-colors"
                                     style={idx > 0 ? { borderTop: '1px solid var(--divider)' } : {}}
@@ -1145,8 +1143,8 @@ const ProductsTab = ({ onEdit, onAdd, onDelete, onInfo, onToggleStock, searchTer
                                     <div className="flex justify-between items-center gap-4">
                                         <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">{product.location}</p>
                                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                            <button 
-                                                onClick={() => onToggleStock(product)} 
+                                            <button
+                                                onClick={() => onToggleStock(product)}
                                                 title={product.status === 'out_of_stock' ? 'Mark as In Stock' : 'Mark as Out of Stock'}
                                                 className={`p-3 rounded-xl border ${product.status === 'out_of_stock' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-[var(--brand-red)]/10 border-[var(--brand-red)]/20 text-[var(--brand-red)]'}`}
                                             >
@@ -1170,11 +1168,11 @@ const ProductPill = ({ status }) => {
     const isSuccess = status === 'Active'
     const isOut = status === 'Out of Stock'
     return (
-        <span className="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit" 
-              style={{ 
-                  background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : isOut ? 'rgba(239, 68, 68, 0.1)' : 'rgba(192, 57, 43, 0.1)', 
-                  color: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#C0392B' 
-              }}>
+        <span className="px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-fit"
+            style={{
+                background: isSuccess ? 'rgba(16, 185, 129, 0.1)' : isOut ? 'rgba(239, 68, 68, 0.1)' : 'rgba(192, 57, 43, 0.1)',
+                color: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#C0392B'
+            }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: isSuccess ? '#10B981' : isOut ? '#EF4444' : '#C0392B' }} />
             {status}
         </span>
@@ -1186,7 +1184,7 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
     const [ledgerFilter, setLedgerFilter] = useState('all')
 
     const confirmedOrders = useMemo(() => {
-        let base = orders.filter(o => 
+        let base = orders.filter(o =>
             ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status)
         )
 
@@ -1195,8 +1193,8 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
         }
 
         if (searchTerm) {
-            base = base.filter(o => 
-                o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            base = base.filter(o =>
+                o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 o.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (o.sellerName && o.sellerName.toLowerCase().includes(searchTerm.toLowerCase()))
             )
@@ -1230,8 +1228,8 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
                         <button
                             key={status}
                             onClick={() => setLedgerFilter(status)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${ledgerFilter === status 
-                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20' 
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${ledgerFilter === status
+                                ? 'bg-[var(--brand-red)] text-white shadow-lg shadow-[var(--brand-red)]/20'
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                         >
                             {status}
@@ -1340,7 +1338,7 @@ const LedgerTab = ({ searchTerm, onSelect, dateRange, setDateRange, onExport }) 
             <div className="p-8 rounded-3xl border border-dashed text-center space-y-3" style={{ borderColor: 'var(--divider)' }}>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--brand-red)]">Platform Disclosure & Compliance</p>
                 <p className="text-xs font-bold leading-relaxed max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
-                    Transactions are processed through verified gateways. Platform income facilitates 
+                    Transactions are processed through verified gateways. Platform income facilitates
                     human-assisted inspection and verified delivery logistics.
                 </p>
             </div>
@@ -1405,11 +1403,11 @@ const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport })
             unique[o.buyerEmail].orders += 1
             unique[o.buyerEmail].spend += o.amount
         })
-        
+
         let filtered = Object.values(unique)
         if (searchTerm) {
-            filtered = filtered.filter(c => 
-                c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            filtered = filtered.filter(c =>
+                c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.phone.includes(searchTerm)
             )
@@ -1421,7 +1419,7 @@ const CustomersTab = ({ searchTerm, onInfo, dateRange, setDateRange, onExport })
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
-                <button 
+                <button
                     onClick={() => onExport(customers, 'UAC_Customers')}
                     className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--bg-primary)] border border-[var(--divider)] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)] transition-all shadow-sm"
                 >
@@ -1545,7 +1543,7 @@ const StatsTab = ({ dateRange, setDateRange, onExport }) => {
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <CustomDatePicker dateRange={dateRange} setDateRange={setDateRange} />
-                    <button 
+                    <button
                         onClick={() => onExport(filteredOrders, 'UAC_Stats_Orders')}
                         className="flex items-center justify-center gap-2 px-6 py-4 bg-[var(--brand-red)] rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:scale-105 transition-transform shadow-lg shadow-[var(--brand-red)]/20"
                     >
@@ -1559,12 +1557,12 @@ const StatsTab = ({ dateRange, setDateRange, onExport }) => {
                     <p className="text-xs font-black uppercase tracking-widest mb-10 text-[var(--text-muted)]">Category Performance</p>
                     <div className="space-y-6">
                         {Object.entries(salesByCategory).map(([cat, val], i) => (
-                            <ProgressRow 
+                            <ProgressRow
                                 key={cat}
-                                label={cat} 
-                                percentage={Math.round((val / totalRevenue) * 100)} 
-                                color={['#C0392B', '#3B82F6', '#10B981', '#A855F7', '#F43F5E'][i % 5]} 
-                                value={`₦${val.toLocaleString()}`} 
+                                label={cat}
+                                percentage={Math.round((val / totalRevenue) * 100)}
+                                color={['#C0392B', '#3B82F6', '#10B981', '#A855F7', '#F43F5E'][i % 5]}
+                                value={`₦${val.toLocaleString()}`}
                             />
                         ))}
                         {Object.keys(salesByCategory).length === 0 && (
@@ -1587,10 +1585,10 @@ const StatsTab = ({ dateRange, setDateRange, onExport }) => {
                                 })) || 1
                                 const height = (volume / maxVolume) * 100
                                 return (
-                                    <motion.div 
-                                        key={i} 
-                                        initial={{ height: 0 }} 
-                                        animate={{ height: `${height}%` }} 
+                                    <motion.div
+                                        key={i}
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${height}%` }}
                                         transition={{ delay: i * 0.1 }}
                                         className="flex-1 bg-[var(--brand-red)] rounded-t-lg opacity-80 hover:opacity-100 relative group"
                                     >
@@ -1672,12 +1670,12 @@ const DeleteConfirmModal = ({ product, onConfirm, onCancel }) => (
 
 const CustomerInfoModal = ({ customer, onClose }) => {
     return (
-        <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+        <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[20000] bg-black/60 backdrop-blur-md flex items-center justify-center p-4"
             onClick={onClose}
         >
-            <motion.div 
+            <motion.div
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
                 className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-[32px] shadow-2xl transition-colors duration-500 custom-scrollbar relative"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--divider)' }}
@@ -1779,7 +1777,7 @@ const ProductInfoModal = ({ product, onClose, onEdit }) => (
                         <p className="text-xs font-bold leading-relaxed">{product.description || 'No description provided.'}</p>
                     </div>
                     <div className="flex gap-4 pt-4">
-                        <button 
+                        <button
                             onClick={() => { onEdit(product); onClose(); }}
                             className="flex-1 py-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--divider)] text-[10px] font-black uppercase tracking-widest hover:border-[var(--brand-red)]/20 transition-all flex items-center justify-center gap-2"
                         >
@@ -1834,7 +1832,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
         e.preventDefault()
         const validImages = form.images.filter(img => img !== '')
         const primaryImage = validImages[0] || form.image
-        
+
         setIsSubmitting(true)
         try {
             const productData = {
@@ -1845,13 +1843,13 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                 sellerPrice: parseInt(form.sellerPrice),
                 category: isAddingCategory ? newCategoryName.trim() : form.category
             }
-            
+
             if (isEdit) {
                 await updateProduct(product.id, productData)
             } else {
                 await addProduct(productData)
             }
-            
+
             if (!isEdit && onSuccess) {
                 onSuccess()
             } else {
@@ -1905,12 +1903,12 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                 <p className="text-sm font-black">Out of Stock</p>
                                 <p className="text-[10px] font-bold text-[var(--text-muted)]">Mark this item as currently unavailable</p>
                             </div>
-                            <button 
+                            <button
                                 type="button"
                                 onClick={() => setForm({ ...form, status: form.status === 'out_of_stock' ? 'active' : 'out_of_stock' })}
                                 className={`w-14 h-8 rounded-full transition-all relative ${form.status === 'out_of_stock' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-700'}`}
                             >
-                                <motion.div 
+                                <motion.div
                                     animate={{ x: form.status === 'out_of_stock' ? 26 : 4 }}
                                     className="absolute top-1 w-6 h-6 rounded-full bg-white shadow-sm"
                                 />
@@ -1919,7 +1917,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                         <div className="md:col-span-2">
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Category</label>
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => setIsAddingCategory(!isAddingCategory)}
                                     className="text-[9px] font-black uppercase text-[var(--brand-red)] hover:underline"
@@ -1927,25 +1925,25 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                     {isAddingCategory ? 'Select Existing' : '+ Create New'}
                                 </button>
                             </div>
-                            
+
                             {isAddingCategory ? (
-                                <input 
+                                <input
                                     autoFocus
                                     value={newCategoryName}
                                     onChange={e => {
                                         setNewCategoryName(e.target.value)
                                         setForm({ ...form, category: e.target.value })
                                     }}
-                                    className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold transition-colors" 
+                                    className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold transition-colors"
                                     style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }}
                                     placeholder="Type new category name..."
                                 />
                             ) : (
                                 <div className="relative">
-                                    <select 
-                                        value={form.category} 
-                                        onChange={e => setForm({ ...form, category: e.target.value })} 
-                                        className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold appearance-none transition-colors cursor-pointer" 
+                                    <select
+                                        value={form.category}
+                                        onChange={e => setForm({ ...form, category: e.target.value })}
+                                        className="w-full rounded-xl px-6 py-4 outline-none text-sm font-bold appearance-none transition-colors cursor-pointer"
                                         style={{ background: 'var(--bg-secondary)', border: '1px solid var(--divider)', color: 'var(--text-primary)' }}
                                     >
                                         {categories.filter(c => c !== 'All').map(cat => (
@@ -1967,7 +1965,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                         {img ? (
                                             <div className="w-full h-full rounded-2xl overflow-hidden border-2 relative" style={{ borderColor: i === 0 ? 'var(--brand-red)' : 'var(--divider)' }}>
                                                 <img src={img} alt="" className="w-full h-full object-cover" />
-                                                <button 
+                                                <button
                                                     type="button"
                                                     onClick={() => removeImage(i)}
                                                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1979,7 +1977,7 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                                 )}
                                             </div>
                                         ) : (
-                                            <label 
+                                            <label
                                                 className="w-full h-full rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[var(--brand-red)] transition-colors flex flex-col items-center justify-center gap-2 cursor-pointer group-hover:bg-[var(--bg-secondary)]"
                                                 onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
                                                 onDrop={e => {
@@ -2003,9 +2001,9 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                                     </div>
                                 ))}
                                 {form.images.length < 10 && (
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setForm({...form, images: [...form.images, '']})}
+                                    <button
+                                        type="button"
+                                        onClick={() => setForm({ ...form, images: [...form.images, ''] })}
                                         className="aspect-square rounded-2xl border-2 border-dashed border-[var(--divider)] hover:border-[var(--brand-red)] flex flex-col items-center justify-center gap-2 transition-all hover:bg-[var(--bg-secondary)]"
                                     >
                                         <Plus size={20} className="text-[var(--text-muted)]" />
@@ -2027,8 +2025,8 @@ const ProductModal = ({ product = null, onClose, onSuccess }) => {
                         </div>
                     </div>
 
-                    <button 
-                        type="submit" 
+                    <button
+                        type="submit"
                         disabled={isSubmitting}
                         className={`w-full py-4 lg:py-5 rounded-xl bg-black dark:bg-[var(--brand-red)] text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl transition-all ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}`}
                     >
@@ -2054,7 +2052,7 @@ const SuccessMessage = ({ title, subtitle, onClose }) => (
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight mb-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
             <p className="text-xs font-bold leading-relaxed mb-6" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
-            <button 
+            <button
                 onClick={onClose}
                 className="w-full py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-primary)] text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform"
             >

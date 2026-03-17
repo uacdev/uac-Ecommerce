@@ -46,7 +46,7 @@ const Navbar = () => {
                     {/* Logo Section */}
                     <Link to="/" className="flex items-center gap-2 group shrink-0">
                         <img 
-                            src="/images/uac_logo.png" 
+                            src="/images/uac_foods_full.png" 
                             alt="UAC Foods" 
                             className="h-12 md:h-14 lg:h-16 w-auto group-hover:scale-105 transition-transform duration-500 object-contain" 
                         />
@@ -235,7 +235,7 @@ const Navbar = () => {
                             className="fixed top-0 right-0 h-full w-[85%] max-w-sm z-50 p-8 flex flex-col shadow-2xl bg-[var(--bg-primary)]"
                         >
                             <div className="flex justify-between items-center mb-10">
-                                <img src="/images/uac_logo.png" alt="UAC Foods" className="h-10 w-auto" />
+                                <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-10 w-auto" />
                                 <button onClick={() => setIsOpen(false)} className="p-2 rounded-xl bg-[var(--bg-secondary)] text-[var(--text-primary)]">
                                     <X size={24} />
                                 </button>
