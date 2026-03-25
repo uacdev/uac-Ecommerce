@@ -1,0 +1,9 @@
+node_modules/
+.env*
+dist/
+build/
+.vite/
+.vercel
+*lock.json
+*.log
+.DS_Store
