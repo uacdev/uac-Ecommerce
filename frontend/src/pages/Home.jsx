@@ -3,6 +3,7 @@ import { ArrowRight, ShoppingBag, ShieldCheck, Zap, Truck, Filter, Star, ArrowUp
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
+import { useStore } from '../context/StoreContext'
 import Preloader from '../components/Preloader'
 
 const DUMMY_PRODUCTS = [
@@ -48,6 +49,7 @@ const HERO_IMAGES = [
 ]
 
 const Home = () => {
+    const { products, categories: storeCategories } = useStore()
     const [activeCategory, setActiveCategory] = useState("All")
     const [currentHeroIdx, setCurrentHeroIdx] = useState(0)
     const [loading, setLoading] = useState(true)
@@ -55,7 +57,8 @@ const Home = () => {
     const { isDark } = useTheme()
     const heroRef = useRef(null)
 
-    const categories = ["All", "Gala", "Supreme", "Swan", "Funtime"]
+    // Merge static brands with dynamic ones for UI showcase
+    const categories = Array.from(new Set(["All", "Gala", "Supreme", "Swan", "Funtime", ...storeCategories]))
 
     useEffect(() => {
         document.title = 'UAC Foods Limited | Tasty · Nourishing · Trusted'
@@ -71,7 +74,7 @@ const Home = () => {
         }
     }, [])
 
-    const filteredProducts = DUMMY_PRODUCTS.filter(p => {
+    const filteredProducts = (products.length > 0 ? products : DUMMY_PRODUCTS).filter(p => {
         if (activeCategory === "All") return true
         return p.category === activeCategory
     })
@@ -165,7 +168,7 @@ const Home = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* BRAND MARQUEE */}
             {/* ═══════════════════════════════════════════ */}
-            <section className="bg-[var(--brand-red)] py-10 overflow-hidden relative skew-y-1">
+            <section className="bg-[var(--brand-red)] py-10 overflow-hidden relative skew-y-1 z-20">
                 <motion.div
                     animate={{ x: [0, -1920] }}
                     transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
@@ -187,9 +190,9 @@ const Home = () => {
             </section>
 
             {/* ═══════════════════════════════════════════ */}
-            {/* ICONIC BRANDS SECTION (DUMMY DATA) */}
+            {/* ICONIC BRANDS SECTION */}
             {/* ═══════════════════════════════════════════ */}
-            <section id="all-products" className="py-24 md:py-40 bg-[var(--bg-primary)]">
+            <section id="all-products" className="py-24 md:py-40 bg-[var(--bg-primary)] relative z-10 transition-colors duration-500">
                 <div className="container px-6">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-20">
                         <div>
@@ -216,7 +219,7 @@ const Home = () => {
                                     onClick={() => setActiveCategory(cat)}
                                     className={`px-10 py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest transition-all shrink-0 whitespace-nowrap shadow-xl ${
                                         activeCategory === cat
-                                            ? 'bg-[var(--brand-red)] text-white shadow-[var(--brand-red)]/30'
+                                            ? 'bg-[var(--brand-red)] text-white shadow-[var(--brand-red)]/30 scale-105'
                                             : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:bg-[var(--divider)]'
                                     }`}
                                 >
@@ -240,7 +243,7 @@ const Home = () => {
                                 >
                                     <div className="aspect-[4/5] rounded-[40px] overflow-hidden bg-[var(--bg-secondary)] relative shadow-2xl transition-all duration-700 group-hover:-translate-y-4">
                                         <img 
-                                            src={product.image} 
+                                            src={product.image || product.images?.[0] || '/images/default_product.jpg'} 
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                                             alt={product.name} 
                                         />
@@ -261,8 +264,8 @@ const Home = () => {
                                         </div>
                                     </div>
                                     <div className="mt-8 text-center">
-                                        <h3 className="text-xl font-black text-[var(--text-primary)]">{product.name}</h3>
-                                        <p className="text-[var(--brand-red)] font-black text-lg mt-1">₦{product.price.toLocaleString()}</p>
+                                        <h3 className="text-xl font-black text-[var(--text-primary)] transition-colors duration-300 group-hover:text-[var(--brand-red)]">{product.name}</h3>
+                                        <p className="text-[var(--text-muted)] font-black text-lg mt-1">₦{product.price.toLocaleString()}</p>
                                     </div>
                                 </motion.div>
                             ))}
@@ -281,7 +284,7 @@ const Home = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* OUR HERITAGE SECTION */}
             {/* ═══════════════════════════════════════════ */}
-            <section id="our-heritage" className="py-32 md:py-48 bg-[var(--bg-secondary)] relative overflow-hidden">
+            <section id="our-heritage" className="py-32 md:py-48 bg-[var(--bg-secondary)] transition-colors duration-500 relative overflow-hidden">
                 <div className="container relative z-10 px-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
                         <div>
@@ -349,9 +352,9 @@ const Home = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* CORPORATE STATUS */}
             {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 bg-[var(--bg-primary)]">
+            <section className="py-24 bg-[var(--bg-primary)] transition-colors duration-500 relative z-10">
                 <div className="container px-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12 bg-[var(--bg-tertiary)] border border-[var(--divider)] rounded-[40px] p-12 shadow-xl shadow-[var(--brand-red)]/5">
                         <StatItem label="Established" value="1962" />
                         <StatItem label="Employees" value="2000+" />
                         <StatItem label="Market Reach" value="80%" />
@@ -363,14 +366,14 @@ const Home = () => {
             {/* ═══════════════════════════════════════════ */}
             {/* OFFICIAL NEWSLETTER */}
             {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 md:py-40">
+            <section className="py-24 md:py-40 bg-[var(--bg-primary)] transition-colors duration-500 relative z-10">
                 <div className="container px-6">
                     <motion.div 
                         initial={{ opacity: 0, y: 50 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8 }}
-                        className="relative overflow-hidden rounded-[64px] px-8 py-24 md:px-24 md:py-32 bg-[var(--brand-red)] text-white shadow-2xl"
+                        className="relative overflow-hidden rounded-[64px] px-8 py-24 md:px-24 md:py-32 bg-[var(--brand-red)] text-white shadow-2xl group hover:shadow-[var(--brand-red)]/50 transition-shadow duration-700"
                     >
                         {/* Faded Gala Background Image */}
                         <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none">
@@ -395,9 +398,9 @@ const Home = () => {
                                 <input
                                     type="email"
                                     placeholder="Enter corporate email..."
-                                    className="flex-1 px-10 py-6 rounded-3xl bg-white text-black text-lg outline-none focus:ring-4 focus:ring-white/30 transition-all font-bold"
+                                    className="flex-1 px-10 py-6 rounded-3xl bg-white/10 backdrop-blur-md text-white placeholder-white/60 text-lg outline-none border border-white/20 focus:bg-white/20 focus:ring-4 focus:ring-white/30 transition-all font-bold"
                                 />
-                                <button className="px-14 py-6 bg-black text-white font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-transform shadow-2xl">
+                                <button className="px-14 py-6 bg-white text-[var(--brand-red)] hover:bg-black hover:text-white font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-2xl hover:shadow-black/50">
                                     Subscribe
                                 </button>
                             </div>
