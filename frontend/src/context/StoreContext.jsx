@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products'
+import { productApi, orderApi, statsApi } from '../api/client'
 
 const StoreContext = createContext()
 
@@ -12,6 +13,7 @@ export const StoreProvider = ({ children }) => {
     const [cart, setCart] = useState([])
     const [favorites, setFavorites] = useState([])
     const [loading, setLoading] = useState(true)
+    const [apiStats, setApiStats] = useState(null)
 
     // Persistence load for Cart & Favorites
     useEffect(() => {
@@ -31,44 +33,55 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem('ufl_favorites', JSON.stringify(favorites))
     }, [favorites])
 
-    // Initial Fetch (existing logic)...
+    // Initial Fetch - Now using Unified API
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true)
             
-            // NOTE: For UAC Demo, we use INITIAL_PRODUCTS to ensure official branding
-            setProducts(INITIAL_PRODUCTS);
-
-            if (!supabase.supabaseUrl) {
-                setLoading(false);
-                return;
-            }
-
             try {
-                // We still fetch orders to keep the admin functionality working
-                const { data: dbOrders, error: oError } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .order('date', { ascending: false })
+                // Parallel fetch for speed
+                const [pRes, oRes, sRes] = await Promise.allSettled([
+                    productApi.getAll(),
+                    orderApi.getAll(),
+                    statsApi.getKpis()
+                ]);
 
-                if (oError) throw oError
-                setOrders((dbOrders || []).map(o => ({
-                    ...o,
-                    productId: o.product_id,
-                    productName: o.product_name,
-                    productImage: o.product_image,
-                    sellerName: o.seller_name,
-                    buyerName: o.buyer_name,
-                    buyerEmail: o.buyer_email,
-                    buyerPhone: o.buyer_phone,
-                    buyerAddress: o.buyer_address,
-                    paymentMethod: o.payment_method,
-                    deliveryMethod: o.delivery_method,
-                    sellerAgreedPrice: o.seller_agreed_price
-                })))
+                // Handle Products
+                if (pRes.status === 'fulfilled') {
+                    const fetchedProducts = pRes.value.data.data;
+                    // Merge with INITIAL_PRODUCTS for branding if DB is empty, or just use DB
+                    setProducts(fetchedProducts.length > 0 ? fetchedProducts : INITIAL_PRODUCTS);
+                } else {
+                    setProducts(INITIAL_PRODUCTS);
+                }
+
+                // Handle Orders
+                if (oRes.status === 'fulfilled') {
+                    const dbOrders = oRes.value.data.data || [];
+                    setOrders(dbOrders.map(o => ({
+                        ...o,
+                        productId: o.product_id,
+                        productName: o.product_name,
+                        productImage: o.product_image,
+                        sellerName: o.seller_name,
+                        buyerName: o.buyer_name,
+                        buyerEmail: o.buyer_email,
+                        buyerPhone: o.buyer_phone,
+                        buyerAddress: o.buyer_address,
+                        paymentMethod: o.payment_method,
+                        deliveryMethod: o.delivery_method,
+                        sellerAgreedPrice: o.seller_agreed_price
+                    })));
+                }
+
+                // Handle Stats
+                if (sRes.status === 'fulfilled') {
+                    setApiStats(sRes.value.data.data);
+                }
 
             } catch (err) {
-                console.error('Supabase fetch error:', err)
+                console.error('API fetch error:', err)
+                setProducts(INITIAL_PRODUCTS); // Fallback
             } finally {
                 setLoading(false)
             }
@@ -128,7 +141,7 @@ export const StoreProvider = ({ children }) => {
 
     // ─── Product Actions ───
     const addProduct = async (product) => {
-        const newProduct = { 
+        const productPayload = { 
             name: product.name,
             price: product.price,
             seller_price: product.sellerPrice || null,
@@ -144,42 +157,24 @@ export const StoreProvider = ({ children }) => {
         }
 
         try {
-            const { data, error } = await supabase.from('products').insert([newProduct]).select()
-            if (error) throw error
-            if (data) {
-                const addedResponse = {
-                    ...data[0],
-                    sellerPrice: data[0].seller_price,
-                    sellerName: data[0].seller_name,
-                    isReserved: data[0].is_reserved
-                }
-                setProducts([addedResponse, ...products])
-            }
+            const res = await productApi.create(productPayload);
+            const added = res.data.data;
+            setProducts([{
+                ...added,
+                sellerPrice: added.seller_price,
+                sellerName: added.seller_name
+            }, ...products]);
         } catch (err) {
             console.error('Add product error:', err)
-            const localProd = { ...newProduct, id: `prod-${Date.now()}`, sellerPrice: newProduct.seller_price, sellerName: newProduct.seller_name }
-            setProducts([localProd, ...products])
+            // Local fallback for demo
+            setProducts([{ ...productPayload, id: `local-${Date.now()}` }, ...products])
         }
     }
 
     const updateProduct = async (id, updates) => {
-        // Map camelCase to snake_case for DB
-        const dbUpdates = { ...updates }
-        if (updates.sellerPrice !== undefined) {
-            dbUpdates.seller_price = updates.sellerPrice
-            delete dbUpdates.sellerPrice
-        }
-        if (updates.sellerName !== undefined) {
-            dbUpdates.seller_name = updates.sellerName
-            delete dbUpdates.sellerName
-        }
-        if (updates.delivery_timeframe !== undefined) {
-            dbUpdates.delivery_timeframe = updates.delivery_timeframe
-        }
-        
         try {
-            const { error } = await supabase.from('products').update(dbUpdates).eq('id', id)
-            if (error) throw error
+            // Note: API updates expect snake_case but we'll handle mapping in controller or here
+            await productApi.update(id, updates);
             setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p))
         } catch (err) {
             console.error('Update product error:', err)
@@ -189,8 +184,7 @@ export const StoreProvider = ({ children }) => {
 
     const removeProduct = async (id) => {
         try {
-            const { error } = await supabase.from('products').delete().eq('id', id)
-            if (error) throw error
+            await productApi.delete(id);
             setProducts(products.filter(p => p.id !== id))
         } catch (err) {
             console.error('Remove product error:', err)
@@ -266,8 +260,7 @@ export const StoreProvider = ({ children }) => {
         }
 
         try {
-            const { error } = await supabase.from('orders').insert([newOrderDb])
-            if (error) throw error
+            await orderApi.create(newOrderDb)
             setOrders([uiOrder, ...orders])
             if (orderData.productId) markProductReserved(orderData.productId)
             return uiOrder
@@ -281,17 +274,10 @@ export const StoreProvider = ({ children }) => {
 
     const updateOrderStatus = async (id, status) => {
         try {
-            const { error } = await supabase.from('orders').update({ status }).eq('id', id)
-            if (error) throw error
-            
+            await orderApi.updateStatus(id, status);
             setOrders(orders.map(o => {
                 if (o.id !== id) return o
-                
-                // Per PRD: When order is completed, mark product as sold
-                if (status === 'completed' && o.productId) {
-                    markProductSold(o.productId)
-                }
-                
+                if (status === 'completed' && o.productId) markProductSold(o.productId)
                 return { ...o, status }
             }))
         } catch (err) {
@@ -307,8 +293,7 @@ export const StoreProvider = ({ children }) => {
                 delivery_fee: parseFloat(delivery_fee), 
                 logistics_partner 
             }
-            const { error } = await supabase.from('orders').update(updates).eq('id', orderId)
-            if (error) throw error
+            await orderApi.updateDelivery(orderId, updates)
             setOrders(orders.map(o => o.id === orderId ? { 
                 ...o, 
                 deliveryMethod: delivery_method, 
@@ -334,16 +319,16 @@ export const StoreProvider = ({ children }) => {
         return ['All', ...Array.from(unique).sort()]
     }, [products])
 
-    const stats = {
-        totalProducts: products.length,
+    const stats = useMemo(() => ({
+        totalProducts: apiStats?.totalProducts || products.length,
         availableProducts: products.filter(p => !p.is_reserved && p.status !== 'sold').length,
-        totalOrders: orders.length,
+        totalOrders: apiStats?.totalOrders || orders.length,
         pendingOrders: orders.filter(o => o.status === 'pending').length,
-        totalRevenue: orders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        totalRevenue: apiStats?.totalRevenue || orders.reduce((sum, o) => sum + (o.amount || 0), 0),
         platformIncome: orders
             .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
             .reduce((sum, o) => sum + (o.commission || Math.round((o.amount || 0) * 0.1)), 0),
-    }
+    }), [products, orders, apiStats])
 
     return (
         <StoreContext.Provider value={{

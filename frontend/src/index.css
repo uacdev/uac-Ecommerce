@@ -126,6 +126,13 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* ─── COMPONENT STYLES ─── */
@@ -270,36 +277,122 @@
     border-color: var(--divider);
   }
 }
-/* React DatePicker Custom Styling */
+/* ─── REACT DATEPICKER PIXEL PERFECT FIX ─── */
 .react-datepicker {
-  background-color: var(--bg-primary) !important;
-  border-color: var(--divider) !important;
-  border-radius: 20px !important;
-  font-family: inherit !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid var(--divider) !important;
+  border-radius: 24px !important;
+  font-family: 'Sen', sans-serif !important;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.2) !important;
+  padding: 15px !important;
+  z-index: 99999 !important;
+  overflow: hidden !important;
 }
+
+.react-datepicker__triangle {
+  display: none !important;
+}
+
 .react-datepicker__header {
-  background-color: var(--bg-secondary) !important;
-  border-bottom-color: var(--divider) !important;
-  border-top-left-radius: 20px !important;
-  border-top-right-radius: 20px !important;
+  background-color: transparent !important;
+  border-bottom: none !important;
+  padding-top: 15px !important;
+  padding-bottom: 10px !important;
 }
-.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
-  background-color: #C0392B !important;
-  border-radius: 50% !important;
+
+.react-datepicker__month-container {
+  float: none !important;
+  width: 280px !important;
 }
-.react-datepicker__day:hover {
-  background-color: rgba(192, 57, 43, 0.1) !important;
-  border-radius: 50% !important;
-}
-.react-datepicker__current-month, .react-datepicker__day-name {
+
+.react-datepicker__current-month {
   color: var(--text-primary) !important;
-  font-weight: 800 !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
   text-transform: uppercase !important;
-  font-size: 10px !important;
-  letter-spacing: 0.1em !important;
+  letter-spacing: 0.15em !important;
+  margin-bottom: 20px !important;
+  text-align: center !important;
 }
+
+.react-datepicker__day-names {
+  display: flex !important;
+  justify-content: space-between !important;
+  margin-bottom: 15px !important;
+  padding: 0 5px !important;
+}
+
+.react-datepicker__day-name {
+  color: var(--text-muted) !important;
+  font-weight: 800 !important;
+  font-size: 9px !important;
+  width: 32px !important;
+  margin: 0 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+}
+
+.react-datepicker__month {
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.react-datepicker__week {
+  display: flex !important;
+  justify-content: space-between !important;
+}
+
 .react-datepicker__day {
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  margin: 0 !important;
   color: var(--text-primary) !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  text-align: center !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
 }
+
+.react-datepicker__day:hover {
+  background-color: var(--bg-secondary) !important;
+  color: #ed0000 !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #ed0000 !important;
+  color: white !important;
+  font-weight: 800 !important;
+}
+
+.react-datepicker__day--outside-month {
+  color: var(--text-muted) !important;
+  opacity: 0.3 !important;
+}
+
+.react-datepicker__navigation {
+  top: 25px !important;
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.react-datepicker__navigation--previous {
+  left: 10px !important;
+}
+
+.react-datepicker__navigation--next {
+  right: 10px !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: var(--text-muted) !important;
+  border-width: 2.5px 2.5px 0 0 !important;
+  width: 7px !important;
+  height: 7px !important;
+}
+
+

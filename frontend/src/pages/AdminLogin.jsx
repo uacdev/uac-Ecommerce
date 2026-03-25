@@ -37,7 +37,7 @@ const AdminLogin = () => {
                 password: password.trim(),
             })
             if (authError) throw authError
-            navigate('/admin')
+            navigate('/admin', { replace: true })
         } catch (err) {
             setError('Invalid credentials. Please try again.')
             setLoading(false)

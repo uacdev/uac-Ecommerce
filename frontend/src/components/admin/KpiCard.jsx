@@ -10,7 +10,7 @@ const KpiCard = ({ title, value, trend, isPositive, delay = 0 }) => {
             transition={{ delay, duration: 0.4 }}
             className="group relative overflow-hidden flex flex-col p-6 rounded-xl transition-all duration-300 bg-[var(--bg-tertiary)] border border-[var(--divider)] shadow-sm"
         >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-red-400 opacity-100" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-[#ed0000]" />
             <p className="text-[13px] font-medium text-[var(--text-muted)] mb-4">{title}</p>
             
             <div className="flex flex-col gap-1 mb-4">

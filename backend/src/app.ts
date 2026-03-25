@@ -3,7 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
+import productRouter from './routes/productRouter';
+import orderRouter from './routes/orderRouter';
+import statsRouter from './routes/statsRouter';
 
 dotenv.config();
 
@@ -15,12 +17,7 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
-// Supabase Setup
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Health Check
+// Routes
 app.get('/health', (req, res) => {
     res.json({
         status: 'UP',
@@ -29,8 +26,10 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Routes
-// We'll add routes/products.ts and routes/orders.ts later
+app.use('/api/products', productRouter);
+app.use('/api/orders', orderRouter);
+app.use('/api/stats', statsRouter);
+
 app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to UFL E-Commerce API' });
 });
