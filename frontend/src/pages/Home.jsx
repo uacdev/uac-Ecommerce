@@ -479,7 +479,13 @@ const Home = () => {
             <section className="mx-4 lg:mx-8 my-4 rounded-[32px] overflow-hidden bg-[#ED0000] relative">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[420px] relative z-10">
-                    <div className="flex flex-col justify-center px-10 lg:px-20 py-16 gap-6">
+                    <motion.div 
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        variants={fadeUp}
+                        className="flex flex-col justify-center px-10 lg:px-20 py-16 gap-6"
+                    >
                         <span className="text-white/70 text-[11px] font-bold tracking-[4px] uppercase">Limited offer</span>
                         <h2 className="text-4xl md:text-6xl font-bold text-white leading-tight tracking-tight">
                             Get 20% off<br />your first order
@@ -490,7 +496,7 @@ const Home = () => {
                         <Link to="/products" className="inline-flex items-center gap-3 bg-white text-[#ED0000] px-8 py-4 rounded-full text-[12px] font-bold w-fit hover:bg-gray-100 transition-colors shadow-2xl">
                             Shop now <ArrowRight size={14} />
                         </Link>
-                    </div>
+                    </motion.div>
                     <div className="relative min-h-[280px] flex items-end justify-center overflow-hidden">
                         <img src="/images/funtime_chips.jpg" alt="Promo" className="w-full h-full object-cover opacity-30 lg:opacity-50" />
                         <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#ED0000] hidden lg:block" />

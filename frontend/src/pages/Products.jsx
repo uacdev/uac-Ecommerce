@@ -49,7 +49,7 @@ const Products = () => {
                         animate={{ opacity: 1 }}
                         className="text-[10px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)] mb-4 block"
                     >
-                        UFL Portfolio
+                        UAC Foods Portfolio
                     </motion.span>
                     <motion.h1 
                         initial={{ scale: 0.9, opacity: 0 }}

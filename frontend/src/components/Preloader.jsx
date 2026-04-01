@@ -42,7 +42,6 @@ const Preloader = () => {
                             />
                         ))}
                     </div>
-                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.3em] ml-1">Loading portal</p>
                 </div>
             </div>
         </div>

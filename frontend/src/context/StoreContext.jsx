@@ -198,7 +198,7 @@ export const StoreProvider = ({ children }) => {
 
     // ─── Order Actions ───
     const addOrder = async (orderData) => {
-        const orderId = `UFL-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`
+        const orderId = `UAC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`
         
         // Financial Split for SAP Reconciliation
         const deliveryFee = orderData.deliveryFee || 0
@@ -207,7 +207,7 @@ export const StoreProvider = ({ children }) => {
 
         // Fulfillment Logic (PRD Section 4.1/4.2/4.3)
         const fulfillmentType = orderData.fulfillmentType || 'delivery'
-        const pickupCode = fulfillmentType === 'pickup' ? `UFL-${Math.random().toString(36).substring(2, 7).toUpperCase()}` : null
+        const pickupCode = fulfillmentType === 'pickup' ? `UAC-${Math.random().toString(36).substring(2, 7).toUpperCase()}` : null
 
         const newOrderDb = {
             id: orderId,

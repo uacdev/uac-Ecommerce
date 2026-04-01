@@ -17,7 +17,7 @@ const ProductDetails = () => {
     const productImages = product ? (product.images?.length > 0 ? product.images : [product.image]) : []
 
     useEffect(() => {
-        if (product) document.title = `${product.name} | UFL`
+        if (product) document.title = `${product.name} | UAC Foods`
     }, [product])
 
     if (loading) return <Preloader />

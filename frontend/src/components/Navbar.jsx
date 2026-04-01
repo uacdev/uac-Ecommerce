@@ -46,7 +46,7 @@ const Navbar = () => {
                     {/* Logo Section */}
                     <div className="flex-1">
                         <Link to="/" className="inline-block group shrink-0">
-                            <span className="text-3xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Ufl.</span>
+                            <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-10 w-auto object-contain transition-transform hover:scale-105" />
                         </Link>
                     </div>
 

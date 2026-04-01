@@ -177,7 +177,7 @@ const Checkout = () => {
 
                             <div className="flex items-center gap-6 px-12">
                                 <ShieldCheck size={32} className="text-[var(--text-muted)]" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] leading-relaxed">Secured via UFL Escrow Strategy. 256-bit Encryption Active.</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] leading-relaxed">Secured via UAC Escrow Strategy. 256-bit Encryption Active.</p>
                             </div>
                         </div>
                     </div>
