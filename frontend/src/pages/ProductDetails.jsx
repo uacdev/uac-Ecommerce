@@ -20,7 +20,7 @@ const ProductDetails = () => {
         if (product) document.title = `${product.name} | UAC Foods`
     }, [product])
 
-    if (loading) return <Preloader />
+    // if (loading) return <Preloader />
 
     if (!product) {
         return (

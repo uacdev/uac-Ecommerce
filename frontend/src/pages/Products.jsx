@@ -50,7 +50,7 @@ const Products = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
-    if (loading) return <Preloader />
+    // if (loading) return <Preloader />
 
     return (
         <div className="min-h-screen pt-44 pb-40 bg-[var(--bg-primary)] transition-colors duration-700 font-['Sen',sans-serif]">

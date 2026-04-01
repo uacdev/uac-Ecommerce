@@ -134,7 +134,7 @@ const Home = () => {
     const featuredProducts = products.slice(0, 6)
     const topPicks = products.slice(0, 4)
 
-    if (loading) return <Preloader />
+    // if (loading) return <Preloader />
 
     return (
         <div className="bg-white font-['Sen',sans-serif] overflow-x-hidden">
