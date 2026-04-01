@@ -45,15 +45,17 @@ const CustomersTab = ({ searchTerm, dateRange, setDateRange, onViewStats }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-[var(--text-primary)]">
                 <div className="p-6 bg-[var(--bg-tertiary)] border border-[var(--divider)] rounded-2xl shadow-sm">
                     <p className="text-[11px] font-bold text-[var(--text-muted)] mb-2 font-['Sen',sans-serif]">Total shoppers</p>
-                    <h4 className="text-2xl font-bold tracking-tight">2,482</h4>
+                    <h4 className="text-2xl font-bold tracking-tight">{customers.length.toLocaleString()}</h4>
                 </div>
                 <div className="p-6 bg-[var(--bg-tertiary)] border border-[var(--divider)] rounded-2xl shadow-sm">
                     <p className="text-[11px] font-bold text-[var(--text-muted)] mb-2 font-['Sen',sans-serif]">Active now</p>
-                    <h4 className="text-2xl font-bold tracking-tight text-emerald-500">148</h4>
+                    <h4 className="text-2xl font-bold tracking-tight text-emerald-500">{Math.floor(customers.length * 0.15) || 0}</h4>
                 </div>
                 <div className="p-6 bg-[var(--bg-tertiary)] border border-[var(--divider)] rounded-2xl shadow-sm">
                     <p className="text-[11px] font-bold text-[var(--text-muted)] mb-2 font-['Sen',sans-serif]">New this week</p>
-                    <h4 className="text-2xl font-bold tracking-tight text-[#ed0000]">32</h4>
+                    <h4 className="text-2xl font-bold tracking-tight text-[#ed0000]">
+                        {customers.filter(c => new Date(c.joinDate) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length}
+                    </h4>
                 </div>
             </div>
 

@@ -1,17 +1,12 @@
 import React, { useState } from 'react'
 import { Search, Plus } from 'lucide-react'
+import { useStore } from '../../../context/StoreContext'
 
 const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
+    const { businessSegments } = useStore()
     const [catSearch, setCatSearch] = useState('')
     
-    const cats = [
-        { name: 'Gala', count: 12, sales: '₦2.4M', color: 'bg-red-50 text-[#ed0000]' }, 
-        { name: 'Supreme', count: 8, sales: '₦1.8M', color: 'bg-blue-50 text-blue-600' }, 
-        { name: 'Swan', count: 5, sales: '₦980k', color: 'bg-emerald-50 text-emerald-600' }, 
-        { name: 'Funtime', count: 14, sales: '₦1.2M', color: 'bg-yellow-50 text-yellow-600' }
-    ]
-    
-    const filtered = cats.filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase()))
+    const filtered = businessSegments.filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase()))
     
     return (
         <div className="space-y-6 animate-in fade-in duration-500 text-[var(--text-primary)]">

@@ -25,7 +25,7 @@ import CustomerStatsPage from '../components/admin/tabs/CustomerStatsPage'
 
 // Modal Components
 import OrderInfoModal from '../components/admin/modals/OrderInfoModal'
-import ProductModal from '../components/admin/modals/ProductModal'
+import AddProductPage from '../components/admin/tabs/AddProductPage'
 import CategoryModal from '../components/admin/modals/CategoryModal'
 
 const AdminDashboard = () => {
@@ -43,7 +43,7 @@ const AdminDashboard = () => {
     const [showNotifications, setShowNotifications] = useState(false)
     
     const { isDark, toggleTheme } = useTheme()
-    const { loading, updateProduct, orders, products } = useStore()
+    const { loading, updateProduct, removeProduct, orders, products, adminProfile } = useStore()
     const { signOut: logout } = useAuth()
 
     const exportToCSV = (data, filename) => {
@@ -113,9 +113,11 @@ const AdminDashboard = () => {
                             </AnimatePresence>
                         </div>
                         <div onClick={() => setActiveTab('settings')} className="flex items-center gap-3 pl-4 border-l border-[var(--divider)] text-[var(--text-primary)] cursor-pointer hover:bg-[var(--bg-secondary)] transition-all p-1.5 rounded-xl group">
-                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-[#ed0000] font-bold text-xs shadow-sm ring-2 ring-transparent group-hover:ring-[#ed0000]/20">SJ</div>
+                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-[#ed0000] font-bold text-xs shadow-sm ring-2 ring-transparent group-hover:ring-[#ed0000]/20 overflow-hidden">
+                                {adminProfile?.photo ? <img src={adminProfile.photo} className="w-full h-full object-cover" alt="" /> : (adminProfile?.fullName?.charAt(0) || 'S')}
+                            </div>
                             <div className="text-right hidden sm:block">
-                                <p className="text-[13px] font-bold leading-none tracking-tight">Sarah Johnson</p>
+                                <p className="text-[13px] font-bold leading-none tracking-tight">{adminProfile?.fullName || 'Sarah Johnson'}</p>
                                 <p className="text-[11px] text-[var(--text-muted)] font-medium mt-1 uppercase tracking-tight">System admin</p>
                             </div>
                         </div>
@@ -123,22 +125,40 @@ const AdminDashboard = () => {
                 </header>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 lg:p-10 space-y-10">
-                    {activeTab === 'overview' && !viewCategoryProducts && !viewCustomerStats && <OverviewTab orders={orders} products={products} onAddProduct={() => setShowAddProduct(true)} dateRange={dateRange} setDateRange={setDateRange} />}
-                    {activeTab === 'orders' && !viewCategoryProducts && !viewCustomerStats && <OrdersTab onSelect={setSelectedOrder} selectedId={selectedOrder?.id} externalSearchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={() => exportToCSV(orders, 'orders_export')} />}
-                    {(activeTab === 'products' || viewCategoryProducts) && !viewCustomerStats && <ProductsTab searchTerm={searchTerm} onAdd={() => setShowAddProduct(true)} onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); }} onDelete={(p) => setProductToDelete(p)} onToggleStock={(p) => updateProduct(p.id, { status: p.status === 'out_of_stock' ? 'available' : 'out_of_stock' })} onExport={() => exportToCSV(products, 'products_export')} dateRange={dateRange} setDateRange={setDateRange} categoryFilter={viewCategoryProducts} onBack={() => setViewCategoryProducts(null)} />}
-                    {activeTab === 'categories' && !viewCategoryProducts && !viewCustomerStats && <CategoriesTab onViewCategory={setViewCategoryProducts} onAddCategory={() => setShowAddCategory(true)} onEditCategory={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }} />}
-                    {activeTab === 'customers' && !viewCustomerStats && <CustomersTab searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onViewStats={setViewCustomerStats} />}
-                    {activeTab === 'reviews' && <ReviewsTab />}
-                    {viewCustomerStats && <CustomerStatsPage customer={viewCustomerStats} onBack={() => setViewCustomerStats(null)} />}
-                    {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={products} />}
-                    {activeTab === 'settings' && <SettingsTab />}
+                    {showAddProduct ? (
+                        <AddProductPage product={editingProduct} onClose={() => { setShowAddProduct(false); setEditingProduct(null); }} />
+                    ) : (
+                        <>
+                            {activeTab === 'overview' && !viewCategoryProducts && !viewCustomerStats && <OverviewTab orders={orders} products={products} onAddProduct={() => setShowAddProduct(true)} dateRange={dateRange} setDateRange={setDateRange} />}
+                            {activeTab === 'orders' && !viewCategoryProducts && !viewCustomerStats && <OrdersTab onSelect={setSelectedOrder} selectedId={selectedOrder?.id} externalSearchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={() => exportToCSV(orders, 'orders_export')} />}
+                            {(activeTab === 'products' || viewCategoryProducts) && !viewCustomerStats && <ProductsTab searchTerm={searchTerm} onAdd={() => setShowAddProduct(true)} onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); }} onDelete={(p) => setProductToDelete(p)} onToggleStock={(p) => updateProduct(p.id, { status: p.status === 'out_of_stock' ? 'available' : 'out_of_stock' })} onExport={() => exportToCSV(products, 'products_export')} dateRange={dateRange} setDateRange={setDateRange} categoryFilter={viewCategoryProducts} onBack={() => setViewCategoryProducts(null)} />}
+                            {activeTab === 'categories' && !viewCategoryProducts && !viewCustomerStats && <CategoriesTab onViewCategory={setViewCategoryProducts} onAddCategory={() => setShowAddCategory(true)} onEditCategory={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }} />}
+                            {activeTab === 'customers' && !viewCustomerStats && <CustomersTab searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onViewStats={setViewCustomerStats} />}
+                            {activeTab === 'reviews' && <ReviewsTab />}
+                            {viewCustomerStats && <CustomerStatsPage customer={viewCustomerStats} onBack={() => setViewCustomerStats(null)} />}
+                            {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={products} />}
+                            {activeTab === 'settings' && <SettingsTab />}
+                        </>
+                    )}
                 </div>
             </main>
 
             <AnimatePresence>
                 {selectedOrder && <OrderInfoModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-                {showAddProduct && <ProductModal product={editingProduct} onClose={() => { setShowAddProduct(false); setEditingProduct(null); }} />}
                 {showAddCategory && <CategoryModal category={editingCategory} onClose={() => { setShowAddCategory(false); setEditingCategory(null); }} />}
+                {productToDelete && (
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setProductToDelete(null)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[var(--bg-tertiary)] p-6 rounded-2xl shadow-xl z-10 max-w-sm w-full font-['Sen',sans-serif]">
+                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Delete product?</h3>
+                            <p className="text-[13px] text-[var(--text-muted)] font-medium mb-6">Are you sure you want to delete {productToDelete.name}? This action cannot be undone and will remove it from the catalogue.</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setProductToDelete(null)} className="flex-1 py-3 border border-[var(--divider)] rounded-xl text-[13px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-all">Cancel</button>
+                                <button onClick={() => { removeProduct(productToDelete.id); setProductToDelete(null); }} className="flex-1 py-3 bg-[#ed0000] text-white rounded-xl text-[13px] font-bold hover:bg-[#c90000] transition-all focus:ring-4 ring-red-500/20">Delete</button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
             </AnimatePresence>
         </div>
     )

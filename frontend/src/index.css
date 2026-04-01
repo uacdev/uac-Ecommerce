@@ -13,46 +13,32 @@
     --transition-smooth: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
-  /* Light theme refined */
+  /* Light theme - Premium Editorial (Inspired by PICCOLLO/Nuve) */
   .light {
-    --bg-primary: #F9FAFB;      /* Off-white */
-    --bg-secondary: #F3F4F6;    /* Darker Light for Sidebar */
-    --bg-tertiary: #FFFFFF;     /* Pure white for cards */
-    --text-primary: #111827;
-    --text-secondary: #4B5563;
-    --text-muted: #9CA3AF;
-    --card-bg: #FFFFFF;
-    --card-border: #E5E7EB;
-    --card-radius: 12px;
-    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --input-radius: 8px;
-    --input-bg: #FFFFFF;
-    --input-border: #D1D5DB;
-    --divider: #F1F2F4;
-    --nav-bg: rgba(249, 250, 251, 0.85);
-    --sidebar-bg: #F3F4F6;      /* Darker light sidebar */
-    --badge-bg: #E5E7EB;
-    --badge-text: #374151;
+    --bg-primary: #FDFCF8;      /* Cream background from inspiration */
+    --bg-secondary: #F7F5EE;    /* Deeper beige for sections */
+    --bg-tertiary: #FFFFFF;     /* Pure white for product cards */
+    --bg-dark: #121212;         /* Pitch black for bold blocks */
+    --text-primary: #1A1A1A;
+    --text-secondary: #4A4A4A;
+    --text-muted: #8E8E8E;
+    --brand-red: #ED0000;
+    --divider: #EBE8DE;
+    --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
   }
 
-  /* Dark theme refined - Lighter charcoal for better readability */
+  /* Dark theme - Sleek Charcoal */
   .dark {
-    --bg-primary: #121212;
-    --bg-secondary: #181818;
-    --bg-tertiary: #222222;
-    --text-primary: #FFFFFF;
-    --text-secondary: #D1D5DB;
-    --text-muted: #888888;
-    --card-bg: #1A1A1A;
-    --card-border: #2A2A2A;
-    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    --input-bg: #1A1A1A;
-    --input-border: #333333;
+    --bg-primary: #0F0F0F;
+    --bg-secondary: #161616;
+    --bg-tertiary: #1E1E1E;
+    --bg-dark: #000000;
+    --text-primary: #FDFCF8;
+    --text-secondary: #A0A0A0;
+    --text-muted: #666666;
+    --brand-red: #FF1A1A;
     --divider: #2A2A2A;
-    --nav-bg: rgba(18, 18, 18, 0.9);
-    --sidebar-bg: #151515;
-    --badge-bg: #2A2A2A;
-    --badge-text: #F3F4F6;
+    --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   }
 
   * {

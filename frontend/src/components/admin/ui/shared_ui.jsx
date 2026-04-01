@@ -12,10 +12,10 @@ export const StatusPill = ({ status }) => {
     return <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest border capitalize ${style}`}>{status}</span>
 }
 
-export const SettingInput = ({ label, value, type = 'text', placeholder = '...' }) => (
+export const SettingInput = ({ label, value, name, onChange, type = 'text', placeholder = '...' }) => (
     <div className="space-y-2">
         <label className="text-[11px] font-bold text-[var(--text-muted)] tracking-tight leading-none ml-1">{label}</label>
-        <input type={type} defaultValue={value} placeholder={placeholder} className="w-full bg-[var(--bg-secondary)] border border-transparent rounded-xl px-6 py-4.5 text-[14px] font-bold outline-none focus:border-[#ed0000]/30 shadow-sm transition-all text-[var(--text-primary)]" />
+        <input name={name} onChange={onChange} type={type} value={value} placeholder={placeholder} className="w-full bg-[var(--bg-secondary)] border border-transparent rounded-xl px-6 py-4.5 text-[14px] font-bold outline-none focus:border-[#ed0000]/30 shadow-sm transition-all text-[var(--text-primary)]" />
     </div>
 )
 

@@ -1,443 +1,657 @@
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
-import { ArrowRight, ShoppingBag, ShieldCheck, Zap, Truck, Filter, Star, ArrowUpRight, ChevronRight, Instagram, Mail, Sparkles, Building2, Award, History, UtensilsCrossed, Waves, IceCream, Cookie } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { useTheme } from '../context/ThemeContext'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowRight, ShoppingBag, Star, Truck, Shield, ChevronLeft, ChevronRight, Package, Award, Users, ArrowUpRight, MapPin, Phone, Mail, Leaf } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import Preloader from '../components/Preloader'
 
-const DUMMY_PRODUCTS = [
+const BRANDS = [
     {
-        id: 'gala-1',
-        name: 'Gala Classic Sausage Roll',
-        category: 'Gala',
-        price: 350,
-        image: '/images/gala.jpg',
-        desc: 'The original Nigerian snack since 1962.'
+        name: 'Gala',
+        tagline: 'Nigeria\'s Favourite Snack',
+        desc: 'The iconic sausage roll loved by millions. Made with premium ingredients and baked to golden perfection since 1962.',
+        img: '/images/gala.jpg',
+        bg: 'from-[#7B1C1C] to-[#C1121F]',
+        accent: '#ED0000',
+        badge: '60+ Years'
     },
     {
-        id: 'supreme-1',
-        name: 'Supreme Vanilla & Strawberry',
-        category: 'Supreme',
-        price: 3500,
-        image: '/images/supreme_ice_cream.jpg',
-        desc: 'Rich, creamy, and irresistibly smooth.'
+        name: 'Supreme',
+        tagline: 'Creamy, Rich & Delicious',
+        desc: 'Premium ice cream crafted with the finest dairy. Available in over 20 exciting flavours for every occasion.',
+        img: '/images/supreme_ice_cream.jpg',
+        bg: 'from-[#1c3a7b] to-[#4a7cc1]',
+        accent: '#4a7cc1',
+        badge: 'New Flavours'
     },
     {
-        id: 'swan-1',
-        name: 'Swan Natural Spring Water',
-        category: 'Swan',
-        price: 2400,
-        image: '/images/swan_water.jpg',
-        desc: 'Pure hydration from the Kerang hills.'
+        name: 'Swan',
+        tagline: 'Pure Natural Spring Water',
+        desc: 'Sourced from natural springs, Swan water is refreshing, pure and trusted by families across Nigeria.',
+        img: '/images/swan_water.jpg',
+        bg: 'from-[#0f4c75] to-[#1b6ca8]',
+        accent: '#1b6ca8',
+        badge: 'Pure & Natural'
     },
     {
-        id: 'funtime-1',
-        name: 'Funtime Coconut Chips',
-        category: 'Funtime',
-        price: 1500,
-        image: '/images/funtime_chips.jpg',
-        desc: 'Crunchy and delicious coconut chips.'
-    }
+        name: 'Funtime',
+        tagline: 'Snack. Share. Enjoy.',
+        desc: 'Crispy and tasty chips perfect for every moment — from parties to solo snacking sessions.',
+        img: '/images/funtime_chips.jpg',
+        bg: 'from-[#7b5e1c] to-[#c18a21]',
+        accent: '#c18a21',
+        badge: 'Fan Favourite'
+    },
 ]
 
-const HERO_IMAGES = [
-    '/images/gala.jpg',
-    '/images/supreme_ice_cream.jpg',
-    '/images/swan_water.jpg',
-    '/images/funtime_chips.jpg'
+const TESTIMONIALS = [
+    { name: 'Adaeze O.', role: 'Lagos', text: 'Gala has been part of my family since childhood. The quality never changes — always fresh and delicious!', stars: 5, avatar: 'A' },
+    { name: 'Emeka N.', role: 'Abuja', text: 'Swan water is the only brand I trust for my household. Clean, refreshing and always consistent.', stars: 5, avatar: 'E' },
+    { name: 'Fatima A.', role: 'Kano', text: 'Supreme ice cream is my kids\' absolute favourite. The mango flavour is incredible — we order it every week!', stars: 5, avatar: 'F' },
+    { name: 'Tunde B.', role: 'Ibadan', text: 'Funtime chips are my go-to snack for movie nights. Super crunchy and the flavours are on point.', stars: 5, avatar: 'T' },
 ]
+
+const fadeUp = {
+    hidden: { opacity: 0, y: 40 },
+    visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] } })
+}
 
 const Home = () => {
-    const { products, categories: storeCategories } = useStore()
-    const [activeCategory, setActiveCategory] = useState("All")
-    const [currentHeroIdx, setCurrentHeroIdx] = useState(0)
+    const { products, addToCart } = useStore()
+    const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
-    const location = useLocation()
-    const { isDark } = useTheme()
-    const heroRef = useRef(null)
-
-    // Merge static brands with dynamic ones for UI showcase
-    const categories = Array.from(new Set(["All", "Gala", "Supreme", "Swan", "Funtime", ...storeCategories]))
+    const [activeBrand, setActiveBrand] = useState(0)
+    const [testimonialIdx, setTestimonialIdx] = useState(0)
+    const [addedId, setAddedId] = useState(null)
+    const heroTimerRef = useRef(null)
 
     useEffect(() => {
-        document.title = 'UAC Foods Limited | Tasty · Nourishing · Trusted'
-        const timer = setTimeout(() => setLoading(false), 1500)
-        
-        const heroInterval = setInterval(() => {
-            setCurrentHeroIdx(prev => (prev + 1) % HERO_IMAGES.length)
-        }, 5000)
-
-        return () => {
-            clearTimeout(timer)
-            clearInterval(heroInterval)
-        }
+        document.title = 'UAC Foods | Nourishing Nigeria Since 1962'
+        const timer = setTimeout(() => setLoading(false), 1200)
+        return () => clearTimeout(timer)
     }, [])
 
-    const filteredProducts = (products.length > 0 ? products : DUMMY_PRODUCTS).filter(p => {
-        if (activeCategory === "All") return true
-        return p.category === activeCategory
-    })
+    // Auto-cycle hero
+    useEffect(() => {
+        heroTimerRef.current = setInterval(() => {
+            setActiveBrand(b => (b + 1) % BRANDS.length)
+        }, 5000)
+        return () => clearInterval(heroTimerRef.current)
+    }, [])
+
+    const handleBrandClick = (i) => {
+        clearInterval(heroTimerRef.current)
+        setActiveBrand(i)
+        heroTimerRef.current = setInterval(() => setActiveBrand(b => (b + 1) % BRANDS.length), 5000)
+    }
+
+    const handleAddToCart = (e, p) => {
+        e.preventDefault()
+        e.stopPropagation()
+        addToCart(p)
+        setAddedId(p.id)
+        setTimeout(() => setAddedId(null), 1500)
+    }
+
+    const brand = BRANDS[activeBrand]
+    const featuredProducts = products.slice(0, 6)
+    const topPicks = products.slice(0, 4)
 
     if (loading) return <Preloader />
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="overflow-x-hidden bg-[var(--bg-primary)]"
-        >
-            {/* ═══════════════════════════════════════════ */}
-            {/* CROSS-FADING HERO SECTION */}
-            {/* ═══════════════════════════════════════════ */}
-            <section ref={heroRef} className="relative min-h-screen flex items-center pt-24 md:pt-32 pb-24 md:pb-32 overflow-hidden">
-                {/* Background Images with Fade Animation */}
-                <div className="absolute inset-0 z-0">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentHeroIdx}
-                            initial={{ opacity: 0, scale: 1.1 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 1.5, ease: "easeInOut" }}
-                            className="absolute inset-0"
-                        >
-                            <img 
-                                src={HERO_IMAGES[currentHeroIdx]} 
-                                alt="UAC Hero" 
-                                className="w-full h-full object-cover"
-                            />
-                            {/* Modern Overlays */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-[var(--bg-primary)] via-[var(--bg-primary)]/80 to-transparent lg:w-3/5" />
-                            <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[var(--bg-primary)] to-transparent" />
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-                
-                <div className="container relative z-10 px-6">
-                    <div className="max-w-3xl">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full mb-8 bg-[var(--brand-red)]/10 border border-[var(--brand-red)]/20 shadow-sm"
-                        >
-                            <Building2 size={16} className="text-[var(--brand-red)]" />
-                            <span className="text-[11px] font-black tracking-[0.2em] uppercase text-[var(--brand-red)]">LEADER IN NIGERIAN FMCG · SINCE 1962</span>
-                        </motion.div>
+        <div className="bg-white font-['Sen',sans-serif] overflow-x-hidden">
 
-                        <motion.h1
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                            className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tighter mb-8 text-[var(--text-primary)]"
-                        >
-                            Tasty. <br />
-                            Nourishing. <br />
-                            <span className="text-[var(--brand-red)]">Trusted by Millions.</span>
-                        </motion.h1>
+            {/* ══════════════════════════════════════════════════════
+                HERO — Animated Brand Showcase with product thumbnails
+            ══════════════════════════════════════════════════════ */}
+            <section className="relative min-h-screen flex flex-col overflow-hidden pt-20">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeBrand}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className={`absolute inset-0 bg-gradient-to-br ${brand.bg}`}
+                    />
+                </AnimatePresence>
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.3 }}
-                            className="text-lg md:text-2xl max-w-xl mb-12 leading-relaxed text-[var(--text-muted)] font-medium"
-                        >
-                            Commitment to high quality, innovation and nutrition. Nigeria’s most preferred food brands, delivered to you.
-                        </motion.p>
+                {/* Decorative grain overlay */}
+                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")` }} />
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.4 }}
-                            className="flex flex-col sm:flex-row gap-5 mb-20"
-                        >
-                            <Link to="/shop" className="btn-primary py-5 px-12 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-3 group rounded-2xl shadow-2xl shadow-[var(--brand-red)]/30 scale-105 active:scale-95 transition-all">
-                                Explore Brands
-                                <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
-                            </Link>
-                            <Link to="/about" className="btn-outline py-5 px-12 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-3 rounded-2xl border-2 hover:bg-[var(--text-primary)] hover:text-[var(--bg-primary)] transition-all">
-                                About the Legacy
-                            </Link>
-                        </motion.div>
+                <div className="relative z-10 flex-1 flex flex-col max-w-[1440px] mx-auto w-full px-6 lg:px-16 py-10">
+
+                    {/* Row: Badge + Brand Name */}
+                    <div className="flex items-center gap-4 mb-6">
+                        <span className="text-white/60 text-[11px] font-bold tracking-[4px] uppercase">UAC Foods Limited</span>
+                        <AnimatePresence mode="wait">
+                            <motion.span
+                                key={brand.badge}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="px-3 py-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-white text-[10px] font-bold"
+                            >
+                                {brand.badge}
+                            </motion.span>
+                        </AnimatePresence>
                     </div>
-                </div>
 
-            </section>
+                    {/* Main 3-col hero grid */}
+                    <div className="grid grid-cols-12 gap-6 flex-1 items-center">
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* BRAND MARQUEE */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="bg-[var(--brand-red)] py-10 overflow-hidden relative skew-y-1 z-20">
-                <motion.div
-                    animate={{ x: [0, -1920] }}
-                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-                    className="flex items-center gap-16 whitespace-nowrap"
-                >
-                    {[...Array(15)].map((_, i) => (
-                        <div key={i} className="flex items-center gap-16">
-                            <span className="text-white text-3xl md:text-4xl font-black tracking-tighter uppercase italic opacity-90">GALA</span>
-                            <div className="w-3 h-3 rounded-full bg-white/40" />
-                            <span className="text-white text-3xl md:text-4xl font-black tracking-tighter uppercase italic opacity-90">SUPREME</span>
-                            <div className="w-3 h-3 rounded-full bg-white/40" />
-                            <span className="text-white text-3xl md:text-4xl font-black tracking-tighter uppercase italic opacity-90">SWAN</span>
-                            <div className="w-3 h-3 rounded-full bg-white/40" />
-                            <span className="text-white text-3xl md:text-4xl font-black tracking-tighter uppercase italic opacity-90">FUNTIME</span>
-                            <div className="w-3 h-3 rounded-full bg-white/40" />
-                        </div>
-                    ))}
-                </motion.div>
-            </section>
+                        {/* Left: Brand info */}
+                        <div className="col-span-12 lg:col-span-4 flex flex-col justify-center gap-6 order-2 lg:order-1">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={brand.name + '-text'}
+                                    initial={{ opacity: 0, x: -30 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -30 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="space-y-5"
+                                >
+                                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.9] tracking-tight">
+                                        {brand.name}
+                                    </h1>
+                                    <p className="text-white/80 text-[15px] font-semibold">{brand.tagline}</p>
+                                    <p className="text-white/60 text-sm leading-relaxed max-w-xs">{brand.desc}</p>
+                                    <div className="flex gap-3 pt-2">
+                                        <Link
+                                            to="/products"
+                                            className="inline-flex items-center gap-2 bg-white text-gray-900 px-7 py-3.5 rounded-full text-[12px] font-bold hover:bg-white/90 transition-all shadow-2xl"
+                                        >
+                                            Shop now <ArrowRight size={14} />
+                                        </Link>
+                                        <Link
+                                            to="/about"
+                                            className="inline-flex items-center gap-2 border border-white/40 text-white px-7 py-3.5 rounded-full text-[12px] font-bold hover:bg-white/10 transition-all"
+                                        >
+                                            Our story
+                                        </Link>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* ICONIC BRANDS SECTION */}
-            {/* ═══════════════════════════════════════════ */}
-            <section id="all-products" className="py-24 md:py-40 bg-[var(--bg-primary)] relative z-10 transition-colors duration-500">
-                <div className="container px-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-20">
-                        <div>
-                            <motion.p
-                                initial={{ opacity: 0, y: 10 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                className="text-[12px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)] mb-6 ml-1"
-                            >
-                                Shop the Portfolio
-                            </motion.p>
-                            <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                className="text-4xl md:text-6xl font-black tracking-tighter text-[var(--text-primary)]"
-                            >
-                                Our Iconic Brands
-                            </motion.h2>
+                            {/* Stats row */}
+                            <div className="flex gap-8 pt-4 border-t border-white/20 mt-6">
+                                {[['60+', 'Years'], ['4', 'Brands'], ['M+', 'Consumers']].map(([val, label]) => (
+                                    <div key={label}>
+                                        <p className="text-2xl font-bold text-white">{val}</p>
+                                        <p className="text-white/50 text-[10px] font-bold tracking-tight">{label}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide w-full md:w-auto">
-                            {categories.map(cat => (
+                        {/* Centre: Big product hero image */}
+                        <div className="col-span-12 lg:col-span-5 flex items-center justify-center order-1 lg:order-2">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={brand.name + '-img'}
+                                    initial={{ opacity: 0, y: 40, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                                    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                                    className="relative"
+                                >
+                                    <div className="w-[280px] h-[280px] md:w-[400px] md:h-[400px] lg:w-[480px] lg:h-[480px] rounded-3xl overflow-hidden border border-white/20 shadow-[0_40px_100px_rgba(0,0,0,0.5)]">
+                                        <img
+                                            src={brand.img}
+                                            alt={brand.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    {/* Floating chip */}
+                                    <motion.div
+                                        animate={{ y: [-6, 6, -6] }}
+                                        transition={{ repeat: Infinity, duration: 3 }}
+                                        className="absolute -bottom-5 -left-6 bg-white rounded-2xl px-4 py-3 shadow-2xl hidden md:block"
+                                    >
+                                        <p className="text-[10px] font-bold text-gray-500">Top selling</p>
+                                        <p className="text-[13px] font-bold text-gray-900">{brand.name}</p>
+                                    </motion.div>
+                                    <motion.div
+                                        animate={{ y: [6, -6, 6] }}
+                                        transition={{ repeat: Infinity, duration: 3.5 }}
+                                        className="absolute -top-4 -right-4 bg-[#ED0000] rounded-2xl px-4 py-3 shadow-2xl hidden md:block"
+                                    >
+                                        <p className="text-[10px] font-bold text-white/80">Available</p>
+                                        <p className="text-[13px] font-bold text-white">Order now</p>
+                                    </motion.div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Right: Brand thumb switcher (like the screenshot product list) */}
+                        <div className="col-span-12 lg:col-span-3 flex flex-row lg:flex-col gap-3 justify-center lg:justify-end items-center lg:items-end order-3">
+                            {BRANDS.map((b, i) => (
                                 <button
-                                    key={cat}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={`px-10 py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest transition-all shrink-0 whitespace-nowrap shadow-xl ${
-                                        activeCategory === cat
-                                            ? 'bg-[var(--brand-red)] text-white shadow-[var(--brand-red)]/30 scale-105'
-                                            : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:bg-[var(--divider)]'
+                                    key={b.name}
+                                    onClick={() => handleBrandClick(i)}
+                                    className={`relative group overflow-hidden rounded-2xl transition-all duration-300 flex-shrink-0 ${
+                                        i === activeBrand
+                                            ? 'w-24 h-24 md:w-28 md:h-28 lg:w-full lg:h-32 border-2 border-white shadow-[0_0_30px_rgba(255,255,255,0.2)]'
+                                            : 'w-16 h-16 md:w-20 md:h-20 lg:w-3/4 lg:h-24 border border-white/20 opacity-60 hover:opacity-80'
                                     }`}
                                 >
-                                    {cat}
+                                    <img src={b.img} alt={b.name} className="w-full h-full object-cover" />
+                                    {i === activeBrand && (
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
+                                            <span className="text-white text-[10px] font-bold">{b.name}</span>
+                                        </div>
+                                    )}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <AnimatePresence mode="popLayout">
-                            {filteredProducts.map((product) => (
-                                <motion.div
-                                    key={product.id}
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="group relative"
-                                >
-                                    <div className="aspect-[4/5] rounded-[40px] overflow-hidden bg-[var(--bg-secondary)] relative shadow-2xl transition-all duration-700 group-hover:-translate-y-4">
-                                        <img 
-                                            src={product.image || product.images?.[0] || '/images/default_product.jpg'} 
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                                            alt={product.name} 
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                        
-                                        <div className="absolute top-6 right-6">
-                                            <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-transform delay-100">
-                                                <ShoppingBag size={20} />
+                    {/* Progress bar */}
+                    <div className="flex gap-2 mt-8 pb-2">
+                        {BRANDS.map((_, i) => (
+                            <button key={i} onClick={() => handleBrandClick(i)} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
+                                {i === activeBrand && (
+                                    <motion.div
+                                        className="h-full bg-white"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: '100%' }}
+                                        transition={{ duration: 5, ease: 'linear' }}
+                                    />
+                                )}
+                                {i !== activeBrand && <div className="h-full w-0 bg-white" />}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════════
+                TRUST STRIP — Why UAC Foods
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-10 border-b border-gray-100">
+                <div className="max-w-[1440px] mx-auto px-6 lg:px-16">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        {[
+                            { icon: <Award size={22} className="text-[#ED0000]" />, title: 'ISO Certified', desc: 'Quality assured at every step' },
+                            { icon: <Truck size={22} className="text-[#ED0000]" />, title: 'Nationwide delivery', desc: 'We deliver across all 36 states' },
+                            { icon: <Leaf size={22} className="text-[#ED0000]" />, title: 'Natural ingredients', desc: 'No artificial additives' },
+                            { icon: <Users size={22} className="text-[#ED0000]" />, title: '60+ years trusted', desc: 'Loved by millions of Nigerians' },
+                        ].map((item, i) => (
+                            <motion.div
+                                key={i}
+                                variants={fadeUp}
+                                custom={i * 0.1}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                                className="flex items-center gap-4"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center shrink-0">
+                                    {item.icon}
+                                </div>
+                                <div>
+                                    <p className="text-[13px] font-bold text-gray-900">{item.title}</p>
+                                    <p className="text-[11px] text-gray-500">{item.desc}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════════
+                OUR BRANDS — Card grid inspired by categories section
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-24 lg:py-32 px-6 lg:px-16">
+                <div className="max-w-[1440px] mx-auto">
+                    <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mb-16">
+                        <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase mb-3">Our Brands</p>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 leading-tight">
+                                Nourishing Nigeria,<br />one bite at a time
+                            </h2>
+                            <Link to="/products" className="flex items-center gap-2 text-[12px] font-bold text-gray-600 border-b border-gray-300 pb-1 hover:text-gray-900 transition-colors whitespace-nowrap">
+                                See all products <ArrowRight size={14} />
+                            </Link>
+                        </div>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {BRANDS.map((b, i) => (
+                            <motion.div
+                                key={b.name}
+                                variants={fadeUp}
+                                custom={i * 0.1}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                            >
+                                <Link to={`/products?brand=${b.name}`} className="group block rounded-3xl overflow-hidden relative min-h-[320px] shadow-sm hover:shadow-2xl transition-shadow duration-500">
+                                    <div className={`absolute inset-0 bg-gradient-to-br ${b.bg} opacity-90`} />
+                                    <img src={b.img} alt={b.name} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay group-hover:scale-105 transition-transform duration-700" />
+                                    <div className="relative z-10 h-full min-h-[320px] flex flex-col justify-between p-8 md:p-10">
+                                        <div className="flex items-start justify-between">
+                                            <span className="bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[10px] font-bold px-3 py-1.5 rounded-full">{b.badge}</span>
+                                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white group-hover:text-gray-900 transition-all">
+                                                <ArrowUpRight size={16} className="text-white group-hover:text-gray-900 transition-colors" />
                                             </div>
                                         </div>
-
-                                        <div className="absolute bottom-10 left-10 right-10 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">
-                                            <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">{product.category}</p>
-                                            <h4 className="text-white text-2xl font-black leading-tight mb-4">{product.name}</h4>
-                                            <Link to={`/product/${product.id}`} className="inline-flex items-center gap-2 text-white text-[10px] font-black uppercase tracking-widest border-b-2 border-[var(--brand-red)] pb-1 hover:text-[var(--brand-red)] transition-colors">
-                                                View Product <ArrowUpRight size={14} />
-                                            </Link>
+                                        <div>
+                                            <h3 className="text-4xl font-bold text-white mb-2">{b.name}</h3>
+                                            <p className="text-white/70 text-sm">{b.tagline}</p>
                                         </div>
                                     </div>
-                                    <div className="mt-8 text-center">
-                                        <h3 className="text-xl font-black text-[var(--text-primary)] transition-colors duration-300 group-hover:text-[var(--brand-red)]">{product.name}</h3>
-                                        <p className="text-[var(--text-muted)] font-black text-lg mt-1">₦{product.price.toLocaleString()}</p>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                                </Link>
+                            </motion.div>
+                        ))}
                     </div>
-                    
-                    <div className="mt-24 text-center">
-                        <Link to="/shop" className="inline-flex items-center gap-6 px-14 py-6 bg-[var(--brand-red)] text-white rounded-[24px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-[var(--brand-red)]/40 group">
-                            Explore Full Catalog
-                            <ChevronRight size={24} className="group-hover:translate-x-2 transition-transform" />
+                </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════════
+                FEATURED PRODUCTS — Most popular food (like screenshot)
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-24 lg:py-32 bg-[#FDF8F5] px-6 lg:px-16">
+                <div className="max-w-[1440px] mx-auto">
+                    <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
+                        <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase mb-3">Shop our range</p>
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">
+                            Most popular products
+                        </h2>
+                    </motion.div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 lg:gap-8">
+                        {featuredProducts.map((p, i) => (
+                            <motion.div
+                                key={p.id}
+                                variants={fadeUp}
+                                custom={i * 0.08}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                                className="group"
+                            >
+                                <Link to={`/product/${p.id}`}>
+                                    <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm group-hover:shadow-xl transition-shadow duration-500 relative">
+                                        {/* Image */}
+                                        <div className="aspect-square bg-white flex items-center justify-center p-8 relative overflow-hidden">
+                                            <img
+                                                src={p.image}
+                                                alt={p.name}
+                                                className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                                            />
+                                            {/* Quick add */}
+                                            <button
+                                                onClick={(e) => handleAddToCart(e, p)}
+                                                className={`absolute bottom-4 right-4 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${addedId === p.id ? 'bg-emerald-500 scale-125' : 'bg-[#ED0000] opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0'}`}
+                                            >
+                                                <ShoppingBag size={15} className="text-white" />
+                                            </button>
+                                        </div>
+                                        {/* Info */}
+                                        <div className="p-5 border-t border-gray-50">
+                                            <p className="text-[10px] text-[#ED0000] font-bold tracking-widest uppercase mb-1">{p.category || 'UAC Foods'}</p>
+                                            <h3 className="text-[15px] font-bold text-gray-900 mb-2 leading-snug">{p.name}</h3>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[15px] font-bold text-gray-900">₦{p.price?.toLocaleString()}</span>
+                                                <div className="flex items-center gap-0.5">
+                                                    {[...Array(5)].map((_, s) => (
+                                                        <Star key={s} size={10} className="text-amber-400 fill-amber-400" />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-center mt-14">
+                        <Link
+                            to="/products"
+                            className="inline-flex items-center gap-3 bg-gray-900 text-white px-10 py-4 rounded-full text-[12px] font-bold hover:bg-[#ED0000] transition-colors"
+                        >
+                            View full catalogue <ArrowRight size={14} />
                         </Link>
                     </div>
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* OUR HERITAGE SECTION */}
-            {/* ═══════════════════════════════════════════ */}
-            <section id="our-heritage" className="py-32 md:py-48 bg-[var(--bg-secondary)] transition-colors duration-500 relative overflow-hidden">
-                <div className="container relative z-10 px-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-                        <div>
-                            <motion.p
-                                initial={{ opacity: 0, y: 10 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                className="text-[12px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)] mb-6"
-                            >
-                                Over 5 Decades of Excellence
-                            </motion.p>
-                            <motion.h2
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                className="text-4xl md:text-6xl font-black tracking-tighter mb-10 leading-[0.95] text-[var(--text-primary)]"
-                            >
-                                A Heritage of <br />
-                                <span className="italic">Quality and Innovation</span>
-                            </motion.h2>
-                            
-                            <div className="space-y-12 mt-16">
-                                <HeritageCard 
-                                    icon={<History size={28} />}
-                                    title="Historic Legacy"
-                                    text="Established in 1962, UAC Foods has been at the forefront of the Nigerian convenience foods market, setting standards in taste and hygiene."
-                                />
-                                <HeritageCard 
-                                    icon={<ShieldCheck size={28} />}
-                                    title="ISO Certified Quality"
-                                    text="Our ISO 9001:2015 certification reflects our unwavering commitment to international quality management and food safety."
-                                />
-                                <HeritageCard 
-                                    icon={<Building2 size={28} />}
-                                    title="Local Empowerment"
-                                    text="We source locally and employ thousands, contributing significantly to the Nigerian economic landscape through sustainable growth."
-                                />
+            {/* ══════════════════════════════════════════════════════
+                BRAND STORY — Our Goals & History (like screenshot)
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-24 lg:py-32 px-6 lg:px-16">
+                <div className="max-w-[1440px] mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        {/* Left text */}
+                        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-8">
+                            <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase">Our story</p>
+                            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 leading-tight">
+                                Proudly Nigerian.<br />Trusted since 1962.
+                            </h2>
+                            <p className="text-gray-600 text-[15px] leading-relaxed">
+                                UAC Foods Limited is a subsidiary of UAC of Nigeria Plc, dedicated to producing and marketing high-quality food products. From our iconic Gala sausage rolls to Supreme Ice Cream, Swan water and Funtime chips, we have been part of Nigeria's food culture for over six decades.
+                            </p>
+                            <p className="text-gray-600 text-[15px] leading-relaxed">
+                                We are committed to nourishing Nigerians with products that meet the highest international standards, while staying rooted in our communities.
+                            </p>
+                            <div className="grid grid-cols-2 gap-6 pt-4">
+                                {[
+                                    { val: '60+', label: 'Years of excellence' },
+                                    { val: '4', label: 'Iconic brands' },
+                                    { val: 'ISO', label: 'Certified quality' },
+                                    { val: 'M+', label: 'Happy consumers' },
+                                ].map(({ val, label }) => (
+                                    <div key={label} className="bg-[#FDF8F5] rounded-2xl p-5">
+                                        <p className="text-3xl font-bold text-[#ED0000]">{val}</p>
+                                        <p className="text-[12px] text-gray-500 font-medium mt-1">{label}</p>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                            <Link to="/about" className="inline-flex items-center gap-2 text-gray-900 font-bold text-[13px] border-b border-gray-300 pb-1 hover:border-gray-900 transition-colors">
+                                Learn more about us <ArrowRight size={14} />
+                            </Link>
+                        </motion.div>
 
-                        <div className="relative">
-                            <div className="grid grid-cols-2 gap-8 relative z-10">
-                                <motion.div
-                                    initial={{ opacity: 0, y: 30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    className="aspect-[3/4] rounded-[48px] overflow-hidden shadow-2xl translate-y-16 bg-[var(--bg-secondary)]"
-                                >
-                                    <img src="/images/gala.jpg" alt="UAC Legacy" className="w-full h-full object-cover hover:scale-110 transition-transform duration-700" />
+                        {/* Right: Image collage */}
+                        <div className="grid grid-cols-2 gap-4 h-[550px]">
+                            <motion.div variants={fadeUp} custom={0.1} initial="hidden" whileInView="visible" viewport={{ once: true }} className="rounded-3xl overflow-hidden">
+                                <img src="/images/gala.jpg" alt="Gala" className="w-full h-full object-cover" />
+                            </motion.div>
+                            <div className="flex flex-col gap-4">
+                                <motion.div variants={fadeUp} custom={0.2} initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex-1 rounded-3xl overflow-hidden">
+                                    <img src="/images/supreme_ice_cream.jpg" alt="Supreme" className="w-full h-full object-cover" />
                                 </motion.div>
-                                <motion.div
-                                    initial={{ opacity: 0, y: -30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    className="aspect-[3/4] rounded-[48px] overflow-hidden shadow-2xl bg-[var(--bg-secondary)]"
-                                >
-                                    <img src="/images/supreme_ice_cream.jpg" alt="UAC Legacy" className="w-full h-full object-cover hover:scale-110 transition-transform duration-700" />
+                                <motion.div variants={fadeUp} custom={0.3} initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex-1 rounded-3xl overflow-hidden">
+                                    <img src="/images/swan_water.jpg" alt="Swan" className="w-full h-full object-cover" />
                                 </motion.div>
                             </div>
-                            {/* Decorative Elements */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[var(--brand-red)]/5 rounded-full blur-[120px] -z-10" />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* CORPORATE STATUS */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 bg-[var(--bg-primary)] transition-colors duration-500 relative z-10">
-                <div className="container px-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12 bg-[var(--bg-tertiary)] border border-[var(--divider)] rounded-[40px] p-12 shadow-xl shadow-[var(--brand-red)]/5">
-                        <StatItem label="Established" value="1962" />
-                        <StatItem label="Employees" value="2000+" />
-                        <StatItem label="Market Reach" value="80%" />
-                        <StatItem label="Brand Count" value="12+" />
+            {/* ══════════════════════════════════════════════════════
+                PROMO BANNER — Red CTA banner
+            ══════════════════════════════════════════════════════ */}
+            <section className="mx-4 lg:mx-8 my-4 rounded-[32px] overflow-hidden bg-[#ED0000] relative">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[420px] relative z-10">
+                    <div className="flex flex-col justify-center px-10 lg:px-20 py-16 gap-6">
+                        <span className="text-white/70 text-[11px] font-bold tracking-[4px] uppercase">Limited offer</span>
+                        <h2 className="text-4xl md:text-6xl font-bold text-white leading-tight tracking-tight">
+                            Get 20% off<br />your first order
+                        </h2>
+                        <p className="text-white/80 text-[15px] leading-relaxed max-w-sm">
+                            New to UAC Foods? Enjoy an exclusive 20% discount on your first purchase. Use code <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded">UACWELCOME</span> at checkout.
+                        </p>
+                        <Link to="/products" className="inline-flex items-center gap-3 bg-white text-[#ED0000] px-8 py-4 rounded-full text-[12px] font-bold w-fit hover:bg-gray-100 transition-colors shadow-2xl">
+                            Shop now <ArrowRight size={14} />
+                        </Link>
+                    </div>
+                    <div className="relative min-h-[280px] flex items-end justify-center overflow-hidden">
+                        <img src="/images/funtime_chips.jpg" alt="Promo" className="w-full h-full object-cover opacity-30 lg:opacity-50" />
+                        <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#ED0000] hidden lg:block" />
                     </div>
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════ */}
-            {/* OFFICIAL NEWSLETTER */}
-            {/* ═══════════════════════════════════════════ */}
-            <section className="py-24 md:py-40 bg-[var(--bg-primary)] transition-colors duration-500 relative z-10">
-                <div className="container px-6">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="relative overflow-hidden rounded-[64px] px-8 py-24 md:px-24 md:py-32 bg-[var(--brand-red)] text-white shadow-2xl group hover:shadow-[var(--brand-red)]/50 transition-shadow duration-700"
-                    >
-                        {/* Faded Gala Background Image */}
-                        <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none">
-                            <img src="/images/gala.jpg" alt="" className="w-full h-full object-cover grayscale" />
-                        </div>
-                        
-                        <div className="absolute top-0 right-0 w-1/2 h-full bg-white/5 skew-x-12 translate-x-1/4 pointer-events-none" />
-                        
-                        <div className="relative z-10 max-w-4xl mx-auto text-center">
-                            <motion.h2 
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                className="text-4xl md:text-7xl font-black mb-10 leading-[0.9] tracking-tighter"
-                            >
-                                Join the <br /> UAC Circle.
-                            </motion.h2>
-                            <p className="text-white/80 text-lg md:text-2xl mb-16 max-w-2xl mx-auto font-medium">
-                                Subscribe for corporate updates, product innovations, and exclusive insights from the heart of UAC Foods.
-                            </p>
+            {/* ══════════════════════════════════════════════════════
+                TESTIMONIALS — Our clients saying
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-24 lg:py-32 px-6 lg:px-16 bg-[#FDF8F5]">
+                <div className="max-w-[1440px] mx-auto">
+                    <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
+                        <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase mb-3">Testimonials</p>
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">What Nigerians say</h2>
+                    </motion.div>
 
-                            <div className="flex flex-col sm:flex-row gap-5 max-w-3xl mx-auto">
-                                <input
-                                    type="email"
-                                    placeholder="Enter corporate email..."
-                                    className="flex-1 px-10 py-6 rounded-3xl bg-white/10 backdrop-blur-md text-white placeholder-white/60 text-lg outline-none border border-white/20 focus:bg-white/20 focus:ring-4 focus:ring-white/30 transition-all font-bold"
-                                />
-                                <button className="px-14 py-6 bg-white text-[var(--brand-red)] hover:bg-black hover:text-white font-black uppercase tracking-widest rounded-3xl hover:scale-105 active:scale-95 transition-all shadow-2xl hover:shadow-black/50">
-                                    Subscribe
-                                </button>
-                            </div>
-                            
-                            <p className="mt-12 text-white/50 text-[11px] font-black uppercase tracking-[0.3em]">
-                                Verified Corporate Communications · Privacy Encrypted
-                            </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {TESTIMONIALS.map((t, i) => (
+                            <motion.div
+                                key={i}
+                                variants={fadeUp}
+                                custom={i * 0.1}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                                className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-lg transition-shadow"
+                            >
+                                <div className="flex gap-0.5 mb-5">
+                                    {[...Array(t.stars)].map((_, s) => (
+                                        <Star key={s} size={14} className="text-amber-400 fill-amber-400" />
+                                    ))}
+                                </div>
+                                <p className="text-gray-600 text-[13px] leading-relaxed mb-8">"{t.text}"</p>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-[#ED0000] flex items-center justify-center text-white font-bold text-sm">
+                                        {t.avatar}
+                                    </div>
+                                    <div>
+                                        <p className="text-[13px] font-bold text-gray-900">{t.name}</p>
+                                        <p className="text-[11px] text-gray-400">{t.role}</p>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════════
+                WHY CHOOSE UAC FOODS — Full width grid cards
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-24 lg:py-32 px-6 lg:px-16">
+                <div className="max-w-[1440px] mx-auto">
+                    <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
+                        <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase mb-3">Why us</p>
+                        <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">Why choose UAC Foods</h2>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                icon: <Award size={28} className="text-white" />,
+                                bg: 'bg-[#ED0000]',
+                                title: 'Quality you can trust',
+                                desc: 'All products manufactured in ISO-certified facilities with rigorous quality checks from raw material to final packaging.'
+                            },
+                            {
+                                icon: <Package size={28} className="text-[#ED0000]" />,
+                                bg: 'bg-[#FDF8F5]',
+                                title: 'Nationwide availability',
+                                desc: 'Our products are available in supermarkets, kiosks and online across all 36 states of Nigeria.'
+                            },
+                            {
+                                icon: <Leaf size={28} className="text-[#ED0000]" />,
+                                bg: 'bg-[#FDF8F5]',
+                                title: 'Natural ingredients',
+                                desc: 'We use only the best quality, locally sourced ingredients — no unnecessary additives, just the goodness of real food.'
+                            }
+                        ].map((card, i) => (
+                            <motion.div
+                                key={i}
+                                variants={fadeUp}
+                                custom={i * 0.1}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true }}
+                                className={`${card.bg} rounded-3xl p-10 ${i === 0 ? '' : 'border border-gray-100'}`}
+                            >
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${i === 0 ? 'bg-white/20' : 'bg-red-50'}`}>
+                                    {card.icon}
+                                </div>
+                                <h3 className={`text-xl font-bold mb-4 ${i === 0 ? 'text-white' : 'text-gray-900'}`}>{card.title}</h3>
+                                <p className={`text-[14px] leading-relaxed ${i === 0 ? 'text-white/80' : 'text-gray-500'}`}>{card.desc}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════════
+                CTA — Ready to order
+            ══════════════════════════════════════════════════════ */}
+            <section className="mx-4 lg:mx-8 mb-8 rounded-[32px] overflow-hidden relative min-h-[500px] flex items-center">
+                <img src="/images/gala.jpg" className="absolute inset-0 w-full h-full object-cover" alt="" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
+                <div className="relative z-10 max-w-[1440px] mx-auto w-full px-10 lg:px-20 py-20">
+                    <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="max-w-2xl">
+                        <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase mb-6">Ready to order?</p>
+                        <h2 className="text-5xl md:text-7xl font-bold text-white leading-tight tracking-tight mb-8">
+                            Taste the quality that lasts generations
+                        </h2>
+                        <p className="text-white/70 text-[15px] leading-relaxed mb-10 max-w-lg">
+                            Order your favourite UAC Foods products online and have them delivered to your doorstep across Nigeria.
+                        </p>
+                        <div className="flex flex-wrap gap-4">
+                            <Link to="/products" className="inline-flex items-center gap-2 bg-[#ED0000] text-white px-8 py-4 rounded-full text-[12px] font-bold hover:bg-red-700 transition-colors">
+                                Start shopping <ArrowRight size={14} />
+                            </Link>
+                            <Link to="/about" className="inline-flex items-center gap-2 border border-white/40 text-white px-8 py-4 rounded-full text-[12px] font-bold hover:bg-white/10 transition-colors">
+                                Learn more
+                            </Link>
                         </div>
                     </motion.div>
                 </div>
             </section>
-        </motion.div>
+
+            {/* ══════════════════════════════════════════════════════
+                NEWSLETTER
+            ══════════════════════════════════════════════════════ */}
+            <section className="py-24 px-6 lg:px-16 bg-[#FDF8F5] border-t border-gray-100">
+                <div className="max-w-[1440px] mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                            <p className="text-[#ED0000] text-[11px] font-bold tracking-[4px] uppercase mb-4">Newsletter</p>
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight leading-tight">
+                                Stay updated with<br />UAC Foods
+                            </h2>
+                            <p className="text-gray-500 mt-5 text-[14px] leading-relaxed">
+                                Get the latest promotions, new product launches and news delivered to your inbox.
+                            </p>
+                        </motion.div>
+                        <motion.div variants={fadeUp} custom={0.1} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                            <div className="flex gap-3">
+                                <input
+                                    type="email"
+                                    placeholder="Enter your email address"
+                                    className="flex-1 bg-white border border-gray-200 rounded-full px-6 py-4 text-[13px] font-medium outline-none focus:border-[#ED0000] transition-colors"
+                                />
+                                <button className="bg-[#ED0000] text-white px-8 py-4 rounded-full text-[12px] font-bold hover:bg-red-700 transition-colors whitespace-nowrap">
+                                    Subscribe
+                                </button>
+                            </div>
+                            <p className="text-gray-400 text-[11px] mt-4">By subscribing you agree to our Privacy Policy. Unsubscribe anytime.</p>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
     )
 }
-
-const HeritageCard = ({ icon, title, text }) => (
-    <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true }}
-        className="flex gap-8 group"
-    >
-        <div className="w-20 h-20 rounded-[28px] bg-[var(--bg-primary)] shadow-xl flex items-center justify-center text-[var(--brand-red)] shrink-0 group-hover:bg-[var(--brand-red)] group-hover:text-white transition-all duration-500">
-            {icon}
-        </div>
-        <div>
-            <h4 className="text-2xl font-black mb-3 text-[var(--text-primary)]">{title}</h4>
-            <p className="text-base text-[var(--text-muted)] font-medium leading-relaxed">{text}</p>
-        </div>
-    </motion.div>
-)
-
-const StatItem = ({ label, value }) => (
-    <div className="text-center">
-        <p className="text-5xl md:text-6xl font-black text-[var(--brand-red)] mb-2 tracking-tighter">{value}</p>
-        <p className="text-[12px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">{label}</p>
-    </div>
-)
 
 export default Home

@@ -312,12 +312,22 @@ export const StoreProvider = ({ children }) => {
         }
     }
 
+    const [businessSegments, setBusinessSegments] = useState([
+        { name: 'Gala', desc: 'Sausage rolls', abstract: 'Snacks' }, 
+        { name: 'Supreme', desc: 'Ice cream variants', abstract: 'Desserts' }, 
+        { name: 'Swan', desc: 'Natural spring water', abstract: 'Beverages' }, 
+        { name: 'Funtime', desc: 'Cupcakes', abstract: 'Snacks' }
+    ])
+
+    const [adminProfile, setAdminProfile] = useState({ fullName: 'Sarah Johnson', email: 's.johnson@uacfoods.com', photo: '' })
     const getOrderById = (id) => orders.find(o => o.id === id)
 
+    const addCategory = (newCat) => setBusinessSegments(prev => [...prev, newCat])
+
     const categories = useMemo(() => {
-        const unique = new Set(products.map(p => p.category))
+        const unique = new Set([...businessSegments.map(c => c.name), ...products.map(p => p.category)])
         return ['All', ...Array.from(unique).sort()]
-    }, [products])
+    }, [products, businessSegments])
 
     const stats = useMemo(() => ({
         totalProducts: apiStats?.totalProducts || products.length,
@@ -325,6 +335,7 @@ export const StoreProvider = ({ children }) => {
         totalOrders: apiStats?.totalOrders || orders.length,
         pendingOrders: orders.filter(o => o.status === 'pending').length,
         totalRevenue: apiStats?.totalRevenue || orders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        totalCustomers: apiStats?.totalCustomers || 0,
         platformIncome: orders
             .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
             .reduce((sum, o) => sum + (o.commission || Math.round((o.amount || 0) * 0.1)), 0),
@@ -340,7 +351,10 @@ export const StoreProvider = ({ children }) => {
             cartCount,
             loading,
             stats,
+            adminProfile, setAdminProfile,
             categories,
+            businessSegments,
+            addCategory,
             toggleFavorite,
             isFavorite,
             addProduct,

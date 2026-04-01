@@ -16,6 +16,7 @@ import TrackOrder from './pages/TrackOrder'
 import Favorites from './pages/Favorites'
 import Products from './pages/Products'
 import AboutUs from './pages/AboutUs'
+
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
@@ -35,6 +36,7 @@ function Layout() {
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+
       <Toaster position="top-center" reverseOrder={false} />
       {!isAdmin && <Navbar />}
       <main>

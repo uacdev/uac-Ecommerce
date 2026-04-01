@@ -26,155 +26,89 @@ const Navbar = () => {
     const handleSearch = (e) => {
         e.preventDefault()
         if (searchQuery.trim()) {
-            navigate(`/?search=${encodeURIComponent(searchQuery)}#all-products`)
+            navigate(`/products?search=${encodeURIComponent(searchQuery)}`)
             setSearchOpen(false)
             setSearchQuery('')
         }
     }
 
     const handleCategoryClick = (filter) => {
-        navigate(`/shop?category=${encodeURIComponent(filter)}`)
+        navigate(`/products?brand=${encodeURIComponent(filter)}`)
         setCatOpen(false)
         setIsOpen(false)
     }
 
     return (
         <>
-            <nav className="fixed top-0 left-0 w-full z-50 bg-[var(--bg-primary)]/80 backdrop-blur-xl border-b border-[var(--divider)]">
-                <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4 lg:px-8">
+            <nav className="fixed top-0 left-0 w-full z-50 bg-[var(--bg-primary)]/80 backdrop-blur-3xl border-b border-[var(--divider)] transition-all duration-500">
+                <div className="max-w-[1440px] mx-auto flex justify-between items-center px-6 py-6 lg:px-12">
                     
                     {/* Logo Section */}
-                    <Link to="/" className="flex items-center gap-2 group shrink-0">
-                        <img 
-                            src="/images/uac_foods_full.png" 
-                            alt="UAC Foods" 
-                            className="h-12 md:h-14 lg:h-16 w-auto group-hover:scale-105 transition-transform duration-500 object-contain" 
-                        />
-                    </Link>
-
-                    {/* Desktop Menu */}
-                    <div className="hidden lg:flex items-center gap-10">
-                        {/* Categories Dropdown */}
-                        <div className="relative" onMouseEnter={() => setCatOpen(true)} onMouseLeave={() => setCatOpen(false)}>
-                            <button
-                                className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.2em] hover:text-[var(--brand-red)] transition-colors"
-                                style={{ color: catOpen ? 'var(--brand-red)' : 'var(--text-primary)' }}
-                            >
-                                <ShoppingBasket size={15} />
-                                Iconic Brands
-                                <motion.span animate={{ rotate: catOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                                    <ChevronDown size={14} />
-                                </motion.span>
-                            </button>
-
-                            <AnimatePresence>
-                                {catOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-80 rounded-3xl shadow-2xl border overflow-hidden p-3"
-                                        style={{ background: 'var(--bg-primary)', borderColor: 'var(--divider)' }}
-                                    >
-                                        <div className="grid gap-2">
-                                            {brandCategories.map((cat) => (
-                                                <button
-                                                    key={cat.name}
-                                                    onClick={() => handleCategoryClick(cat.filter)}
-                                                    className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-[var(--brand-red)]/5 transition-colors group text-left"
-                                                >
-                                                    <div className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center group-hover:bg-[var(--brand-red)] transition-colors shrink-0">
-                                                        <cat.icon size={18} className="text-[var(--brand-red)] group-hover:text-white transition-colors" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs font-black uppercase tracking-widest text-[var(--text-primary)]">{cat.name}</p>
-                                                        <p className="text-[10px] font-medium text-[var(--text-muted)]">{cat.desc}</p>
-                                                    </div>
-                                                    <ChevronRight size={14} className="ml-auto text-[var(--brand-red)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-
-                        <Link to="/shop" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
-                            Our Portfolio
-                            <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
+                    <div className="flex-1">
+                        <Link to="/" className="inline-block group shrink-0">
+                            <span className="text-3xl font-bold tracking-tighter uppercase text-[var(--text-primary)]">Ufl.</span>
                         </Link>
-                        
-                        <Link to="/about" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
-                            About UAC
-                            <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
-                        </Link>
-
-                        <Link to="/track-order" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-[var(--brand-red)] transition-colors text-[var(--text-primary)]">Track Delivery</Link>
                     </div>
 
-                    {/* Desktop Actions */}
-                    <div className="hidden md:flex items-center gap-5">
-                        {/* Search Trigger */}
+                    {/* Desktop Menu - Centered */}
+                    <div className="hidden lg:flex items-center gap-10 flex-initial">
+                        <Link to="/products" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
+                            Shop
+                            <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
+                        </Link>
+                        
+                        <Link to="/about" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
+                            Story
+                            <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
+                        </Link>
+ 
+                        <Link to="/track-order" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
+                            Track
+                            <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
+                        </Link>
+                    </div>
+
+                    {/* Desktop Actions - Right Aligned */}
+                    <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
                         <button 
                             onClick={() => setSearchOpen(!searchOpen)}
-                            className="p-2.5 rounded-xl hover:bg-[var(--brand-red)]/10 transition-colors text-[var(--text-primary)]"
+                            className="p-2 text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors"
                         >
-                            <Search size={20} strokeWidth={2.5} />
+                            <Search size={18} strokeWidth={3} />
                         </button>
 
-                        {/* Cart/Bag */}
-                        <Link to="/checkout" className="p-2.5 rounded-xl hover:bg-[var(--brand-red)]/10 transition-colors relative text-[var(--text-primary)]">
-                            <ShoppingBag size={22} strokeWidth={2.5} />
+                        <Link to="/checkout" className="p-2 relative text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors">
+                            <ShoppingBag size={18} strokeWidth={3} />
                             {cartCount > 0 && (
                                 <motion.span 
                                     key={cartCount}
                                     initial={{ scale: 0.5, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
-                                    className="absolute -top-1 -right-1 w-5 h-5 bg-[var(--brand-red)] text-white text-[9px] font-black rounded-full flex items-center justify-center"
+                                    className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--brand-red)] text-white text-[8px] font-bold rounded-full flex items-center justify-center"
                                 >
                                     {cartCount}
                                 </motion.span>
                             )}
                         </Link>
 
-                        {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className="p-2.5 rounded-xl border border-[var(--divider)] hover:bg-[var(--bg-secondary)] transition-colors"
+                            className="p-2 text-[var(--text-primary)] transition-colors"
                         >
-                            <AnimatePresence mode="wait">
-                                {isDark ? (
-                                    <motion.div key="sun" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 90 }}>
-                                        <Sun size={18} className="text-yellow-400" />
-                                    </motion.div>
-                                ) : (
-                                    <motion.div key="moon" initial={{ scale: 0, rotate: 90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: -90 }}>
-                                        <Moon size={18} className="text-black" />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                            {isDark ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
-
-                        <Link to="/shop" className="btn-primary py-3 px-6 text-[10px] uppercase tracking-widest font-black rounded-xl">
-                            Direct Shop
-                        </Link>
                     </div>
 
                     {/* Mobile Icons */}
-                    <div className="md:hidden flex items-center gap-2">
-                        <Link to="/checkout" className="p-2.5 rounded-xl relative text-[var(--text-primary)]">
-                            <ShoppingBag size={20} strokeWidth={2.5} />
-                            {cartCount > 0 && (
-                                <span className="absolute top-1 right-1 w-4 h-4 bg-[var(--brand-red)] text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                                    {cartCount}
-                                </span>
-                            )}
+                    <div className="md:hidden flex items-center gap-4">
+                        <Link to="/checkout" className="p-2 relative text-[var(--text-primary)]">
+                            <ShoppingBag size={18} strokeWidth={3} />
                         </Link>
                         <button 
-                            className="p-2.5 rounded-xl text-[var(--text-primary)]" 
+                            className="p-2 text-[var(--text-primary)]" 
                             onClick={() => setIsOpen(!isOpen)} 
                         >
-                            {isOpen ? <X size={24} /> : <Menu size={24} />}
+                            {isOpen ? <X size={20} /> : <Menu size={20} />}
                         </button>
                     </div>
                 </div>
@@ -242,12 +176,12 @@ const Navbar = () => {
                             </div>
 
                             <div className="flex flex-col gap-2 overflow-y-auto flex-1">
-                                <Link to="/shop" onClick={() => setIsOpen(false)} className="text-xl font-black px-4 py-3 rounded-2xl text-[var(--text-primary)]">Our Portfolio</Link>
-                                <Link to="/about" onClick={() => setIsOpen(false)} className="text-xl font-black px-4 py-3 rounded-2xl text-[var(--text-primary)]">About Us</Link>
-                                <Link to="/track-order" onClick={() => setIsOpen(false)} className="text-xl font-black px-4 py-3 rounded-2xl text-[var(--text-primary)]">Track Delivery</Link>
+                                <Link to="/shop" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">Our portfolio</Link>
+                                <Link to="/about" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">About us</Link>
+                                <Link to="/track-order" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">Track delivery</Link>
                                 
                                 <div className="mt-4 pt-4 border-t border-[var(--divider)]">
-                                    <p className="px-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-2">Brands</p>
+                                    <p className="px-4 text-[11px] font-bold text-[var(--text-muted)] mb-2">Brands</p>
                                     <div className="grid gap-2">
                                         {brandCategories.map((cat) => (
                                             <button

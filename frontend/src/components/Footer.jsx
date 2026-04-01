@@ -24,31 +24,31 @@ const Footer = () => {
                     <div className="hidden lg:block lg:col-span-1" />
 
                     <div>
-                        <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-8">Navigation</h4>
+                        <h4 className="text-white text-[11px] font-bold tracking-widest mb-8">Navigation</h4>
                         <ul className="space-y-4">
-                            <li><Link to="/" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Home</Link></li>
-                            <li><a href="#how-it-works" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Process</a></li>
-                            <li><a href="#all-products" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Collection</a></li>
-                            <li><Link to="/admin" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Admin</Link></li>
+                            <li><Link to="/" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Home</Link></li>
+                            <li><a href="#how-it-works" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Process</a></li>
+                            <li><a href="#all-products" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Collection</a></li>
+                            <li><Link to="/admin" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Admin</Link></li>
                         </ul>
                     </div>
-
+ 
                     <div>
-                        <h4 className="text-white text-[10px] font-black uppercase tracking-[0.3em] mb-8">Support</h4>
+                        <h4 className="text-white text-[11px] font-bold tracking-widest mb-8">Support</h4>
                         <ul className="space-y-4">
-                            <li><a href="mailto:info@uacfoodsng.com" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Contact</a></li>
-                            <li><a href="#" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Privacy Policy</a></li>
-                            <li><a href="#" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-bold uppercase tracking-widest transition-colors">Terms of Service</a></li>
+                            <li><a href="mailto:info@uacfoodsng.com" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Contact</a></li>
+                            <li><a href="#" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Privacy policy</a></li>
+                            <li><a href="#" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Terms of service</a></li>
                         </ul>
                     </div>
                 </div>
-
+ 
                 <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest">
-                        © {new Date().getFullYear()} UAC FOODS LIMITED. ALL RIGHTS RESERVED.
+                    <p className="text-white/20 text-[10px] font-medium tracking-widest uppercase">
+                        © {new Date().getFullYear()} Uac foods limited. All rights reserved.
                     </p>
-                    <p className="text-white/10 text-[9px] font-bold uppercase tracking-widest max-w-[400px] text-center md:text-right">
-                        UAC Foods Limited is a leading food and beverage company. All rights reserved.
+                    <p className="text-white/10 text-[9px] font-medium tracking-widest uppercase max-w-[400px] text-center md:text-right">
+                        Uac foods limited is a leading food and beverage company. All rights reserved.
                     </p>
                 </div>
             </div>
