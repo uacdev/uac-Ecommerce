@@ -119,6 +119,25 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Visible Testimonial Scrollbar */
+  .testimonial-scroll::-webkit-scrollbar {
+    height: 8px;
+    display: block !important;
+  }
+  .testimonial-scroll::-webkit-scrollbar-track {
+    background: #FDF8F5;
+    border-radius: 10px;
+  }
+  .testimonial-scroll::-webkit-scrollbar-thumb {
+    background: #ED0000;
+    border-radius: 10px;
+    border: 2px solid #FDF8F5;
+  }
+  .testimonial-scroll {
+    scrollbar-width: auto !important;
+    scrollbar-color: #ED0000 #FDF8F5 !important;
+  }
 }
 
 /* ─── COMPONENT STYLES ─── */

@@ -325,9 +325,9 @@ export const StoreProvider = ({ children }) => {
     const addCategory = (newCat) => setBusinessSegments(prev => [...prev, newCat])
 
     const categories = useMemo(() => {
-        const unique = new Set([...businessSegments.map(c => c.name), ...products.map(p => p.category)])
-        return ['All', ...Array.from(unique).sort()]
-    }, [products, businessSegments])
+        // Strict brands-only filtering as requested
+        return ['All', 'Gala', 'Supreme', 'Swan', 'Funtime']
+    }, [])
 
     const stats = useMemo(() => ({
         totalProducts: apiStats?.totalProducts || products.length,

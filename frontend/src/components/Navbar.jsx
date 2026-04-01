@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Instagram, MessageCircle, Menu, X, Sun, Moon, ShoppingBag, Search, ChevronRight, ChevronDown, ShoppingBasket, Heart, Building2, UtensilsCrossed, Waves, IceCream, Cookie } from 'lucide-react'
+import { Instagram, MessageCircle, Menu, X, Sun, Moon, ShoppingBag, Search, ChevronRight, ChevronDown, ShoppingBasket, Heart, Building2, UtensilsCrossed, Waves, IceCream, Cookie, User, ArrowRight } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
@@ -10,17 +10,17 @@ const Navbar = () => {
     const [searchOpen, setSearchOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [catOpen, setCatOpen] = useState(false)
-    const [mobileCatOpen, setMobileCatOpen] = useState(false)
+    const [showMegaMenu, setShowMegaMenu] = useState(false)
     const { isDark, toggleTheme } = useTheme()
     const store = useStore() || {}
     const { cartCount = 0, favorites = [] } = store
     const navigate = useNavigate()
 
     const brandCategories = [
-        { name: 'Gala', icon: UtensilsCrossed, desc: 'The King of Snacks since 1962', filter: 'Gala' },
-        { name: 'Supreme', icon: IceCream, desc: 'Rich and Creamy Indulgence', filter: 'Supreme' },
-        { name: 'Swan', icon: Waves, desc: 'Natural Spring Water', filter: 'Swan' },
-        { name: 'Funtime', icon: Cookie, desc: 'Tasty Coconut Chips & More', filter: 'Funtime' }
+        { name: 'Gala', icon: UtensilsCrossed, desc: 'The King of Snacks since 1962', filter: 'Gala', img: '/images/gala.jpg' },
+        { name: 'Supreme', icon: IceCream, desc: 'Rich and Creamy Indulgence', filter: 'Supreme', img: '/images/supreme_ice_cream.jpg' },
+        { name: 'Swan', icon: Waves, desc: 'Natural Spring Water', filter: 'Swan', img: '/images/swan_water.jpg' },
+        { name: 'Funtime', icon: Cookie, desc: 'Tasty Coconut Chips & More', filter: 'Funtime', img: '/images/funtime_chips.jpg' }
     ]
 
     const handleSearch = (e) => {
@@ -52,10 +52,16 @@ const Navbar = () => {
 
                     {/* Desktop Menu - Centered */}
                     <div className="hidden lg:flex items-center gap-10 flex-initial">
-                        <Link to="/products" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
-                            Shop
+                        <div 
+                            className="relative group"
+                            onMouseEnter={() => setShowMegaMenu(true)}
+                            onMouseLeave={() => setShowMegaMenu(false)}
+                        >
+                            <Link to="/products" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors flex items-center gap-1 text-[var(--text-primary)]">
+                                SHOP <ChevronDown size={14} className={`transition-transform duration-300 ${showMegaMenu ? 'rotate-180' : ''}`} />
+                            </Link>
                             <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
-                        </Link>
+                        </div>
                         
                         <Link to="/about" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
                             Story
@@ -91,15 +97,11 @@ const Navbar = () => {
                             )}
                         </Link>
 
-                        <button
-                            onClick={toggleTheme}
-                            className="p-2 text-[var(--text-primary)] transition-colors"
-                        >
-                            {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
+                        <Link to="/admin" className="p-2 text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors">
+                            <User size={18} strokeWidth={3} />
+                        </Link>
                     </div>
 
-                    {/* Mobile Icons */}
                     <div className="md:hidden flex items-center gap-4">
                         <Link to="/checkout" className="p-2 relative text-[var(--text-primary)]">
                             <ShoppingBag size={18} strokeWidth={3} />
@@ -112,6 +114,54 @@ const Navbar = () => {
                         </button>
                     </div>
                 </div>
+
+                {/* MEGA MENU */}
+                <AnimatePresence>
+                    {showMegaMenu && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            onMouseEnter={() => setShowMegaMenu(true)}
+                            onMouseLeave={() => setShowMegaMenu(false)}
+                            className="absolute top-full left-0 w-full bg-white border-b border-[var(--divider)] shadow-2xl py-12 z-[100]"
+                        >
+                            <div className="max-w-[1440px] mx-auto px-12">
+                                <div className="grid grid-cols-4 gap-8">
+                                    {brandCategories.map((brand) => (
+                                        <button
+                                            key={brand.name}
+                                            onClick={() => handleCategoryClick(brand.filter)}
+                                            className="group relative flex flex-col items-start gap-4 p-6 rounded-3xl hover:bg-slate-50 transition-all text-left"
+                                        >
+                                            <div className="w-full aspect-[16/10] rounded-2xl overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] mb-2">
+                                                <img 
+                                                    src={brand.img} 
+                                                    alt={brand.name} 
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-[var(--brand-red)]">
+                                                    <brand.icon size={16} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-[14px] font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
+                                                        {brand.name}
+                                                        <ArrowRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--brand-red)]" />
+                                                    </h4>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                                        {brand.desc}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </nav>
             
             {/* Search Overlay/Bar */}

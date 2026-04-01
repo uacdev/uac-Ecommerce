@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Filter, SlidersHorizontal, ChevronDown, Check, Building2, UtensilsCrossed, IceCream, Waves, Cookie } from 'lucide-react'
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import ProductCard from '../components/ProductCard'
 import EmptyState from '../components/EmptyState'
@@ -8,11 +9,23 @@ import Preloader from '../components/Preloader'
 
 const Products = () => {
     const { products, categories, loading } = useStore()
+    const [searchParams] = useSearchParams()
     const [searchQuery, setSearchQuery] = useState('')
     const [activeCategory, setActiveCategory] = useState('All')
     const [sortBy, setSortBy] = useState('latest')
     const [sortOpen, setSortOpen] = useState(false)
     const sortRef = useRef(null)
+
+    useEffect(() => {
+        const brandFilter = searchParams.get('brand') || searchParams.get('category')
+        if (brandFilter) {
+            setActiveCategory(brandFilter)
+        }
+        const search = searchParams.get('search')
+        if (search) {
+            setSearchQuery(search)
+        }
+    }, [searchParams])
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
@@ -70,8 +83,8 @@ const Products = () => {
                                 className="w-full bg-transparent border-b-2 border-[var(--divider)] py-6 text-2xl font-black uppercase tracking-tight outline-none focus:border-[var(--brand-red)] transition-all text-[var(--text-primary)] placeholder:text-[var(--divider)]"
                             />
                         </div>
-                        <div className="flex gap-4">
-                            {['All', ...categories].map(c => (
+                        <div className="flex gap-4 flex-wrap justify-center">
+                            {categories.map(c => (
                                 <button 
                                     key={c}
                                     onClick={() => setActiveCategory(c)}

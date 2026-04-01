@@ -1,9 +1,45 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ShoppingBag, Star, Truck, Shield, ChevronLeft, ChevronRight, Package, Award, Users, ArrowUpRight, MapPin, Phone, Mail, Leaf } from 'lucide-react'
+import { ArrowRight, ShoppingBag, Star, Truck, Shield, ChevronLeft, ChevronRight, Package, Award, Users, ArrowUpRight, MapPin, Phone, Mail, Leaf, Plus } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import Preloader from '../components/Preloader'
+import toast from 'react-hot-toast'
+
+const CountUp = ({ end, duration = 2 }) => {
+    const isNumeric = /[0-9]/.test(end)
+    const [count, setCount] = useState(isNumeric ? 0 : end)
+    const endVal = isNumeric ? parseInt(end.replace(/\D/g, '')) : 0
+    const suffix = isNumeric ? end.replace(/[0-9]/g, '') : ''
+    
+    useEffect(() => {
+        if (!isNumeric) {
+            setCount(end)
+            return
+        }
+        let start = 0
+        if (start === endVal) return
+        
+        let totalMilisecDur = duration * 1000
+        let increments = endVal
+        let incrementTime = Math.max(totalMilisecDur / increments, 30) // Minimum 30ms for smooth UI
+        let step = Math.max(Math.floor(endVal / (totalMilisecDur / 30)), 1)
+        
+        let timer = setInterval(() => {
+            start += step
+            if (start >= endVal) {
+                setCount(endVal)
+                clearInterval(timer)
+            } else {
+                setCount(start)
+            }
+        }, incrementTime)
+        
+        return () => clearInterval(timer)
+    }, [endVal, end, isNumeric, duration])
+    
+    return <span>{isNumeric ? count + suffix : count}</span>
+}
 
 const BRANDS = [
     {
@@ -13,15 +49,16 @@ const BRANDS = [
         img: '/images/gala.jpg',
         bg: 'from-[#7B1C1C] to-[#C1121F]',
         accent: '#ED0000',
-        badge: '60+ Years'
+        badge: '60+ Years',
+        stats: [['60+', 'Years'], ['4', 'Brands'], ['M+', 'Consumers']]
     },
     {
         name: 'Supreme',
         tagline: 'Creamy, Rich & Delicious',
         desc: 'Premium ice cream crafted with the finest dairy. Available in over 20 exciting flavours for every occasion.',
         img: '/images/supreme_ice_cream.jpg',
-        bg: 'from-[#1c3a7b] to-[#4a7cc1]',
-        accent: '#4a7cc1',
+        bg: 'from-[#832657] to-[#C1126E]',
+        accent: '#ED008C',
         badge: 'New Flavours'
     },
     {
@@ -176,9 +213,11 @@ const Home = () => {
 
                             {/* Stats row */}
                             <div className="flex gap-8 pt-4 border-t border-white/20 mt-6">
-                                {[['60+', 'Years'], ['4', 'Brands'], ['M+', 'Consumers']].map(([val, label]) => (
+                                {[['60', 'Years'], ['4', 'Brands'], ['01', 'M+ Consumers']].map(([val, label]) => (
                                     <div key={label}>
-                                        <p className="text-2xl font-bold text-white">{val}</p>
+                                        <p className="text-2xl font-bold text-white">
+                                            <CountUp end={val} />{label === 'M+ Consumers' ? 'M+' : '+'}
+                                        </p>
                                         <p className="text-white/50 text-[10px] font-bold tracking-tight">{label}</p>
                                     </div>
                                 ))}
@@ -362,11 +401,11 @@ const Home = () => {
                     </motion.div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 lg:gap-8">
-                        {featuredProducts.map((p, i) => (
+                        {products.slice(0, 6).map((p, idx) => (
                             <motion.div
                                 key={p.id}
                                 variants={fadeUp}
-                                custom={i * 0.08}
+                                custom={idx * 0.08}
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true }}
@@ -383,10 +422,24 @@ const Home = () => {
                                             />
                                             {/* Quick add */}
                                             <button
-                                                onClick={(e) => handleAddToCart(e, p)}
+                                                onClick={(e) => {
+                                                    handleAddToCart(e, p);
+                                                    toast.success(`ADDED ${p.name.toUpperCase()} TO BAG`, {
+                                                        style: {
+                                                            background: 'var(--bg-primary)',
+                                                            color: 'var(--text-primary)',
+                                                            border: '1px solid var(--divider)',
+                                                            fontSize: '10px',
+                                                            fontWeight: '900',
+                                                            letterSpacing: '0.2em',
+                                                            borderRadius: '0px',
+                                                            padding: '20px 30px'
+                                                        }
+                                                    });
+                                                }}
                                                 className={`absolute bottom-4 right-4 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${addedId === p.id ? 'bg-emerald-500 scale-125' : 'bg-[#ED0000] opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0'}`}
                                             >
-                                                <ShoppingBag size={15} className="text-white" />
+                                                <Plus size={18} className="text-white" />
                                             </button>
                                         </div>
                                         {/* Info */}
@@ -445,7 +498,9 @@ const Home = () => {
                                     { val: 'M+', label: 'Happy consumers' },
                                 ].map(({ val, label }) => (
                                     <div key={label} className="bg-[#FDF8F5] rounded-2xl p-5">
-                                        <p className="text-3xl font-bold text-[#ED0000]">{val}</p>
+                                        <p className="text-3xl font-bold text-[#ED0000]">
+                                            <CountUp end={val} />
+                                        </p>
                                         <p className="text-[12px] text-gray-500 font-medium mt-1">{label}</p>
                                     </div>
                                 ))}
@@ -514,34 +569,44 @@ const Home = () => {
                         <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">What Nigerians say</h2>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {TESTIMONIALS.map((t, i) => (
-                            <motion.div
-                                key={i}
-                                variants={fadeUp}
-                                custom={i * 0.1}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{ once: true }}
-                                className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-lg transition-shadow"
-                            >
-                                <div className="flex gap-0.5 mb-5">
-                                    {[...Array(t.stars)].map((_, s) => (
-                                        <Star key={s} size={14} className="text-amber-400 fill-amber-400" />
-                                    ))}
-                                </div>
-                                <p className="text-gray-600 text-[13px] leading-relaxed mb-8">"{t.text}"</p>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-[#ED0000] flex items-center justify-center text-white font-bold text-sm">
-                                        {t.avatar}
+                    <div className="overflow-hidden py-10">
+                        <motion.div 
+                            className="flex gap-6 w-max"
+                            animate={{ 
+                                x: ["0%", "-50%"]
+                            }}
+                            transition={{
+                                x: {
+                                    duration: 35,
+                                    repeat: Infinity,
+                                    ease: "linear"
+                                }
+                            }}
+                        >
+                            {/* Duplicate testimonials for seamless loop */}
+                            {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
+                                <div
+                                    key={i}
+                                    className="w-[300px] md:w-[450px] bg-white rounded-[40px] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all group"
+                                >
+                                    <div className="flex gap-1 mb-6 text-amber-400">
+                                        {[...Array(t.stars)].map((_, s) => (
+                                            <Star key={s} size={18} className="fill-current" />
+                                        ))}
                                     </div>
-                                    <div>
-                                        <p className="text-[13px] font-bold text-gray-900">{t.name}</p>
-                                        <p className="text-[11px] text-gray-400">{t.role}</p>
+                                    <p className="text-gray-900 text-lg font-medium leading-relaxed mb-10 italic">"{t.text}"</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-[#ED0000] flex items-center justify-center text-white font-black text-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                                            {t.avatar}
+                                        </div>
+                                        <div>
+                                            <p className="text-[15px] font-black text-gray-900">{t.name}</p>
+                                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.role}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </motion.div>
-                        ))}
+                            ))}
+                        </motion.div>
                     </div>
                 </div>
             </section>
@@ -559,20 +624,17 @@ const Home = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
                             {
-                                icon: <Award size={28} className="text-white" />,
-                                bg: 'bg-[#ED0000]',
+                                icon: <Award size={28} />,
                                 title: 'Quality you can trust',
                                 desc: 'All products manufactured in ISO-certified facilities with rigorous quality checks from raw material to final packaging.'
                             },
                             {
-                                icon: <Package size={28} className="text-[#ED0000]" />,
-                                bg: 'bg-[#FDF8F5]',
+                                icon: <Package size={28} />,
                                 title: 'Nationwide availability',
                                 desc: 'Our products are available in supermarkets, kiosks and online across all 36 states of Nigeria.'
                             },
                             {
-                                icon: <Leaf size={28} className="text-[#ED0000]" />,
-                                bg: 'bg-[#FDF8F5]',
+                                icon: <Leaf size={28} />,
                                 title: 'Natural ingredients',
                                 desc: 'We use only the best quality, locally sourced ingredients — no unnecessary additives, just the goodness of real food.'
                             }
@@ -584,13 +646,15 @@ const Home = () => {
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true }}
-                                className={`${card.bg} rounded-3xl p-10 ${i === 0 ? '' : 'border border-gray-100'}`}
+                                className="bg-[#FDF8F5] rounded-3xl p-10 border border-gray-100 hover:bg-[#ED0000] transition-all group duration-500 cursor-pointer"
                             >
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${i === 0 ? 'bg-white/20' : 'bg-red-50'}`}>
-                                    {card.icon}
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 bg-white shadow-sm group-hover:bg-white/20 transition-colors">
+                                    <div className="text-[#ED0000] group-hover:text-white transition-colors">
+                                        {card.icon}
+                                    </div>
                                 </div>
-                                <h3 className={`text-xl font-bold mb-4 ${i === 0 ? 'text-white' : 'text-gray-900'}`}>{card.title}</h3>
-                                <p className={`text-[14px] leading-relaxed ${i === 0 ? 'text-white/80' : 'text-gray-500'}`}>{card.desc}</p>
+                                <h3 className="text-xl font-bold mb-4 text-gray-900 group-hover:text-white transition-colors">{card.title}</h3>
+                                <p className="text-[14px] leading-relaxed text-gray-500 group-hover:text-white/80 transition-colors">{card.desc}</p>
                             </motion.div>
                         ))}
                     </div>

@@ -50,6 +50,14 @@ const ProductDetails = () => {
     return (
         <div className="pt-40 pb-40 bg-[var(--bg-primary)] transition-colors duration-700 font-['Sen',sans-serif]">
             <div className="container px-6">
+                <Link 
+                    to="/products" 
+                    className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-[var(--text-muted)] hover:text-[var(--brand-red)] transition-all mb-12 group"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-2 transition-transform" />
+                    Back to shop
+                </Link>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
                     
                     {/* Editorial Gallery */}
@@ -94,18 +102,25 @@ const ProductDetails = () => {
                                 <p className="text-lg text-[var(--text-primary)] font-medium leading-relaxed max-w-lg">{product.description || "The original Nigerian snack since 1962. Tasty, nourishing, and trusted by millions."}</p>
                             </div>
 
-                            <div className="flex items-center gap-12">
-                                <div>
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Quantity</h3>
-                                    <div className="flex items-center gap-6 border-b-2 border-[var(--divider)] pb-2">
-                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="text-2xl font-black">-</button>
-                                        <span className="text-2xl font-black w-8 text-center">{quantity}</span>
-                                        <button onClick={() => setQuantity(q => q+1)} className="text-2xl font-black">+</button>
+                            <div className="flex items-start gap-12 pt-8 border-t border-[var(--divider)]">
+                                <div className="w-32">
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-6">Quantity</h3>
+                                    <div className="flex items-center justify-between border-b-2 border-[var(--divider)] pb-2 group focus-within:border-[var(--brand-red)] transition-colors">
+                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors">-</button>
+                                        <input 
+                                            type="number" 
+                                            min="1"
+                                            value={quantity}
+                                            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                            className="w-12 text-center bg-transparent text-xl font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
+                                        <button onClick={() => setQuantity(q => q+1)} className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors">+</button>
                                     </div>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Delivery</h3>
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-6">Delivery</h3>
                                     <p className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">24-48 HOURS TRACKING</p>
+                                    <p className="text-[10px] font-medium text-[var(--text-muted)] mt-2">Standard regional logistics applies.</p>
                                 </div>
                             </div>
                         </div>

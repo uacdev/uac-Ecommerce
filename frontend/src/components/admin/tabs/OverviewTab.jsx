@@ -89,9 +89,11 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange }
                                 </div>
                             ) : (
                                 displayProducts.map(p => (
-                                    <div key={p.id} className="flex items-center justify-between group cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <img src={p.image} className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" alt="" />
+                                    <div key={p.id} className="flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white border border-[var(--divider)] shrink-0 shadow-sm group-hover:shadow-md transition-all duration-500">
+                                                <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                                            </div>
                                             <div>
                                                 <p className="text-[12px] font-bold tracking-tight text-[var(--text-primary)] line-clamp-1">{p.name}</p>
                                                 <p className="text-[10px] text-[var(--text-muted)] font-bold mt-0.5">₦{(p.price || 0).toLocaleString()}</p>
