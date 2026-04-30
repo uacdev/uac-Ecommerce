@@ -1,74 +1,28 @@
+// Offline fallback. StoreContext only uses this when the API request fails.
+// Mirrors the seeded production catalogue (see backend/src/scripts/seedProducts.ts)
+// so the storefront stays coherent during a transient backend outage.
+//
+// Cloudinary URLs are intentionally absent here — the public/images/ originals
+// are good enough for an emergency render. When the API returns, the live data
+// (with f_auto,q_auto Cloudinary delivery) replaces this in memory.
+
 export const PRODUCTS = [
-    {
-        id: 'gala-1',
-        name: "Gala Sausage Roll (Classic)",
-        price: 350,
-        image: "/images/gala.jpg",
-        images: ["/images/gala.jpg"],
-        description: "The iconic Nigerian snack since 1962. Tasty, nourishing, and trusted.",
-        location: "Ojota",
-        packaging: "1 carton of 24 pieces",
-        is_reserved: false,
-        brand: "Gala",
-        category: "Gala",
-        status: "available"
-    },
-    {
-        id: 'supreme-1',
-        name: "Supreme Ice Cream (2L)",
-        price: 3500,
-        image: "/images/supreme_ice_cream.jpg",
-        images: ["/images/supreme_ice_cream.jpg"],
-        description: "Premium vanilla and strawberry delight. Rich, creamy, and irresistibly smooth.",
-        location: "Oregun",
-        packaging: "1 pack of 6 tubs",
-        is_reserved: false,
-        brand: "Supreme",
-        category: "Supreme",
-        status: "available"
-    },
-    {
-        id: 'swan-1',
-        name: "Swan Natural Spring Water",
-        price: 2400,
-        image: "/images/swan_water.png",
-        images: ["/images/swan_water.png"],
-        description: "Pure natural spring water from the Kerang hills. Hydration at its best.",
-        location: "Kerang",
-        packaging: "75cl x 12 bottles",
-        is_reserved: false,
-        brand: "Swan",
-        category: "Swan",
-        status: "available"
-    },
-    {
-        id: 'funtime-1',
-        name: "Funtime Coconut Chips",
-        price: 1500,
-        image: "/images/funtime_chips.png",
-        images: ["/images/funtime_chips.png"],
-        description: "Crunchy and delicious coconut chips. The perfect snack for every moment.",
-        location: "Ojota",
-        packaging: "1 carton of 12 pieces",
-        is_reserved: false,
-        brand: "Funtime",
-        category: "Funtime",
-        status: "available"
-    },
-    {
-        id: 'funtime-2',
-        name: "Funtime Snacks Bundle",
-        price: 5000,
-        image: "/images/funtime_chips.png",
-        images: ["/images/funtime_chips.png"],
-        description: "A variety of Funtime snacks for the whole family.",
-        location: "Ojota",
-        packaging: "1 mixed carton",
-        is_reserved: false,
-        brand: "Funtime",
-        category: "Funtime",
-        status: "available"
-    }
+    { id: 'swan-50',     name: 'Swan Water 50cl — Pack of 12',                   brand: 'Swan',     category: 'Water',     price: 2018,  stockCount: 1240, image: '/images/swan_water.png',     images: ['/images/swan_water.png'],    description: 'Pure premium drinking water in a portable 50cl bottle. Pack of 12.',           location: 'Kerang', packaging: '12 × 50cl bottles per pack',     status: 'available', is_reserved: false },
+    { id: 'swan-75-12',  name: 'Swan Water 75cl — Pack of 12',                   brand: 'Swan',     category: 'Water',     price: 2609,  stockCount: 980,  image: '/images/swan_water.png',     images: ['/images/swan_water.png'],    description: 'Premium drinking water in a 75cl bottle. Pack of 12.',                          location: 'Kerang', packaging: '12 × 75cl bottles per pack',     status: 'available', is_reserved: false },
+    { id: 'swan-75-20',  name: 'Swan Water 75cl — Pack of 20',                   brand: 'Swan',     category: 'Water',     price: 4156,  stockCount: 540,  image: '/images/swan_water.png',     images: ['/images/swan_water.png'],    description: 'Premium drinking water in 75cl bottles. Bulk pack of 20.',                       location: 'Kerang', packaging: '20 × 75cl bottles per pack',     status: 'available', is_reserved: false },
+    { id: 'swan-150',    name: 'Swan Water 150cl — Pack of 6',                   brand: 'Swan',     category: 'Water',     price: 2280,  stockCount: 670,  image: '/images/swan_water.png',     images: ['/images/swan_water.png'],    description: 'Family-size 1.5L bottles. Pack of 6.',                                            location: 'Kerang', packaging: '6 × 1.5L bottles per pack',      status: 'available', is_reserved: false },
+
+    { id: 'gala-classic',name: 'Gala Classic 60g — Carton of 26',                 brand: 'Gala',     category: 'Snacks',    price: 4200,  stockCount: 850,  image: '/images/gala.jpg',           images: ['/images/gala.jpg'],          description: 'The original Nigerian sausage roll since 1962. Carton of 26.',                  location: 'Ojota',  packaging: '26 × 60g sausage rolls per carton', status: 'available', is_reserved: false },
+    { id: 'gala-cocktail',name:'Gala Cocktail — Carton of 4',                     brand: 'Gala',     category: 'Snacks',    price: 3700,  stockCount: 320,  image: '/images/gala.jpg',           images: ['/images/gala.jpg'],          description: 'Bite-size Gala for events and entertaining.',                                    location: 'Ojota',  packaging: '4-pack cocktail carton',         status: 'available', is_reserved: false },
+    { id: 'gala-odogwo', name: 'Gala Odogwo King Size 120g — Carton of 26',       brand: 'Gala',     category: 'Snacks',    price: 10500, stockCount: 460,  image: '/images/gala.jpg',           images: ['/images/gala.jpg'],          description: 'Twice the bite. Gala Odogwo king-size. Carton of 26.',                          location: 'Ojota',  packaging: '26 × 120g sausage rolls per carton', status: 'available', is_reserved: false },
+
+    { id: 'funtime-35',  name: 'Funtime Coconut Chips 35g — Carton of 18',        brand: 'Funtime',  category: 'Snacks',    price: 3596,  stockCount: 410,  image: '/images/funtime_chips.png',  images: ['/images/funtime_chips.png'], description: 'Crunchy roasted coconut chips in a 35g pack. Carton of 18.',                     location: 'Ojota',  packaging: '18 × 35g packs per carton',      status: 'available', is_reserved: false },
+    { id: 'funtime-jar', name: 'Funtime Coconut Jar 350g — Carton of 6',          brand: 'Funtime',  category: 'Snacks',    price: 13800, stockCount: 180,  image: '/images/funtime_chips.png',  images: ['/images/funtime_chips.png'], description: 'Premium coconut chips in a 350g sharing jar. Carton of 6.',                       location: 'Ojota',  packaging: '6 × 350g jars per carton',       status: 'available', is_reserved: false },
+
+    { id: 'zuri-classic',name: 'Zuri Classic Seasoning',                          brand: 'Zuri',     category: 'Seasoning', price: 21000, stockCount: 750,  image: '/images/zuri.png',           images: ['/images/zuri.png'],          description: 'All-purpose Zuri Classic seasoning — base flavour for every Nigerian kitchen.', location: 'Ojota',  packaging: '300 × 10g sachets or 30 × 100g pouches', status: 'available', is_reserved: false },
+    { id: 'zuri-jollof', name: 'Zuri Jollof Seasoning',                           brand: 'Zuri',     category: 'Seasoning', price: 21000, stockCount: 620,  image: '/images/zuri.png',           images: ['/images/zuri.png'],          description: 'Zuri Jollof — that signature smoky party-pot finish.',                            location: 'Ojota',  packaging: '300 × 10g sachets or 30 × 100g pouches', status: 'available', is_reserved: false },
+    { id: 'zuri-chicken',name: 'Zuri Chicken Seasoning',                          brand: 'Zuri',     category: 'Seasoning', price: 21000, stockCount: 540,  image: '/images/zuri.png',           images: ['/images/zuri.png'],          description: 'Zuri Chicken — slow-cooked depth for grills and stocks.',                         location: 'Ojota',  packaging: '300 × 10g sachets or 30 × 100g pouches', status: 'available', is_reserved: false },
+    { id: 'zuri-beef',   name: 'Zuri Beef Seasoning',                             brand: 'Zuri',     category: 'Seasoning', price: 21000, stockCount: 480,  image: '/images/zuri.png',           images: ['/images/zuri.png'],          description: 'Zuri Beef — rich, savoury blend for red-meat dishes and pepper soup.',           location: 'Ojota',  packaging: '300 × 10g sachets or 30 × 100g pouches', status: 'available', is_reserved: false }
 ];
 
-export const CATEGORIES = ["All", "Gala", "Supreme", "Swan", "Funtime"];
+export const CATEGORIES = ['All', 'Gala', 'Supreme', 'Swan', 'Funtime', 'Zuri'];
