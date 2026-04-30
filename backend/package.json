@@ -5,10 +5,11 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "tsx src/server.ts",
     "dev": "nodemon --exec tsx src/server.ts",
-    "build": "tsc",
+    "build": "echo \"No build step — runtime uses tsx\"",
     "seed:admin": "tsx src/scripts/seedAdmin.ts",
+    "seed:products": "tsx src/scripts/seedProducts.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -27,7 +28,8 @@
     "morgan": "^1.10.0",
     "multer": "^2.1.1",
     "nodemailer": "^6.9.13",
-    "resend": "^6.12.2"
+    "resend": "^6.12.2",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -37,7 +39,6 @@
     "@types/nodemailer": "^6.4.14",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
     "typescript": "^5.3.3"
   }
 }

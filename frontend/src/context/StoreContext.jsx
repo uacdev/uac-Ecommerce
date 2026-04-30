@@ -184,9 +184,11 @@ export const StoreProvider = ({ children }) => {
                 buyerEmail: orderData.buyerEmail,
                 buyerPhone: orderData.buyerPhone,
                 buyerAddress: orderData.buyerAddress,
+                buyerState: orderData.buyerState || '',
                 deliveryZone: orderData.deliveryZone || '',
                 paymentMethod: orderData.paymentMethod || '',
-                fulfillmentType: orderData.fulfillmentType || 'delivery'
+                fulfillmentType: orderData.fulfillmentType || 'delivery',
+                checkoutSessionId: orderData.checkoutSessionId
             })
             const created = res.data?.data
             if (!created) return { success: false, message: 'Empty response from server' }
@@ -340,6 +342,9 @@ export const StoreProvider = ({ children }) => {
         totalRevenue: apiStats?.totalRevenue ?? orders.reduce((sum, o) => sum + (o.amount || 0), 0),
         avgOrderValue: apiStats?.avgOrderValue ?? 0,
         totalCustomers: apiStats?.totalCustomers ?? 0,
+        returningRate: apiStats?.returningRate ?? 0,
+        abandonmentRate: apiStats?.abandonmentRate ?? 0,
+        dailyVisitors: apiStats?.dailyVisitors ?? 0,
         trends: apiStats?.trends ?? null,
         platformIncome: orders
             .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))

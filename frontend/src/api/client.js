@@ -153,4 +153,9 @@ export const searchApi = {
     query: (q, limit = 5) => api.get('/search', { params: { q, limit } })
 };
 
+export const trackingApi = {
+    visit: (visitorId, path) => api.post('/track/visit', { visitorId, path }),
+    startCheckout: (visitorId, email) => api.post('/track/checkout-start', { visitorId, email })
+};
+
 export default api;

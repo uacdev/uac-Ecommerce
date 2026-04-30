@@ -8,10 +8,12 @@ import EmptyState from '../components/EmptyState'
 import Preloader from '../components/Preloader'
 
 const Products = () => {
-    const { products, categories, loading } = useStore()
+    const { products } = useStore()
     const [searchParams] = useSearchParams()
     const [searchQuery, setSearchQuery] = useState('')
-    const [activeCategory, setActiveCategory] = useState('All')
+    // Filter chips are brand-based (Gala / Supreme / Swan / Funtime / Zuri),
+    // matching the navbar dropdown and the home brand grid. "All" sees everything.
+    const [activeBrand, setActiveBrand] = useState('All')
     const [sortBy, setSortBy] = useState('latest')
     const [sortOpen, setSortOpen] = useState(false)
     const sortRef = useRef(null)
@@ -19,7 +21,7 @@ const Products = () => {
     useEffect(() => {
         const brandFilter = searchParams.get('brand') || searchParams.get('category')
         if (brandFilter) {
-            setActiveCategory(brandFilter)
+            setActiveBrand(brandFilter)
         }
         const search = searchParams.get('search')
         if (search) {
@@ -27,18 +29,27 @@ const Products = () => {
         }
     }, [searchParams])
 
+    // Derive the chip set from the products themselves so a new brand auto-appears
+    // the moment its first product is seeded.
+    const brands = useMemo(() => {
+        const seen = new Set(products.map(p => (p.brand || '').trim()).filter(Boolean))
+        return ['All', ...Array.from(seen).sort()]
+    }, [products])
+
     const filteredProducts = useMemo(() => {
+        const norm = (s) => (s || '').trim().toLowerCase()
+        const target = norm(activeBrand)
         return products.filter(p => {
-            const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-            const matchesSearch = !searchQuery || 
+            const matchesBrand = activeBrand === 'All' || norm(p.brand) === target
+            const matchesSearch = !searchQuery ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase())
-            return matchesCategory && matchesSearch
+            return matchesBrand && matchesSearch
         }).sort((a, b) => {
             if (sortBy === 'price-low') return a.price - b.price
             if (sortBy === 'price-high') return b.price - a.price
             return 0
         })
-    }, [products, activeCategory, searchQuery, sortBy])
+    }, [products, activeBrand, searchQuery, sortBy])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -84,13 +95,13 @@ const Products = () => {
                             />
                         </div>
                         <div className="flex gap-4 flex-wrap justify-center">
-                            {categories.map(c => (
-                                <button 
-                                    key={c}
-                                    onClick={() => setActiveCategory(c)}
-                                    className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === c ? 'bg-[var(--brand-red)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                            {brands.map(b => (
+                                <button
+                                    key={b}
+                                    onClick={() => setActiveBrand(b)}
+                                    className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeBrand === b ? 'bg-[var(--brand-red)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                                 >
-                                    {c}
+                                    {b}
                                 </button>
                             ))}
                         </div>
@@ -110,7 +121,7 @@ const Products = () => {
                         title="NO RESULTS FOUND"
                         description="Try refining your search or category selection."
                         actionLabel="RESET FILTERS"
-                        onAction={() => { setSearchQuery(''); setActiveCategory('All'); }}
+                        onAction={() => { setSearchQuery(''); setActiveBrand('All'); }}
                     />
                 )}
             </div>

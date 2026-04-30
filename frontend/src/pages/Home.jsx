@@ -65,7 +65,7 @@ const BRANDS = [
         name: 'Swan',
         tagline: 'Pure Natural Spring Water',
         desc: 'Sourced from natural springs, Swan water is refreshing, pure and trusted by families across Nigeria.',
-        img: '/images/swan_water.jpg',
+        img: '/images/swan_water.png',
         bg: 'from-[#0f4c75] to-[#1b6ca8]',
         accent: '#1b6ca8',
         badge: 'Pure & Natural'
@@ -74,10 +74,19 @@ const BRANDS = [
         name: 'Funtime',
         tagline: 'Snack. Share. Enjoy.',
         desc: 'Crispy and tasty chips perfect for every moment — from parties to solo snacking sessions.',
-        img: '/images/funtime_chips.jpg',
+        img: '/images/funtime_chips.png',
         bg: 'from-[#7b5e1c] to-[#c18a21]',
         accent: '#c18a21',
         badge: 'Fan Favourite'
+    },
+    {
+        name: 'Zuri',
+        tagline: 'Seasoning, Reimagined',
+        desc: 'All-purpose and recipe-specific Zuri blends — the modern foundation of every Nigerian kitchen.',
+        img: '/images/zuri.png',
+        bg: 'from-[#5b1c2c] to-[#a31d3a]',
+        accent: '#a31d3a',
+        badge: 'Pantry Essential'
     },
 ]
 
@@ -520,7 +529,7 @@ const Home = () => {
                                     <img src="/images/supreme_ice_cream.jpg" alt="Supreme" className="w-full h-full object-cover" />
                                 </motion.div>
                                 <motion.div variants={fadeUp} custom={0.3} initial="hidden" whileInView="visible" viewport={{ once: true }} className="flex-1 rounded-3xl overflow-hidden">
-                                    <img src="/images/swan_water.jpg" alt="Swan" className="w-full h-full object-cover" />
+                                    <img src="/images/swan_water.png" alt="Swan" className="w-full h-full object-cover" />
                                 </motion.div>
                             </div>
                         </div>
@@ -553,7 +562,7 @@ const Home = () => {
                         </Link>
                     </motion.div>
                     <div className="relative min-h-[280px] flex items-end justify-center overflow-hidden">
-                        <img src="/images/funtime_chips.jpg" alt="Promo" className="w-full h-full object-cover opacity-30 lg:opacity-50" />
+                        <img src="/images/funtime_chips.png" alt="Promo" className="w-full h-full object-cover opacity-30 lg:opacity-50" />
                         <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#ED0000] hidden lg:block" />
                     </div>
                 </div>
