@@ -1,13 +1,28 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-    LayoutDashboard, ShoppingCart, Package, Users, BarChart3, 
-    Settings, LogOut, Sun, Moon, Star, Layers, 
-    ChevronLeft, ChevronRight, AlertCircle, Sparkles
+import {
+    LayoutDashboard, ShoppingCart, Package, Users, BarChart3,
+    Settings, LogOut, Sun, Moon, Star, Layers,
+    ChevronLeft, ChevronRight, AlertCircle, Sparkles, X
 } from 'lucide-react'
 
-const AdminSidebar = ({ activeTab, setActiveTab, toggleTheme, isDark, logout, collapsed, counts = {} }) => {
+const AdminSidebar = ({
+    activeTab, setActiveTab, toggleTheme, isDark, logout, collapsed, counts = {},
+    // Mobile drawer state. Below lg the sidebar lives off-canvas; the parent
+    // toggles `mobileOpen` to slide it in and provides `onMobileClose` for the
+    // backdrop / X button. Above lg both props are ignored — the sidebar is
+    // permanently visible in normal flow.
+    mobileOpen = false, onMobileClose
+}) => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+
+    // Close the drawer with Escape on mobile.
+    useEffect(() => {
+        if (!mobileOpen) return
+        const onKey = (e) => { if (e.key === 'Escape') onMobileClose?.() }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [mobileOpen, onMobileClose])
 
     const menuItems = [
         { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -22,16 +37,43 @@ const AdminSidebar = ({ activeTab, setActiveTab, toggleTheme, isDark, logout, co
 
     return (
         <>
+            {/* Backdrop — only shown when the mobile drawer is open. Clicking it
+                dismisses the drawer. lg:hidden so it never appears on desktop. */}
+            <AnimatePresence>
+                {mobileOpen && (
+                    <motion.div
+                        key="sidebar-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onMobileClose}
+                        className="lg:hidden fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm"
+                    />
+                )}
+            </AnimatePresence>
+
             <motion.aside
                 animate={{ width: collapsed ? 100 : 280 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="fixed lg:static h-screen z-[1000] flex flex-col shrink-0 overflow-hidden bg-[var(--bg-secondary)] border-r border-[var(--divider)] shadow-sm font-['Sen',sans-serif]"
+                // Off-canvas on mobile (translate -100%), drops back into view when
+                // mobileOpen flips. lg+: always in normal flow.
+                className={`fixed lg:static h-screen z-[1000] flex flex-col shrink-0 overflow-hidden bg-[var(--bg-secondary)] border-r border-[var(--divider)] shadow-sm font-['Sen',sans-serif] transform transition-transform duration-300 ease-out lg:transform-none ${
+                    mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                }`}
             >
-                {/* BRAND LOGO & TOGGLE */}
+                {/* BRAND LOGO & MOBILE CLOSE BUTTON */}
                 <div className={`shrink-0 flex items-center h-32 ${collapsed ? 'justify-center' : 'px-8 justify-between'}`}>
                     <div className="flex items-center gap-3">
                         <img src="/images/uac_foods_full.png" className="h-16 w-auto object-contain transition-transform hover:scale-105" alt="UAC" />
                     </div>
+                    <button
+                        type="button"
+                        onClick={onMobileClose}
+                        aria-label="Close navigation"
+                        className="lg:hidden p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
 
                 {/* NAV LINKS */}
