@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    Search, Bell, Zap, ShoppingCart, Users, Star, Settings as SettingsIcon
+    Search, Bell, Zap, ShoppingCart, Users, Star, Settings as SettingsIcon, Menu
 } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
 import { useTheme } from '../context/ThemeContext'
@@ -65,6 +65,9 @@ const AdminDashboard = () => {
     const [searchOpen, setSearchOpen] = useState(false)
     const [searchResults, setSearchResults] = useState({ products: [], orders: [], customers: [] })
     const [searchLoading, setSearchLoading] = useState(false)
+    // Mobile drawer toggle. On lg+ the sidebar is always visible (static),
+    // this state only matters below the lg breakpoint.
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
     const { isDark, toggleTheme } = useTheme()
     const { loading, removeProduct, orders, products, adminProfile, stats, businessSegments } = useStore()
@@ -220,17 +223,30 @@ const AdminDashboard = () => {
                     setViewCategoryId(null);
                     setShowAddProduct(false);
                     setEditingProduct(null);
+                    // Auto-close the mobile drawer when a nav item is picked.
+                    setMobileSidebarOpen(false);
                 }}
                 collapsed={false}
                 counts={sidebarCounts}
                 isDark={isDark}
                 toggleTheme={toggleTheme}
                 logout={() => logout()}
+                mobileOpen={mobileSidebarOpen}
+                onMobileClose={() => setMobileSidebarOpen(false)}
             />
 
             <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
                 <header className="h-20 flex items-center justify-between px-6 lg:px-10 border-b border-[var(--divider)] bg-[var(--bg-tertiary)] shrink-0 gap-6">
                     <div className="flex items-center gap-4 flex-1">
+                        {/* Mobile-only hamburger — opens the sidebar drawer below lg. */}
+                        <button
+                            type="button"
+                            onClick={() => setMobileSidebarOpen(true)}
+                            className="lg:hidden p-2 -ml-2 rounded-lg text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                            aria-label="Open navigation"
+                        >
+                            <Menu size={22} />
+                        </button>
                         <div className="relative max-w-md w-full hidden md:block">
                             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                             <input
