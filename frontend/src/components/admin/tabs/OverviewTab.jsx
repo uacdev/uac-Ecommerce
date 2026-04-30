@@ -54,7 +54,7 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
         return m
     }, [products])
     const displayProducts = (bestSellers.length > 0 ? bestSellers : products.slice(0, 5))
-        .map(p => ({ ...p, image: p.image || productImageById.get(String(p.id)) || '/images/uac_logo.png' }))
+        .map(p => ({ ...p, image: p.image || productImageById.get(String(p.id)) || '' }))
 
     // Derived from server-aggregated customer data so it stays correct with paginated orders.
     const topContributors = React.useMemo(

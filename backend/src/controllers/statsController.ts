@@ -263,26 +263,32 @@ export const getBestSellers = async (_req: Request, res: Response) => {
             });
         }
 
-        // Backfill name/image/price from the live Product when the order item
-        // captured them as empty strings (early orders pre-Cloudinary did this).
+        // Backfill name/image/price from the live Product. Match by id first;
+        // if the original product was deleted (e.g. catalogue reseed), fall
+        // back to a prefix-name match — `Gala` finds `Gala Classic 60g…`.
         const productIds = top.map(t => String(t._id));
         const products = await Product.find({ _id: { $in: productIds } });
         const productMap = new Map(products.map(p => [String(p._id), p]));
 
-        res.json({
-            success: true,
-            data: top.map(t => {
-                const live = productMap.get(String(t._id));
-                return {
-                    id: t._id,
-                    name: t.name || live?.name || '',
-                    image: t.image || live?.image || '',
-                    price: t.price ?? live?.price ?? 0,
-                    unitsSold: t.unitsSold,
-                    revenue: t.revenue
-                };
-            })
-        });
+        const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const resolved = await Promise.all(top.map(async (t) => {
+            let live = productMap.get(String(t._id));
+            if (!live && t.name) {
+                live = await Product.findOne({
+                    name: new RegExp(`^${escapeRegex(t.name)}\\b`, 'i')
+                }) || undefined;
+            }
+            return {
+                id: live?._id || t._id,
+                name: live?.name || t.name || '',
+                image: live?.image || t.image || '',
+                price: live?.price ?? t.price ?? 0,
+                unitsSold: t.unitsSold,
+                revenue: t.revenue
+            };
+        }));
+
+        res.json({ success: true, data: resolved });
     } catch (err: any) {
         console.error('Error in getBestSellers:', err);
         res.status(500).json({ success: false, message: err.message });
