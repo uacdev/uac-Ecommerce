@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Trash2, Plus, Minus, ChevronRight, ShieldCheck, Truck } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, ChevronRight, ShieldCheck } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
+import { useCustomerAuth } from '../context/CustomerAuthContext'
+import { deliveryApi } from '../api/client'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
 
@@ -11,7 +13,8 @@ const Checkout = () => {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState('monnify')
-    const { products, addOrder, cart, removeFromCart, updateCartQuantity, cartTotal } = useStore()
+    const { products, addOrder, cart, cartTotal } = useStore()
+    const { customer } = useCustomerAuth() || {}
 
     const [buyer, setBuyer] = useState({
         name: '',
@@ -20,34 +23,87 @@ const Checkout = () => {
         address: '',
     })
 
+    // Pre-fill from the signed-in customer (only fills empty fields so user edits survive)
+    useEffect(() => {
+        if (!customer) return
+        setBuyer(b => ({
+            name: b.name || customer.fullName || '',
+            email: b.email || customer.email || '',
+            phone: b.phone || customer.phone || '',
+            address: b.address || customer.defaultAddress || ''
+        }))
+        if (customer.defaultState) setStateName(s => s || customer.defaultState)
+    }, [customer])
+
+    const [zones, setZones] = useState([])
+    const [zonesLoading, setZonesLoading] = useState(true)
+    const [zoneName, setZoneName] = useState('')
+
+    const [states, setStates] = useState([])
+    const [stateName, setStateName] = useState('')
+
+    useEffect(() => {
+        Promise.allSettled([deliveryApi.getZones(), deliveryApi.getStates()]).then(([zRes, sRes]) => {
+            if (zRes.status === 'fulfilled') setZones(zRes.value.data?.data || [])
+            if (sRes.status === 'fulfilled') setStates(sRes.value.data?.data || [])
+            setZonesLoading(false)
+        })
+    }, [])
+
     const isSingleItem = !!id
     const singleProduct = isSingleItem ? products.find(p => p.id === id) : null
     const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: 1 }] : []) : cart
-    const totalAmount = isSingleItem ? (singleProduct?.price || 0) : cartTotal
+    const subtotal = isSingleItem ? (singleProduct?.price || 0) : cartTotal
+
+    const selectedZone = useMemo(() => zones.find(z => z.name === zoneName), [zones, zoneName])
+    const deliveryFee = selectedZone?.fee || 0
+    const totalAmount = subtotal + deliveryFee
 
     if (isSingleItem && !singleProduct) return <Preloader />
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (!stateName) {
+            toast.error('PICK YOUR STATE')
+            return
+        }
+        if (!zoneName) {
+            toast.error('PICK A DELIVERY ZONE')
+            return
+        }
         setLoading(true)
-        
+
         // Simulate Monnify Integration / Processing
         setTimeout(async () => {
             const result = await addOrder({
-                productId: isSingleItem ? checkoutItems[0].id : 'multi',
-                productName: isSingleItem ? checkoutItems[0].name : 'Cart Items',
-                amount: totalAmount,
+                items: checkoutItems.map(it => ({
+                    productId: it.id,
+                    name: it.name,
+                    image: it.image,
+                    price: it.price,
+                    quantity: it.quantity || 1
+                })),
                 buyerName: buyer.name,
                 buyerPhone: buyer.phone,
                 buyerEmail: buyer.email,
                 buyerAddress: buyer.address,
-                items: checkoutItems
+                buyerState: stateName,
+                deliveryZone: zoneName,
+                paymentMethod,
+                fulfillmentType: 'delivery'
             })
 
-            if (result) {
-                navigate('/success', { state: { orderId: result.id } })
+            if (result?.success) {
+                navigate('/delivery-selection', {
+                    state: {
+                        orderId: result.data.id,
+                        reference: result.data.reference,
+                        amount: result.data.amount,
+                        deliveryZone: result.data.deliveryZone
+                    }
+                })
             } else {
-                toast.error('ORDER FAILED')
+                toast.error(result?.message || 'ORDER FAILED')
                 setLoading(false)
             }
         }, 2000)
@@ -97,6 +153,26 @@ const Checkout = () => {
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Street Address</label>
                                         <input required type="text" value={buyer.address} onChange={e => setBuyer({...buyer, address: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none uppercase" placeholder="DELIVERY LOCATION" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">State</label>
+                                        <select required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none appearance-none cursor-pointer">
+                                            <option value="">SELECT STATE</option>
+                                            {states.map(s => (
+                                                <option key={s} value={s}>{s.toUpperCase()}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Delivery Zone</label>
+                                        <select required value={zoneName} onChange={e => setZoneName(e.target.value)} disabled={zonesLoading} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none appearance-none cursor-pointer">
+                                            <option value="">{zonesLoading ? 'LOADING ZONES…' : 'SELECT YOUR ZONE'}</option>
+                                            {zones.map(z => (
+                                                <option key={z.name} value={z.name}>
+                                                    {z.name.toUpperCase()} — ₦{z.fee.toLocaleString()}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </section>
@@ -149,11 +225,13 @@ const Checkout = () => {
                                 <div className="space-y-4 pt-12 border-t border-[var(--divider)]">
                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
                                         <span>Subtotal</span>
-                                        <span className="text-[var(--text-primary)]">₦{totalAmount.toLocaleString()}</span>
+                                        <span className="text-[var(--text-primary)]">₦{subtotal.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-                                        <span>Shipping</span>
-                                        <span className="text-emerald-500">FREE FOR NOW</span>
+                                        <span>Delivery {selectedZone ? `· ${selectedZone.name}` : ''}</span>
+                                        <span className={selectedZone ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+                                            {selectedZone ? `₦${deliveryFee.toLocaleString()}` : 'PICK A ZONE'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between items-center pt-8 mt-4 border-t-2 border-[var(--divider)]">
                                         <span className="text-xl font-black uppercase tracking-widest text-[var(--text-primary)]">Total</span>

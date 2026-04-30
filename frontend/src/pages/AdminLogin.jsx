@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, ChevronLeft } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, ChevronLeft, CheckCircle2 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { authApi } from '../api/client'
 
 const AdminLogin = () => {
+    const [mode, setMode] = useState('signin') // 'signin' | 'forgot'
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
+    const [info, setInfo] = useState(null)
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const navigate = useNavigate()
+    const { signIn } = useAuth()
 
     const bannerImages = [
         '/images/login1.png',
@@ -29,19 +33,32 @@ const AdminLogin = () => {
     const handleLogin = async (e) => {
         e.preventDefault()
         setLoading(true)
-        setError(null)
+        setError(null); setInfo(null)
 
-        try {
-            const { error: authError } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password: password.trim(),
-            })
-            if (authError) throw authError
+        const result = await signIn(email.trim(), password)
+        if (result?.success) {
             navigate('/admin', { replace: true })
-        } catch (err) {
-            setError('Invalid credentials. Please try again.')
+        } else {
+            setError(result?.message || 'Invalid credentials. Please try again.')
             setLoading(false)
         }
+    }
+
+    const handleForgot = async (e) => {
+        e.preventDefault()
+        setLoading(true); setError(null); setInfo(null)
+        try {
+            const res = await authApi.requestPasswordReset(email.trim())
+            setInfo(res.data?.message || 'If that email is registered, a reset link has been sent.')
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Could not send reset email.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const switchMode = (next) => {
+        setMode(next); setError(null); setInfo(null); setPassword('')
     }
 
     return (
@@ -95,13 +112,19 @@ const AdminLogin = () => {
                 <div className="max-w-md w-full mx-auto">
                     <div className="mb-14">
                         <img src="/images/uac_foods_full.png" alt="UAC Logo" className="h-16 mb-12 transition-transform active:scale-95 cursor-pointer" onClick={() => navigate('/')} />
-                        <h1 className="text-2xl font-medium tracking-tight text-slate-900 leading-tight">Admin sign in</h1>
-                        <p className="text-slate-400 font-medium mt-2.5 text-[15px]">Sign in to manage your dashboard</p>
+                        <h1 className="text-2xl font-medium tracking-tight text-slate-900 leading-tight">
+                            {mode === 'forgot' ? 'Reset your password' : 'Admin sign in'}
+                        </h1>
+                        <p className="text-slate-400 font-medium mt-2.5 text-[15px]">
+                            {mode === 'forgot'
+                                ? "Enter your email and we'll send you a reset link."
+                                : 'Sign in to manage your dashboard'}
+                        </p>
                     </div>
 
-                    <form onSubmit={handleLogin} className="space-y-8">
+                    <form onSubmit={mode === 'forgot' ? handleForgot : handleLogin} className="space-y-8">
                         {error && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, scale: 0.98 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="p-4 rounded-xl bg-red-50 text-[#ed0000] text-[13px] font-bold border border-red-100 flex items-center gap-3 shadow-sm"
@@ -110,14 +133,24 @@ const AdminLogin = () => {
                                 {error}
                             </motion.div>
                         )}
+                        {info && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="p-4 rounded-xl bg-emerald-50 text-emerald-700 text-[13px] font-bold border border-emerald-100 flex items-center gap-3 shadow-sm"
+                            >
+                                <CheckCircle2 size={18} />
+                                {info}
+                            </motion.div>
+                        )}
 
                         <div className="space-y-4">
                             <label className="text-[14px] font-bold text-slate-600 tracking-tight ml-1 leading-none">Email address</label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-[#ed0000]" size={18} />
-                                <input 
+                                <input
                                     required
-                                    type="email" 
+                                    type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter your email address"
@@ -126,37 +159,47 @@ const AdminLogin = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <label className="text-[14px] font-bold text-slate-600 tracking-tight ml-1 leading-none">Password</label>
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-[#ed0000]" size={18} />
-                                <input 
-                                    required
-                                    type={showPassword ? 'text' : 'password'} 
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your password"
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl py-4.5 pl-12 pr-12 text-slate-700 text-sm font-medium outline-none focus:bg-white focus:border-[#ed0000] shadow-sm transition-all"
-                                />
-                                <button 
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ed0000] transition-colors p-2"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
+                        {mode === 'signin' && (
+                            <div className="space-y-4">
+                                <label className="text-[14px] font-bold text-slate-600 tracking-tight ml-1 leading-none">Password</label>
+                                <div className="relative group">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors group-focus-within:text-[#ed0000]" size={18} />
+                                    <input
+                                        required
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Enter your password"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl py-4.5 pl-12 pr-12 text-slate-700 text-sm font-medium outline-none focus:bg-white focus:border-[#ed0000] shadow-sm transition-all"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#ed0000] transition-colors p-2"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="flex items-center justify-between py-1">
-                             <label className="flex items-center gap-2.5 cursor-pointer group">
-                                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-[#ed0000] focus:ring-[#ed0000] transition-all cursor-pointer" />
-                                <span className="text-[12px] font-medium text-slate-400 group-hover:text-slate-600">Remember session</span>
-                             </label>
-                             <button type="button" className="text-[12px] font-medium text-[#ed0000] hover:underline decoration-2">Forgot password?</button>
+                            {mode === 'signin' ? (
+                                <>
+                                    <label className="flex items-center gap-2.5 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-[#ed0000] focus:ring-[#ed0000] transition-all cursor-pointer" />
+                                        <span className="text-[12px] font-medium text-slate-400 group-hover:text-slate-600">Remember session</span>
+                                    </label>
+                                    <button type="button" onClick={() => switchMode('forgot')} className="text-[12px] font-medium text-[#ed0000] hover:underline decoration-2">Forgot password?</button>
+                                </>
+                            ) : (
+                                <button type="button" onClick={() => switchMode('signin')} className="text-[12px] font-medium text-slate-400 hover:text-[#ed0000] flex items-center gap-1.5">
+                                    <ChevronLeft size={14} /> Back to sign in
+                                </button>
+                            )}
                         </div>
 
-                        <button 
+                        <button
                             disabled={loading}
                             type="submit"
                             className="w-full py-4.5 rounded-xl bg-black text-white text-[15px] font-bold shadow-xl shadow-slate-100 hover:bg-[#ed0000] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 disabled:opacity-50"
@@ -165,7 +208,7 @@ const AdminLogin = () => {
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    Login
+                                    {mode === 'forgot' ? 'Send reset link' : 'Login'}
                                     <ArrowRight size={18} />
                                 </>
                             )}

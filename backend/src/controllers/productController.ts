@@ -1,9 +1,25 @@
 import { Request, Response } from 'express';
-import { db } from '../mockDb';
+import { Product, PRODUCT_LOCATIONS } from '../models/Product';
+import { StockSubscription } from '../models/StockSubscription';
+import { notify } from '../lib/notify';
+import { sendBackInStockEmails } from '../lib/email';
 
-export const getProducts = async (req: Request, res: Response) => {
+const ALLOWED_FIELDS = [
+    'name', 'brand', 'description', 'category', 'image', 'images',
+    'location', 'packaging', 'price', 'status', 'stockCount', 'is_reserved'
+];
+
+const sanitize = (body: any) => {
+    const out: Record<string, any> = {};
+    for (const k of ALLOWED_FIELDS) {
+        if (k in body) out[k] = body[k];
+    }
+    return out;
+};
+
+export const getProducts = async (_req: Request, res: Response) => {
     try {
-        const data = db.products.getAll();
+        const data = await Product.find().sort({ created_at: -1 });
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
         console.error('Error in getProducts:', err);
@@ -11,11 +27,54 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 };
 
+// Admin-only: per-product sales totals (units sold + revenue) across paid orders.
+export const getProductsSalesSummary = async (_req: Request, res: Response) => {
+    try {
+        // Lazy-import to keep this controller free of cross-module knowledge
+        const { Order } = await import('../models/Order');
+        const PAID = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
+
+        const rows = await Order.aggregate([
+            { $match: { status: { $in: PAID } } },
+            { $unwind: '$items' },
+            { $group: {
+                _id: '$items.productId',
+                soldUnits: { $sum: '$items.quantity' },
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+                orders: { $sum: 1 }
+            } },
+            { $project: { _id: 0, productId: '$_id', soldUnits: 1, revenue: 1, orders: 1 } }
+        ]);
+
+        const summary: Record<string, { soldUnits: number; revenue: number; orders: number }> = {};
+        for (const r of rows) {
+            summary[String(r.productId)] = { soldUnits: r.soldUnits, revenue: r.revenue, orders: r.orders };
+        }
+        res.json({ success: true, data: summary });
+    } catch (err: any) {
+        console.error('Error in getProductsSalesSummary:', err);
+        res.status(500).json({ success: false, message: err.message || 'Error fetching sales summary' });
+    }
+};
+
 export const createProduct = async (req: Request, res: Response) => {
     try {
-        const productData = req.body;
-        const newProduct = db.products.create(productData);
-        res.status(201).json({ success: true, data: newProduct });
+        const payload = sanitize(req.body);
+        if (!payload.name) return res.status(400).json({ success: false, message: 'name is required' });
+        if (!payload.category) return res.status(400).json({ success: false, message: 'category is required' });
+        if (payload.price === undefined || payload.price === null || payload.price === '') {
+            return res.status(400).json({ success: false, message: 'price is required' });
+        }
+        if (!payload.location || !PRODUCT_LOCATIONS.includes(payload.location)) {
+            return res.status(400).json({ success: false, message: `location must be one of ${PRODUCT_LOCATIONS.join(', ')}` });
+        }
+        // Status is derived from stockCount; ignore any incoming status on create
+        const stock = Number(payload.stockCount ?? 0);
+        payload.stockCount = stock;
+        payload.status = stock > 0 ? 'available' : 'out_of_stock';
+
+        const created = await Product.create(payload);
+        res.status(201).json({ success: true, data: created });
     } catch (err: any) {
         console.error('Error in createProduct:', err);
         res.status(400).json({ success: false, message: err.message || 'Error creating product' });
@@ -25,10 +84,46 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
-        const updated = db.products.update(id, updates);
-        
-        if (!updated) throw new Error('Product not found');
+        const payload = sanitize(req.body);
+        if (payload.location && !PRODUCT_LOCATIONS.includes(payload.location)) {
+            return res.status(400).json({ success: false, message: `location must be one of ${PRODUCT_LOCATIONS.join(', ')}` });
+        }
+
+        const before = await Product.findById(id);
+        if (!before) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        // Status is no longer set manually — it is always derived from stockCount.
+        // If the admin sent a stockCount, recalc status. Otherwise leave both alone.
+        if (payload.stockCount !== undefined) {
+            const newStock = Math.max(0, Number(payload.stockCount));
+            payload.stockCount = newStock;
+            payload.status = newStock > 0 ? 'available' : 'out_of_stock';
+        } else {
+            // Strip any stale status from the payload so admin can't drift it from inventory truth
+            delete payload.status;
+        }
+
+        const updated = await Product.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+        if (!updated) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        const beforeStatus = String(before.status);
+        const afterStatus = String(updated.status);
+
+        // Notify on transition into out_of_stock
+        if (beforeStatus !== 'out_of_stock' && afterStatus === 'out_of_stock') {
+            notify({
+                type: 'inventory',
+                title: 'Inventory alert · out of stock',
+                description: `${updated.name} just hit zero stock.`,
+                meta: { productId: updated.id, name: updated.name }
+            });
+        }
+
+        // Restock: was out, now available — fire emails to all pending subscribers
+        if (beforeStatus === 'out_of_stock' && afterStatus === 'available') {
+            void sendRestockEmails(updated.id as string, updated.name as string);
+        }
+
         res.json({ success: true, data: updated });
     } catch (err: any) {
         console.error('Error in updateProduct:', err);
@@ -36,10 +131,191 @@ export const updateProduct = async (req: Request, res: Response) => {
     }
 };
 
+const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
+
+// Admin: deep stats for a single product
+export const getProductStats = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findById(id);
+        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        const { Order } = await import('../models/Order');
+        const { Review } = await import('../models/Review');
+
+        const productIdStr = String(product._id);
+
+        // Sales summary: $unwind items, match this product, group totals
+        const [salesAgg] = await Order.aggregate([
+            { $match: { status: { $in: PAID_STATUSES } } },
+            { $unwind: '$items' },
+            { $match: { 'items.productId': productIdStr } },
+            { $group: {
+                _id: null,
+                soldUnits: { $sum: '$items.quantity' },
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+                orderCount: { $sum: 1 },
+                buyers: { $addToSet: '$buyerEmail' }
+            } }
+        ]);
+
+        const sales = salesAgg
+            ? { soldUnits: salesAgg.soldUnits, revenue: salesAgg.revenue, orderCount: salesAgg.orderCount, uniqueBuyers: salesAgg.buyers.length }
+            : { soldUnits: 0, revenue: 0, orderCount: 0, uniqueBuyers: 0 };
+
+        // Recent orders containing this product (last 10, any status)
+        const recentOrders = await Order.find({ 'items.productId': productIdStr })
+            .sort({ date: -1 })
+            .limit(10)
+            .select('reference buyerName buyerEmail amount status date items');
+
+        // Top buyers of this product (by quantity)
+        const topBuyers = await Order.aggregate([
+            { $match: { status: { $in: PAID_STATUSES } } },
+            { $unwind: '$items' },
+            { $match: { 'items.productId': productIdStr } },
+            { $group: {
+                _id: '$buyerEmail',
+                name: { $first: '$buyerName' },
+                units: { $sum: '$items.quantity' },
+                spend: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+                orders: { $sum: 1 }
+            } },
+            { $sort: { units: -1 } },
+            { $limit: 5 },
+            { $project: { _id: 0, email: '$_id', name: 1, units: 1, spend: 1, orders: 1 } }
+        ]);
+
+        // Monthly sales chart for last 12 months
+        const now = new Date();
+        const since = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+        const monthlyRows = await Order.aggregate([
+            { $match: { status: { $in: PAID_STATUSES }, date: { $gte: since } } },
+            { $unwind: '$items' },
+            { $match: { 'items.productId': productIdStr } },
+            { $group: {
+                _id: { y: { $year: '$date' }, m: { $month: '$date' } },
+                units: { $sum: '$items.quantity' },
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+            } }
+        ]);
+
+        const map = new Map<string, { units: number; revenue: number }>();
+        for (const r of monthlyRows) {
+            map.set(`${r._id.y}-${r._id.m}`, { units: r.units, revenue: r.revenue });
+        }
+        const chart: { name: string; units: number; revenue: number }[] = [];
+        const cur = new Date(since);
+        while (cur <= now) {
+            const k = `${cur.getFullYear()}-${cur.getMonth() + 1}`;
+            const row = map.get(k) || { units: 0, revenue: 0 };
+            chart.push({
+                name: cur.toLocaleDateString('en-NG', { month: 'short' }),
+                units: row.units,
+                revenue: row.revenue
+            });
+            cur.setMonth(cur.getMonth() + 1);
+        }
+
+        // Reviews
+        const reviews = await Review.find({ productId: product._id }).sort({ date: -1 }).limit(5);
+        const allRatings = await Review.find({ productId: product._id }).select('rating');
+        const reviewSummary = {
+            count: allRatings.length,
+            avgRating: allRatings.length > 0
+                ? Number((allRatings.reduce((s, r) => s + (r.rating as number), 0) / allRatings.length).toFixed(2))
+                : 0
+        };
+
+        // Pending restock subscribers
+        const pendingRestock = await StockSubscription.countDocuments({
+            productId: product._id,
+            notifiedAt: null
+        });
+
+        res.json({
+            success: true,
+            data: {
+                product,
+                sales,
+                chart,
+                recentOrders,
+                topBuyers,
+                reviews: { ...reviewSummary, recent: reviews },
+                pendingRestockSubscribers: pendingRestock
+            }
+        });
+    } catch (err: any) {
+        console.error('Error in getProductStats:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Helper: dispatch back-in-stock emails to pending subscribers, log audit notification.
+const sendRestockEmails = async (productId: string, productName: string) => {
+    try {
+        const subs = await StockSubscription.find({ productId, notifiedAt: null });
+        if (subs.length === 0) return;
+
+        const emails = subs.map(s => s.email);
+        const result = await sendBackInStockEmails({ productId, productName, emails });
+
+        await StockSubscription.updateMany(
+            { _id: { $in: subs.map(s => s._id) } },
+            { $set: { notifiedAt: new Date() } }
+        );
+
+        notify({
+            type: 'inventory',
+            title: 'Back-in-stock emails sent',
+            description: `${productName} · ${emails.length} subscriber${emails.length === 1 ? '' : 's'}${result.failed > 0 ? ` (${result.failed} failed)` : ''}`,
+            meta: { productId, count: emails.length, failed: result.failed }
+        });
+    } catch (err) {
+        console.error('Restock email dispatch failed:', err);
+    }
+};
+
+// Public — customer subscribes to a notification for an out-of-stock product
+export const subscribeRestock = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const email = String(req.body.email || '').trim().toLowerCase();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ success: false, message: 'A valid email is required' });
+        }
+        const product = await Product.findById(id);
+        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+        if (product.status !== 'out_of_stock') {
+            return res.status(400).json({ success: false, message: 'This product is currently in stock — no need to subscribe.' });
+        }
+
+        // Upsert: create if no pending subscription exists for this (product, email)
+        try {
+            await new StockSubscription({
+                productId: product._id,
+                productName: product.name,
+                email
+            }).save();
+        } catch (err: any) {
+            if (err?.code === 11000) {
+                return res.json({ success: true, message: "You're already on the list — we'll email you when it's back." });
+            }
+            throw err;
+        }
+
+        res.status(201).json({ success: true, message: "We'll email you the moment it's back in stock." });
+    } catch (err: any) {
+        console.error('Error in subscribeRestock:', err);
+        res.status(400).json({ success: false, message: err.message || 'Could not save subscription' });
+    }
+};
+
 export const deleteProduct = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        db.products.delete(id);
+        const deleted = await Product.findByIdAndDelete(id);
+        if (!deleted) return res.status(404).json({ success: false, message: 'Product not found' });
         res.json({ success: true, message: 'Product deleted' });
     } catch (err: any) {
         console.error('Error in deleteProduct:', err);

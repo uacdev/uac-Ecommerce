@@ -4,14 +4,19 @@ import { Toaster } from 'react-hot-toast'
 import { StoreProvider } from './context/StoreContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { CustomerAuthProvider } from './context/CustomerAuthContext'
 import Home from './pages/Home'
 import ProductDetails from './pages/ProductDetails'
 import Checkout from './pages/Checkout'
-import Success from './pages/Success'
 import DeliverySelection from './pages/DeliverySelection'
 import SuccessDelivery from './pages/SuccessDelivery'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminLogin from './pages/AdminLogin'
+import ResetPassword from './pages/ResetPassword'
+import AccountLogin from './pages/AccountLogin'
+import AccountSignup from './pages/AccountSignup'
+import AccountResetPassword from './pages/AccountResetPassword'
+import Account from './pages/Account'
 import TrackOrder from './pages/TrackOrder'
 import Favorites from './pages/Favorites'
 import Products from './pages/Products'
@@ -48,14 +53,21 @@ function Layout() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/checkout/:id" element={<Checkout />} />
             <Route path="/checkout" element={<Checkout />} />
-            <Route path="/success" element={<Success />} />
+            <Route path="/delivery-selection" element={<DeliverySelection />} />
+            {/* Back-compat for the old typo'd path */}
             <Route path="/deliver-selection" element={<DeliverySelection />} />
             <Route path="/success-delivery" element={<SuccessDelivery />} />
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/favorites" element={<Favorites />} />
-            
+
+            <Route path="/account/login" element={<AccountLogin />} />
+            <Route path="/account/signup" element={<AccountSignup />} />
+            <Route path="/account/reset-password" element={<AccountResetPassword />} />
+            <Route path="/account" element={<Account />} />
+
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/reset-password" element={<ResetPassword />} />
             <Route 
               path="/admin/*" 
               element={
@@ -78,9 +90,11 @@ function App() {
       <ScrollToTop />
       <ThemeProvider>
         <AuthProvider>
-          <StoreProvider>
-            <Layout />
-          </StoreProvider>
+          <CustomerAuthProvider>
+            <StoreProvider>
+              <Layout />
+            </StoreProvider>
+          </CustomerAuthProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

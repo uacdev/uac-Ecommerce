@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useStore } from '../context/StoreContext'
+import { useCustomerAuth } from '../context/CustomerAuthContext'
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false)
@@ -15,6 +16,8 @@ const Navbar = () => {
     const store = useStore() || {}
     const { cartCount = 0, favorites = [] } = store
     const navigate = useNavigate()
+    const { customer } = useCustomerAuth() || {}
+    const accountHref = customer ? '/account' : '/account/login'
 
     const brandCategories = [
         { name: 'Gala', icon: UtensilsCrossed, desc: 'The King of Snacks since 1962', filter: 'Gala', img: '/images/gala.jpg' },
@@ -97,8 +100,9 @@ const Navbar = () => {
                             )}
                         </Link>
 
-                        <Link to="/admin" className="p-2 text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors">
+                        <Link to={accountHref} className="p-2 text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors relative" title={customer ? `Signed in as ${customer.fullName?.split(' ')[0] || customer.email}` : 'Sign in'}>
                             <User size={18} strokeWidth={3} />
+                            {customer && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-primary)]" />}
                         </Link>
                     </div>
 
@@ -229,6 +233,10 @@ const Navbar = () => {
                                 <Link to="/shop" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">Our portfolio</Link>
                                 <Link to="/about" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">About us</Link>
                                 <Link to="/track-order" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">Track delivery</Link>
+                                <Link to={accountHref} onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)] flex items-center gap-3">
+                                    <User size={18} className="text-[var(--brand-red)]" />
+                                    {customer ? `Hi, ${customer.fullName?.split(' ')[0] || 'you'}` : 'Sign in / Create account'}
+                                </Link>
                                 
                                 <div className="mt-4 pt-4 border-t border-[var(--divider)]">
                                     <p className="px-4 text-[11px] font-bold text-[var(--text-muted)] mb-2">Brands</p>

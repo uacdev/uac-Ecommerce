@@ -1,81 +1,428 @@
 import { Request, Response } from 'express';
-import { db } from '../mockDb';
+import { Order } from '../models/Order';
+import { Product } from '../models/Product';
+import { NIGERIAN_STATES } from '../data/nigerianStates';
 
-export const getKpis = async (req: Request, res: Response) => {
+const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
+
+const pctDelta = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+};
+
+const fmtTrend = (delta: number) => {
+    const sign = delta >= 0 ? '+' : '';
+    return `${sign}${delta.toFixed(1)}%`;
+};
+
+export const getKpis = async (_req: Request, res: Response) => {
     try {
-        const orders = db.orders.getAll();
-        
-        const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0) || 0;
-        const totalOrders = orders.length || 0;
-        const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-        const customerCount = new Set(orders.map(o => o.buyer_email)).size;
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        const [thisMonth, lastMonth, allOrders, totalProducts] = await Promise.all([
+            Order.aggregate([
+                { $match: { date: { $gte: thisMonthStart } } },
+                { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
+            ]),
+            Order.aggregate([
+                { $match: { date: { $gte: lastMonthStart, $lt: thisMonthStart } } },
+                { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
+            ]),
+            Order.aggregate([
+                { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
+            ]),
+            Product.countDocuments()
+        ]);
+
+        const tm = thisMonth[0] || { revenue: 0, count: 0, customers: [] };
+        const lm = lastMonth[0] || { revenue: 0, count: 0, customers: [] };
+        const all = allOrders[0] || { revenue: 0, count: 0, customers: [] };
+
+        const revenueDelta = pctDelta(tm.revenue, lm.revenue);
+        const ordersDelta = pctDelta(tm.count, lm.count);
+        const aovThis = tm.count > 0 ? tm.revenue / tm.count : 0;
+        const aovLast = lm.count > 0 ? lm.revenue / lm.count : 0;
+        const aovDelta = pctDelta(aovThis, aovLast);
+
+        const totalCustomers = (all.customers || []).length;
+        const newThisMonth = (tm.customers || []).filter((e: string) => !(lm.customers || []).includes(e)).length;
+        const newLastMonth = (lm.customers || []).length;
+        const customersDelta = pctDelta(newThisMonth, newLastMonth);
 
         res.json({
             success: true,
             data: {
-                totalRevenue,
-                totalOrders,
-                avgOrderValue,
-                totalCustomers: customerCount || 0,
-                returningRate: '68%',
-                abandonmentRate: '23.8%'
+                totalRevenue: all.revenue,
+                totalOrders: all.count,
+                avgOrderValue: all.count > 0 ? all.revenue / all.count : 0,
+                totalCustomers,
+                totalProducts,
+                trends: {
+                    revenue: { value: revenueDelta, label: fmtTrend(revenueDelta), positive: revenueDelta >= 0 },
+                    orders: { value: ordersDelta, label: fmtTrend(ordersDelta), positive: ordersDelta >= 0 },
+                    aov: { value: aovDelta, label: fmtTrend(aovDelta), positive: aovDelta >= 0 },
+                    customers: { value: customersDelta, label: fmtTrend(customersDelta), positive: customersDelta >= 0 }
+                }
             }
         });
     } catch (err: any) {
+        console.error('Error in getKpis:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
 
 export const getSalesChart = async (req: Request, res: Response) => {
     try {
-        const { timeframe } = req.query; // 'Daily', 'Weekly', 'Monthly'
-        const data = [
-            { name: 'Jan', value: 4000 }, { name: 'Feb', value: 3000 }, { name: 'Mar', value: 5000 },
-            { name: 'Apr', value: 2780 }, { name: 'May', value: 1890 }, { name: 'Jun', value: 2390 },
-            { name: 'Jul', value: 3490 }, { name: 'Aug', value: 4000 }, { name: 'Sep', value: 5500 },
-            { name: 'Oct', value: 6000 }, { name: 'Nov', value: 4800 }, { name: 'Dec', value: 5900 }
-        ];
+        const timeframe = String(req.query.timeframe || 'Monthly');
+        const now = new Date();
+
+        let startDate: Date;
+        let groupBy: any;
+        let labelFormat: (d: Date) => string;
+
+        if (timeframe === 'Daily') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 13);
+            groupBy = { y: { $year: '$date' }, m: { $month: '$date' }, d: { $dayOfMonth: '$date' } };
+            labelFormat = (d) => d.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' });
+        } else if (timeframe === 'Weekly') {
+            startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+            groupBy = { y: { $isoWeekYear: '$date' }, w: { $isoWeek: '$date' } };
+            labelFormat = (d) => `Wk ${getIsoWeek(d)}`;
+        } else {
+            startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+            groupBy = { y: { $year: '$date' }, m: { $month: '$date' } };
+            labelFormat = (d) => d.toLocaleDateString('en-NG', { month: 'short' });
+        }
+
+        const rows = await Order.aggregate([
+            { $match: { date: { $gte: startDate } } },
+            { $group: { _id: groupBy, value: { $sum: '$amount' } } },
+            { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1, '_id.w': 1 } }
+        ]);
+
+        const buckets = buildBuckets(startDate, now, timeframe);
+        const map = new Map<string, number>();
+        for (const r of rows) {
+            map.set(bucketKey(r._id, timeframe), r.value);
+        }
+
+        const data = buckets.map(b => ({
+            name: labelFormat(b.date),
+            value: map.get(b.key) || 0
+        }));
 
         res.json({ success: true, timeframe, data });
     } catch (err: any) {
+        console.error('Error in getSalesChart:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
 
-export const getBestSellers = async (req: Request, res: Response) => {
+const getIsoWeek = (d: Date) => {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+};
+
+const bucketKey = (id: any, timeframe: string) => {
+    if (timeframe === 'Daily') return `${id.y}-${id.m}-${id.d}`;
+    if (timeframe === 'Weekly') return `${id.y}-W${id.w}`;
+    return `${id.y}-${id.m}`;
+};
+
+const buildBuckets = (start: Date, end: Date, timeframe: string) => {
+    const buckets: { key: string; date: Date }[] = [];
+    const cur = new Date(start);
+    if (timeframe === 'Daily') {
+        while (cur <= end) {
+            buckets.push({ key: `${cur.getFullYear()}-${cur.getMonth() + 1}-${cur.getDate()}`, date: new Date(cur) });
+            cur.setDate(cur.getDate() + 1);
+        }
+    } else if (timeframe === 'Weekly') {
+        while (cur <= end) {
+            buckets.push({ key: `${cur.getFullYear()}-W${getIsoWeek(cur)}`, date: new Date(cur) });
+            cur.setDate(cur.getDate() + 7);
+        }
+    } else {
+        while (cur <= end) {
+            buckets.push({ key: `${cur.getFullYear()}-${cur.getMonth() + 1}`, date: new Date(cur) });
+            cur.setMonth(cur.getMonth() + 1);
+        }
+    }
+    return buckets;
+};
+
+export const getBestSellers = async (_req: Request, res: Response) => {
     try {
-        const products = db.products.getAll();
-        const data = products.slice(0, 5); // Just return top 5 for mock
-        res.json({ success: true, data });
+        const top = await Order.aggregate([
+            { $match: { status: { $in: PAID_STATUSES } } },
+            { $unwind: '$items' },
+            { $group: {
+                _id: '$items.productId',
+                name: { $first: '$items.name' },
+                image: { $first: '$items.image' },
+                price: { $first: '$items.price' },
+                unitsSold: { $sum: '$items.quantity' },
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } }
+            } },
+            { $sort: { unitsSold: -1 } },
+            { $limit: 5 }
+        ]);
+
+        // If no paid orders yet, return top 5 by created_at as a placeholder
+        if (top.length === 0) {
+            const fallback = await Product.find().sort({ created_at: -1 }).limit(5);
+            return res.json({
+                success: true,
+                data: fallback.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    image: p.image,
+                    price: p.price,
+                    unitsSold: 0,
+                    revenue: 0
+                }))
+            });
+        }
+
+        res.json({
+            success: true,
+            data: top.map(t => ({
+                id: t._id,
+                name: t.name,
+                image: t.image,
+                price: t.price,
+                unitsSold: t.unitsSold,
+                revenue: t.revenue
+            }))
+        });
     } catch (err: any) {
+        console.error('Error in getBestSellers:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };
 
-export const getCustomers = async (req: Request, res: Response) => {
+const ONGOING_STATUSES = ['pending', 'paid', 'confirmed', 'shipped'];
+const DONE_STATUSES = ['delivered', 'completed'];
+
+export const getCustomerOrders = async (req: Request, res: Response) => {
     try {
-        const orders = db.orders.getAll();
-        // Extract unique customers from orders
-        const customersMap = new Map();
-        
-        orders.forEach(o => {
-            if (o.buyer_email && !customersMap.has(o.buyer_email)) {
-                customersMap.set(o.buyer_email, {
-                    id: Math.random().toString(36).substr(2, 9),
-                    name: o.buyer_name || 'Unknown',
-                    email: o.buyer_email || 'No email',
-                    phone: o.buyer_phone || 'No phone',
-                    orders: 1,
-                    joinDate: o.date
-                });
-            } else if (customersMap.has(o.buyer_email)) {
-                customersMap.get(o.buyer_email).orders += 1;
+        const email = String(req.params.email || '').trim().toLowerCase();
+        if (!email) return res.status(400).json({ success: false, message: 'email is required' });
+
+        const orders = await Order.find({ buyerEmail: email }).sort({ date: -1 });
+        if (orders.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    summary: {
+                        totalOrders: 0,
+                        ongoingOrders: 0,
+                        completedOrders: 0,
+                        cancelledOrders: 0,
+                        totalSpend: 0,
+                        joinDate: null,
+                        lastOrderDate: null,
+                        name: '',
+                        phone: ''
+                    },
+                    orders: []
+                }
+            });
+        }
+
+        const ongoing = orders.filter(o => ONGOING_STATUSES.includes(o.status as string)).length;
+        const completed = orders.filter(o => DONE_STATUSES.includes(o.status as string)).length;
+        const cancelled = orders.filter(o => o.status === 'cancelled').length;
+        const totalSpend = orders
+            .filter(o => o.status !== 'cancelled')
+            .reduce((s, o) => s + (o.amount || 0), 0);
+
+        // Use the most recent non-empty values for name/phone
+        const latest = orders[0];
+
+        res.json({
+            success: true,
+            data: {
+                summary: {
+                    totalOrders: orders.length,
+                    ongoingOrders: ongoing,
+                    completedOrders: completed,
+                    cancelledOrders: cancelled,
+                    totalSpend,
+                    joinDate: orders[orders.length - 1].date,
+                    lastOrderDate: latest.date,
+                    name: latest.buyerName,
+                    phone: latest.buyerPhone
+                },
+                orders
             }
         });
-
-        const customers = Array.from(customersMap.values());
-        res.json({ success: true, count: customers.length, data: customers });
     } catch (err: any) {
+        console.error('Error in getCustomerOrders:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const getGeography = async (_req: Request, res: Response) => {
+    try {
+        const rows = await Order.aggregate([
+            { $match: { buyerState: { $exists: true, $ne: '' } } },
+            { $group: {
+                _id: '$buyerState',
+                orderCount: { $sum: 1 },
+                revenue: { $sum: '$amount' },
+                customers: { $addToSet: '$buyerEmail' }
+            } },
+            { $project: {
+                _id: 0,
+                state: '$_id',
+                orderCount: 1,
+                revenue: 1,
+                customerCount: { $size: '$customers' }
+            } },
+            { $sort: { orderCount: -1 } }
+        ]);
+
+        // Pad zero-state entries so every state appears for the heatmap
+        const present = new Set(rows.map(r => r.state));
+        const padded = [
+            ...rows,
+            ...NIGERIAN_STATES
+                .filter(s => !present.has(s))
+                .map(state => ({ state, orderCount: 0, revenue: 0, customerCount: 0 }))
+        ];
+
+        const totals = rows.reduce(
+            (acc, r) => ({ orders: acc.orders + r.orderCount, revenue: acc.revenue + r.revenue }),
+            { orders: 0, revenue: 0 }
+        );
+
+        res.json({
+            success: true,
+            totals,
+            data: padded
+        });
+    } catch (err: any) {
+        console.error('Error in getGeography:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const getRevenueByCategory = async (_req: Request, res: Response) => {
+    try {
+        const rows = await Order.aggregate([
+            { $match: { status: { $in: PAID_STATUSES } } },
+            { $unwind: '$items' },
+            { $lookup: {
+                from: 'products',
+                let: { pid: '$items.productId' },
+                pipeline: [{ $match: { $expr: { $eq: [{ $toString: '$_id' }, '$$pid'] } } }],
+                as: 'product'
+            } },
+            { $addFields: {
+                category: {
+                    $ifNull: [{ $arrayElemAt: ['$product.category', 0] }, '$items.name']
+                }
+            } },
+            { $group: {
+                _id: '$category',
+                revenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+                units: { $sum: '$items.quantity' }
+            } },
+            { $project: { _id: 0, category: '$_id', revenue: 1, units: 1 } },
+            { $sort: { revenue: -1 } }
+        ]);
+        res.json({ success: true, data: rows });
+    } catch (err: any) {
+        console.error('Error in getRevenueByCategory:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const getOrdersByHour = async (_req: Request, res: Response) => {
+    try {
+        // 1=Sun ... 7=Sat in $dayOfWeek; we'll re-key to 0=Sun ... 6=Sat for the UI
+        const rows = await Order.aggregate([
+            { $group: {
+                _id: { dow: { $dayOfWeek: '$date' }, hour: { $hour: '$date' } },
+                count: { $sum: 1 }
+            } }
+        ]);
+
+        // Build a 7×24 grid (rows=days Sun..Sat, cols=hours 0..23)
+        const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+        let max = 0;
+        for (const r of rows) {
+            const day = (r._id.dow - 1) % 7;
+            const hour = r._id.hour;
+            if (day >= 0 && day < 7 && hour >= 0 && hour < 24) {
+                grid[day][hour] = r.count;
+                if (r.count > max) max = r.count;
+            }
+        }
+        res.json({ success: true, max, data: grid });
+    } catch (err: any) {
+        console.error('Error in getOrdersByHour:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const ALL_STATUSES = ['pending', 'paid', 'confirmed', 'shipped', 'delivered', 'completed', 'cancelled'];
+
+export const getStatusFunnel = async (_req: Request, res: Response) => {
+    try {
+        const rows = await Order.aggregate([
+            { $group: { _id: '$status', count: { $sum: 1 }, revenue: { $sum: '$amount' } } }
+        ]);
+        const map = new Map<string, { count: number; revenue: number }>();
+        rows.forEach(r => map.set(r._id, { count: r.count, revenue: r.revenue }));
+        const data = ALL_STATUSES.map(status => ({
+            status,
+            count: map.get(status)?.count || 0,
+            revenue: map.get(status)?.revenue || 0
+        }));
+        res.json({ success: true, data });
+    } catch (err: any) {
+        console.error('Error in getStatusFunnel:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const getCustomers = async (_req: Request, res: Response) => {
+    try {
+        const rows = await Order.aggregate([
+            { $group: {
+                _id: '$buyerEmail',
+                name: { $first: '$buyerName' },
+                email: { $first: '$buyerEmail' },
+                phone: { $first: '$buyerPhone' },
+                orders: { $sum: 1 },
+                totalSpend: { $sum: '$amount' },
+                joinDate: { $min: '$date' },
+                lastOrderDate: { $max: '$date' }
+            } },
+            { $sort: { lastOrderDate: -1 } }
+        ]);
+
+        const data = rows.map(r => ({
+            id: Buffer.from(r._id || '').toString('base64').slice(0, 12),
+            name: r.name || 'Unknown',
+            email: r.email || '',
+            phone: r.phone || '',
+            orders: r.orders,
+            totalSpend: r.totalSpend,
+            joinDate: r.joinDate,
+            lastOrderDate: r.lastOrderDate
+        }));
+
+        res.json({ success: true, count: data.length, data });
+    } catch (err: any) {
+        console.error('Error in getCustomers:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 };

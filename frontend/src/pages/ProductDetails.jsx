@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
+import NotifyWhenInStock from '../components/NotifyWhenInStock'
 
 const ProductDetails = () => {
     const { id } = useParams()
@@ -91,10 +92,29 @@ const ProductDetails = () => {
                         <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)] mb-4 block">{product.category}</span>
                         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.9] text-[var(--text-primary)] mb-8">{product.name}</h1>
                         
-                        <div className="flex items-baseline gap-4 mb-12">
+                        <div className="flex items-baseline gap-4 mb-6">
                             <span className="text-4xl font-black text-[var(--text-primary)]">₦{product.price.toLocaleString()}</span>
                             <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Retail Price</span>
                         </div>
+
+                        {/* Stock indicator */}
+                        {(() => {
+                            const stock = Number(product.stockCount ?? 0)
+                            const out = product.status === 'out_of_stock' || stock === 0
+                            const low = !out && stock <= 5
+                            return (
+                                <div className="mb-12 flex items-center gap-2">
+                                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${
+                                        out ? 'bg-red-50 text-[var(--brand-red)] border-red-200'
+                                            : low ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    }`}>
+                                        <span className={`w-2 h-2 rounded-full ${out ? 'bg-[var(--brand-red)]' : low ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                        {out ? 'Out of stock' : low ? `Only ${stock} left` : `${stock} in stock`}
+                                    </span>
+                                </div>
+                            )
+                        })()}
 
                         <div className="space-y-12 mb-16">
                             <div>
@@ -106,16 +126,29 @@ const ProductDetails = () => {
                                 <div className="w-32">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-6">Quantity</h3>
                                     <div className="flex items-center justify-between border-b-2 border-[var(--divider)] pb-2 group focus-within:border-[var(--brand-red)] transition-colors">
-                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors">-</button>
-                                        <input 
-                                            type="number" 
+                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} disabled={(product.stockCount ?? 0) === 0} className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">-</button>
+                                        <input
+                                            type="number"
                                             min="1"
+                                            max={Math.max(1, product.stockCount ?? 1)}
                                             value={quantity}
-                                            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                            className="w-12 text-center bg-transparent text-xl font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            onChange={(e) => {
+                                                const n = parseInt(e.target.value) || 1
+                                                const stock = Math.max(1, product.stockCount ?? 1)
+                                                setQuantity(Math.max(1, Math.min(stock, n)))
+                                            }}
+                                            disabled={(product.stockCount ?? 0) === 0}
+                                            className="w-12 text-center bg-transparent text-xl font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-30"
                                         />
-                                        <button onClick={() => setQuantity(q => q+1)} className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors">+</button>
+                                        <button
+                                            onClick={() => setQuantity(q => Math.min(product.stockCount ?? q, q + 1))}
+                                            disabled={(product.stockCount ?? 0) === 0 || quantity >= (product.stockCount ?? 0)}
+                                            className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                        >+</button>
                                     </div>
+                                    {quantity >= (product.stockCount ?? 0) && (product.stockCount ?? 0) > 0 && (
+                                        <p className="text-[10px] font-bold text-[var(--brand-red)] mt-2">Max stock reached</p>
+                                    )}
                                 </div>
                                 <div className="flex-1">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-6">Delivery</h3>
@@ -126,12 +159,16 @@ const ProductDetails = () => {
                         </div>
 
                         <div className="flex flex-col gap-4">
-                            <button 
-                                onClick={handleAddToCart}
-                                className="w-full bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl"
-                            >
-                                Add to Bag
-                            </button>
+                            {product.status === 'out_of_stock' ? (
+                                <NotifyWhenInStock productId={product.id || product._id} productName={product.name} />
+                            ) : (
+                                <button
+                                    onClick={handleAddToCart}
+                                    className="w-full bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl"
+                                >
+                                    Add to Bag
+                                </button>
+                            )}
                             
                             <div className="grid grid-cols-2 gap-4 mt-8">
                                 <a href="https://wa.me/+2349098050402" target="_blank" className="flex items-center justify-center gap-3 py-6 border border-[var(--divider)] rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">

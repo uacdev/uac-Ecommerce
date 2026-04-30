@@ -1,32 +1,60 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { SettingInput } from '../ui/shared_ui'
 import { useStore } from '../../../context/StoreContext'
+import { uploadApi } from '../../../api/client'
 
 const CategoryModal = ({ category, onClose }) => {
-    const { addCategory } = useStore();
+    const { addCategory, updateCategoryById } = useStore();
     const [formData, setFormData] = useState({
         name: category?.name || '',
-        abstract: category?.abstract || ''
+        abstract: category?.abstract || '',
+        parent: category?.parent || '',
+        coverImage: category?.coverImage || ''
     });
+    const [submitting, setSubmitting] = useState(false);
+    const [uploadingCover, setUploadingCover] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleCoverChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setError('');
+        setUploadingCover(true);
+        try {
+            const res = await uploadApi.image(file);
+            const url = res.data?.data?.url;
+            if (url) setFormData(prev => ({ ...prev, coverImage: url }));
+            else setError('Upload returned no URL');
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Cover upload failed');
+        } finally {
+            setUploadingCover(false);
+        }
+    };
 
     const handleChange = (e, field) => {
         setFormData(prev => ({ ...prev, [field]: e.target.value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.name) {
-            addCategory({
-                name: formData.name,
-                abstract: formData.abstract,
-                count: 0,
-                sales: '₦0',
-                color: 'bg-indigo-50 text-indigo-600'
-            });
-            onClose();
-        }
+        if (!formData.name) return;
+        setSubmitting(true);
+        setError('');
+        const payload = {
+            name: formData.name,
+            abstract: formData.abstract,
+            parent: formData.parent,
+            coverImage: formData.coverImage,
+            color: category?.color || 'bg-indigo-50 text-indigo-600'
+        };
+        const res = category
+            ? await updateCategoryById(category._id, payload)
+            : await addCategory(payload);
+        setSubmitting(false);
+        if (res?.success) onClose();
+        else setError(res?.message || 'Could not save category');
     };
 
     return (
@@ -38,8 +66,12 @@ const CategoryModal = ({ category, onClose }) => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="flex justify-center mb-6">
                         <div className="w-24 h-24 rounded-full bg-[var(--bg-secondary)] border-2 border-dashed border-[var(--divider)] flex flex-col items-center justify-center text-[var(--text-muted)] cursor-pointer hover:border-[#ed0000] hover:text-[#ed0000] transition-all relative overflow-hidden">
-                            <span className="text-[10px] font-bold mt-1 text-center px-2">Upload<br/>Cover</span>
-                            <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
+                            {formData.coverImage ? (
+                                <img src={formData.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-[10px] font-bold mt-1 text-center px-2">{uploadingCover ? 'Uploading…' : <>Upload<br/>Cover</>}</span>
+                            )}
+                            <input type="file" onChange={handleCoverChange} disabled={uploadingCover} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
                         </div>
                     </div>
 
@@ -50,10 +82,11 @@ const CategoryModal = ({ category, onClose }) => {
 
                     <div className="space-y-2">
                         <label className="text-[11px] font-bold text-[var(--text-muted)] tracking-tight ml-1">Parent Segment (Optional)</label>
-                        <select className="w-full bg-[var(--bg-secondary)] rounded-xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[#ed0000]/30 border border-transparent shadow-sm text-[var(--text-primary)]">
+                        <select value={formData.parent} onChange={(e) => handleChange(e, 'parent')} className="w-full bg-[var(--bg-secondary)] rounded-xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[#ed0000]/30 border border-transparent shadow-sm text-[var(--text-primary)]">
                             <option value="">None (Top Level)</option>
-                            <option value="snacks">Snacks</option>
-                            <option value="beverages">Beverages</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Beverages">Beverages</option>
+                            <option value="Desserts">Desserts</option>
                         </select>
                     </div>
 
@@ -62,7 +95,11 @@ const CategoryModal = ({ category, onClose }) => {
                         <textarea value={formData.abstract} onChange={(e) => handleChange(e, 'abstract')} placeholder="Brief category summary..." className="w-full bg-[var(--bg-secondary)] rounded-xl px-6 py-4 text-[14px] font-bold outline-none focus:border-[#ed0000]/30 border border-transparent shadow-sm text-[var(--text-primary)] h-24 resize-none" />
                     </div>
 
-                    <button type="submit" className="w-full bg-black text-white py-4 bg-[#0f2e53] hover:bg-[#0a1f38] rounded-2xl font-bold text-[14px] shadow-xl transition-all active:scale-[0.98]">Submit classification</button>
+                    {error && <p className="text-[12px] font-bold text-[#ed0000] text-center">{error}</p>}
+
+                    <button type="submit" disabled={submitting} className="w-full bg-black text-white py-4 bg-[#0f2e53] hover:bg-[#0a1f38] rounded-2xl font-bold text-[14px] shadow-xl transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed">
+                        {submitting ? 'Saving…' : (category ? 'Save changes' : 'Submit classification')}
+                    </button>
                 </form>
             </motion.div>
         </motion.div>
