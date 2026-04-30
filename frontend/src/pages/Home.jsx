@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ShoppingBag, Star, Truck, Shield, ChevronLeft, ChevronRight, Package, Award, Users, ArrowUpRight, MapPin, Phone, Mail, Leaf, Plus } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import Preloader from '../components/Preloader'
@@ -84,8 +84,9 @@ const BRANDS = [
         tagline: 'Seasoning, Reimagined',
         desc: 'All-purpose and recipe-specific Zuri blends — the modern foundation of every Nigerian kitchen.',
         img: '/images/zuri.png',
-        bg: 'from-[#5b1c2c] to-[#a31d3a]',
-        accent: '#a31d3a',
+        // Matches the deep forest-green sachet → brighter accent stripe.
+        bg: 'from-[#0E3D22] to-[#2C7A3F]',
+        accent: '#2C7A3F',
         badge: 'Pantry Essential'
     },
 ]
