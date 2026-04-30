@@ -177,26 +177,36 @@ const SEED: SeedProduct[] = [
     }
 ];
 
-// Distinct categories with cover-image-friendly defaults.
-const CATEGORY_META: Record<string, { abstract: string; color: string }> = {
-    Water: { abstract: 'Premium drinking water — Swan range, household to event sizing.', color: 'bg-sky-50 text-sky-700' },
-    Snacks: { abstract: 'On-the-go and at-home snacks from Gala and Funtime.', color: 'bg-amber-50 text-amber-700' },
-    Seasoning: { abstract: 'All-purpose and recipe-specific seasoning blends from Zuri.', color: 'bg-rose-50 text-rose-700' },
-    Dairy: { abstract: 'Supreme ice cream, yoghurt and dairy treats.', color: 'bg-violet-50 text-violet-700' }
+// Brand metadata — categories ARE brands.
+const BRAND_META: Record<string, { abstract: string; color: string }> = {
+    Gala:    { abstract: "Nigeria's iconic sausage roll since 1962.",                 color: 'bg-rose-50 text-rose-700' },
+    Swan:    { abstract: 'Premium natural spring water — household to event sizing.', color: 'bg-sky-50 text-sky-700' },
+    Funtime: { abstract: 'Crunchy roasted coconut chips, party-snack ready.',         color: 'bg-amber-50 text-amber-700' },
+    Zuri:    { abstract: 'Recipe-specific Nigerian-kitchen seasoning blends.',        color: 'bg-fuchsia-50 text-fuchsia-700' },
+    Supreme: { abstract: 'Rich, creamy ice cream and dairy treats.',                  color: 'bg-violet-50 text-violet-700' }
 };
 
 const upsertCategory = async (name: string, coverImage: string) => {
-    const meta = CATEGORY_META[name] || { abstract: '', color: 'bg-indigo-50 text-indigo-600' };
+    const meta = BRAND_META[name] || { abstract: '', color: 'bg-indigo-50 text-indigo-600' };
+    // Insert path: full payload via $setOnInsert.
     await Category.updateOne(
         { name },
         {
-            $setOnInsert: { name, abstract: meta.abstract, color: meta.color, coverImage },
-            // Keep abstract/color stable across re-runs but refresh coverImage
-            // if the existing one is empty.
-            $set: {}
+            $setOnInsert: {
+                name,
+                abstract: meta.abstract,
+                color: meta.color,
+                coverImage,
+                parent: 'Brand'
+            }
         },
         { upsert: true }
     );
+    // Backfill path: a previous run may have created the row without abstract/
+    // color/parent (e.g. ensureCategoriesFromProducts only sets parent+color).
+    // Fill empty fields without overwriting admin-edited ones.
+    await Category.updateOne({ name, $or: [{ abstract: '' }, { abstract: { $exists: false } }] }, { $set: { abstract: meta.abstract } });
+    await Category.updateOne({ name, parent: { $ne: 'Brand' } }, { $set: { parent: 'Brand' } });
     if (coverImage) {
         await Category.updateOne({ name, coverImage: '' }, { $set: { coverImage } });
     }
@@ -252,7 +262,7 @@ const run = async () => {
     }
 
     let uploaded = 0;
-    const categoryCovers = new Map<string, string>();
+    const brandCovers = new Map<string, string>();
 
     for (const p of SEED) {
         const filePath = path.join(ARCHIVE_DIR, p.file);
@@ -260,8 +270,8 @@ const run = async () => {
             const buf = await fs.readFile(filePath);
             const stored = await saveImage(buf, path.basename(p.file), mimeFor(p.file));
             await upsertProduct(p, stored.url);
-            // Use the FIRST product image of each category as that category's cover
-            if (!categoryCovers.has(p.category)) categoryCovers.set(p.category, stored.url);
+            // First product of each brand donates its image as the brand's cover.
+            if (!brandCovers.has(p.brand)) brandCovers.set(p.brand, stored.url);
             uploaded += 1;
             console.log(`  ✓ ${p.name}`);
         } catch (err: any) {
@@ -269,14 +279,14 @@ const run = async () => {
         }
     }
 
-    // Categories: include "Dairy" up-front even though Supreme images are pending,
-    // so the category filter chip exists when product imagery later arrives.
-    const allCategories = ['Water', 'Snacks', 'Seasoning', 'Dairy'];
-    for (const name of allCategories) {
-        await upsertCategory(name, categoryCovers.get(name) || '');
+    // Brand-categories: include Supreme even though images are pending so its
+    // chip exists when imagery later arrives.
+    const allBrands = ['Gala', 'Swan', 'Funtime', 'Zuri', 'Supreme'];
+    for (const name of allBrands) {
+        await upsertCategory(name, brandCovers.get(name) || '');
     }
 
-    console.log(`\n✅ Seeded ${uploaded}/${SEED.length} products into ${allCategories.length} categories.`);
+    console.log(`\n✅ Seeded ${uploaded}/${SEED.length} products into ${allBrands.length} brand categories.`);
     await mongoose.disconnect();
     process.exit(0);
 };

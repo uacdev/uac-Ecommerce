@@ -5,41 +5,31 @@ import { Order } from '../models/Order';
 
 const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
 
-// Walk every product's `category` and `brand` and ensure a Category record
-// exists for each. Brand entries get parent='Brand', type entries parent='Type',
-// so the admin tab can group/filter them. Idempotent — $setOnInsert means we
-// never overwrite admin-edited fields (color, coverImage, abstract).
+// Categories ARE brands. Walk every product's `brand` and ensure a Category
+// record exists for each. Idempotent — $setOnInsert means we never overwrite
+// admin-edited fields (color, coverImage, abstract). No pruning: a brand
+// without products yet (e.g. Supreme while imagery is pending) stays as a
+// placeholder so the admin can pre-stage covers/copy. Admin-initiated deletes
+// run through deleteCategory, which is the only path that removes one.
 const ensureCategoriesFromProducts = async () => {
-    const products = await Product.find({}, { brand: 1, category: 1 }).lean();
+    const products = await Product.find({}, { brand: 1 }).lean();
     const brands = new Set<string>();
-    const types = new Set<string>();
     for (const p of products) {
         const b = String(p.brand || '').trim();
-        const c = String(p.category || '').trim();
         if (b) brands.add(b);
-        if (c) types.add(c);
     }
-    const ops: any[] = [];
-    for (const name of brands) {
-        ops.push({ updateOne: {
+    if (brands.size === 0) return;
+
+    const ops = Array.from(brands).map(name => ({
+        updateOne: {
             filter: { name },
             update: { $setOnInsert: { name, parent: 'Brand', color: 'bg-rose-50 text-rose-700' } },
             upsert: true
-        } });
-    }
-    for (const name of types) {
-        ops.push({ updateOne: {
-            filter: { name },
-            update: { $setOnInsert: { name, parent: 'Type', color: 'bg-sky-50 text-sky-700' } },
-            upsert: true
-        } });
-    }
-    if (ops.length > 0) {
-        try { await Category.bulkWrite(ops, { ordered: false }); }
-        catch (err: any) {
-            // Duplicate-key races between concurrent calls are expected and harmless.
-            if (err?.code !== 11000) throw err;
         }
+    }));
+    try { await Category.bulkWrite(ops, { ordered: false }); }
+    catch (err: any) {
+        if (err?.code !== 11000) throw err;
     }
 };
 
@@ -93,8 +83,8 @@ export const getCategoryStats = async (req: Request, res: Response) => {
         const category = await Category.findById(id);
         if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
 
-        // Products in this category (matched by name — products store category as a string)
-        const products = await Product.find({ category: category.name }).sort({ created_at: -1 });
+        // Categories are brand-keyed — match products by brand name.
+        const products = await Product.find({ brand: category.name }).sort({ created_at: -1 });
         const productIds = products.map(p => String(p._id));
 
         // No products yet — return early with empty shape
