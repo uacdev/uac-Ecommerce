@@ -8,16 +8,26 @@
     "start": "node dist/index.js",
     "dev": "nodemon --exec tsx src/server.ts",
     "build": "tsc",
+    "seed:admin": "tsx src/scripts/seedAdmin.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.7",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.1.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.4.1",
     "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.6.0",
     "morgan": "^1.10.0",
-    "nodemailer": "^6.9.13"
+    "multer": "^2.1.1",
+    "nodemailer": "^6.9.13",
+    "resend": "^6.12.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

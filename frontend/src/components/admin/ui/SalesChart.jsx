@@ -27,7 +27,7 @@ const SalesChart = () => {
     }, [timeframe])
 
     return (
-        <div className="bg-[var(--bg-tertiary)] p-6 rounded-2xl border border-[var(--divider)] shadow-sm">
+        <div className="bg-[var(--bg-tertiary)] p-6 rounded-2xl border border-[var(--divider)] shadow-sm h-full flex flex-col">
             <div className="flex items-center justify-between mb-8">
                 <h3 className="text-lg font-bold text-[var(--text-primary)]">Sales analytics</h3>
                 <div className="flex bg-[var(--bg-secondary)] rounded-xl p-1">
@@ -42,7 +42,7 @@ const SalesChart = () => {
                     ))}
                 </div>
             </div>
-            <div className="h-[320px] w-full relative">
+            <div className="flex-1 min-h-[320px] w-full relative">
                 {loading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-tertiary)]/50 z-10">
                         <span className="text-[12px] font-bold text-[var(--text-muted)] mt-2">Loading...</span>

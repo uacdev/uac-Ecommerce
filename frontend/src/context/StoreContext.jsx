@@ -1,19 +1,21 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
-import { supabase } from '../lib/supabase'
 import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products'
-import { productApi, orderApi, statsApi } from '../api/client'
+import { productApi, orderApi, statsApi, categoryApi, adminApi } from '../api/client'
+import { useAuth } from './AuthContext'
 
 const StoreContext = createContext()
 
 export const useStore = () => useContext(StoreContext)
 
 export const StoreProvider = ({ children }) => {
+    const { user } = useAuth()
     const [products, setProducts] = useState([])
     const [orders, setOrders] = useState([])
     const [cart, setCart] = useState([])
     const [favorites, setFavorites] = useState([])
     const [loading, setLoading] = useState(true)
     const [apiStats, setApiStats] = useState(null)
+    const [adminProfile, setAdminProfileState] = useState(null)
 
     // Persistence load for Cart & Favorites
     useEffect(() => {
@@ -33,62 +35,44 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem('ufl_favorites', JSON.stringify(favorites))
     }, [favorites])
 
-    // Initial Fetch - Now using Unified API
+    // Public products always; orders + stats only for signed-in admins.
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true)
-            
-            try {
-                // Parallel fetch for speed
-                const [pRes, oRes, sRes] = await Promise.allSettled([
-                    productApi.getAll(),
-                    orderApi.getAll(),
-                    statsApi.getKpis()
-                ]);
-
-                // Handle Products
-                if (pRes.status === 'fulfilled') {
-                    const fetchedProducts = pRes.value.data.data;
-                    // Merge with INITIAL_PRODUCTS for branding if DB is empty, or just use DB
-                    setProducts(fetchedProducts.length > 0 ? fetchedProducts : INITIAL_PRODUCTS);
-                } else {
-                    setProducts(INITIAL_PRODUCTS);
-                }
-
-                // Handle Orders
-                if (oRes.status === 'fulfilled') {
-                    const dbOrders = oRes.value.data.data || [];
-                    setOrders(dbOrders.map(o => ({
-                        ...o,
-                        productId: o.product_id,
-                        productName: o.product_name,
-                        productImage: o.product_image,
-                        sellerName: o.seller_name,
-                        buyerName: o.buyer_name,
-                        buyerEmail: o.buyer_email,
-                        buyerPhone: o.buyer_phone,
-                        buyerAddress: o.buyer_address,
-                        paymentMethod: o.payment_method,
-                        deliveryMethod: o.delivery_method,
-                        sellerAgreedPrice: o.seller_agreed_price
-                    })));
-                }
-
-                // Handle Stats
-                if (sRes.status === 'fulfilled') {
-                    setApiStats(sRes.value.data.data);
-                }
-
-            } catch (err) {
-                console.error('API fetch error:', err)
-                setProducts(INITIAL_PRODUCTS); // Fallback
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchData()
+        let cancelled = false
+        setLoading(true)
+        productApi.getAll()
+            .then(res => {
+                if (cancelled) return
+                const fetched = res.data?.data || []
+                setProducts(fetched.length > 0 ? fetched : INITIAL_PRODUCTS)
+            })
+            .catch(() => { if (!cancelled) setProducts(INITIAL_PRODUCTS) })
+            .finally(() => { if (!cancelled) setLoading(false) })
+        return () => { cancelled = true }
     }, [])
+
+    const refreshStats = async () => {
+        try {
+            const res = await statsApi.getKpis()
+            if (res.data?.success) setApiStats(res.data.data)
+        } catch { /* silent */ }
+    }
+
+    // Bumps on every order mutation. Components that maintain their own paginated
+    // copy of orders (e.g. OrdersTab) depend on this so they refetch when status
+    // or delivery changes — not just when the array length changes.
+    const [ordersTick, setOrdersTick] = useState(0)
+    const bumpOrdersTick = () => setOrdersTick(t => t + 1)
+
+    useEffect(() => {
+        if (!user) { setOrders([]); setApiStats(null); return }
+        let cancelled = false
+        Promise.allSettled([orderApi.getAll(), statsApi.getKpis()]).then(([oRes, sRes]) => {
+            if (cancelled) return
+            if (oRes.status === 'fulfilled') setOrders(oRes.value.data?.data || [])
+            if (sRes.status === 'fulfilled') setApiStats(sRes.value.data?.data || null)
+        })
+        return () => { cancelled = true }
+    }, [user])
 
     // Persistence Fallback for Offline Mode (existing logic)...
     useEffect(() => {
@@ -141,54 +125,49 @@ export const StoreProvider = ({ children }) => {
 
     // ─── Product Actions ───
     const addProduct = async (product) => {
-        const productPayload = { 
+        const payload = {
             name: product.name,
-            price: product.price,
-            seller_price: product.sellerPrice || null,
-            seller_name: product.sellerName || null,
+            brand: product.brand || '',
             description: product.description || '',
-            location: product.location || '',
-            category: product.category || 'General',
-            image: product.image,
+            category: product.category,
+            image: product.image || '',
             images: product.images || [],
-            status: product.status || 'available',
-            delivery_timeframe: product.delivery_timeframe || '',
-            is_reserved: false
+            location: product.location,
+            packaging: product.packaging || '',
+            price: Number(product.price),
+            status: product.status || 'available'
         }
-
         try {
-            const res = await productApi.create(productPayload);
-            const added = res.data.data;
-            setProducts([{
-                ...added,
-                sellerPrice: added.seller_price,
-                sellerName: added.seller_name
-            }, ...products]);
+            const res = await productApi.create(payload)
+            const added = res.data.data
+            setProducts(prev => [added, ...prev])
+            return { success: true, data: added }
         } catch (err) {
             console.error('Add product error:', err)
-            // Local fallback for demo
-            setProducts([{ ...productPayload, id: `local-${Date.now()}` }, ...products])
+            return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
     const updateProduct = async (id, updates) => {
         try {
-            // Note: API updates expect snake_case but we'll handle mapping in controller or here
-            await productApi.update(id, updates);
-            setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p))
+            const res = await productApi.update(id, updates)
+            const updated = res.data.data
+            setProducts(prev => prev.map(p => (p.id === id || p._id === id) ? { ...p, ...updated } : p))
+            return { success: true, data: updated }
         } catch (err) {
             console.error('Update product error:', err)
-            setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p))
+            return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
     const removeProduct = async (id) => {
         try {
-            await productApi.delete(id);
-            setProducts(products.filter(p => p.id !== id))
+            await productApi.delete(id)
+            setProducts(prev => prev.filter(p => p.id !== id && p._id !== id))
+            return { success: true }
         } catch (err) {
             console.error('Remove product error:', err)
-            setProducts(products.filter(p => p.id !== id))
+            return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
@@ -198,144 +177,170 @@ export const StoreProvider = ({ children }) => {
 
     // ─── Order Actions ───
     const addOrder = async (orderData) => {
-        const orderId = `UAC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`
-        
-        // Financial Split for SAP Reconciliation
-        const deliveryFee = orderData.deliveryFee || 0
-        const productAmount = orderData.amount - deliveryFee 
-        const commission = productAmount * 0.1
-
-        // Fulfillment Logic (PRD Section 4.1/4.2/4.3)
-        const fulfillmentType = orderData.fulfillmentType || 'delivery'
-        const pickupCode = fulfillmentType === 'pickup' ? `UAC-${Math.random().toString(36).substring(2, 7).toUpperCase()}` : null
-
-        const newOrderDb = {
-            id: orderId,
-            product_id: orderData.productId,
-            product_name: orderData.productName,
-            product_image: orderData.productImage,
-            seller_name: orderData.sellerName,
-            amount: orderData.amount, // Total
-            product_amount: productAmount,
-            delivery_fee: deliveryFee,
-            buyer_name: orderData.buyerName,
-            buyer_email: orderData.buyerEmail,
-            buyer_phone: orderData.buyerPhone,
-            buyer_address: orderData.buyerAddress,
-            payment_method: orderData.paymentMethod,
-            fulfillment_type: fulfillmentType,
-            pickup_location: orderData.pickupLocation || '',
-            pickup_code: pickupCode,
-            pickup_time: orderData.pickupTime || '',
-            delivery_method: orderData.deliveryMethod || 'pending',
-            logistics_partner: '',
-            pickup_location: '',
-            status: 'pending',
-            seller_agreed_price: productAmount - commission,
-            commission: commission,
-            date: new Date().toISOString()
-        }
-
-        const uiOrder = {
-            ...newOrderDb,
-            productId: newOrderDb.product_id,
-            productName: newOrderDb.product_name,
-            productImage: newOrderDb.product_image,
-            sellerName: newOrderDb.seller_name,
-            buyerName: newOrderDb.buyer_name,
-            buyerEmail: newOrderDb.buyer_email,
-            buyerPhone: newOrderDb.buyer_phone,
-            buyerAddress: newOrderDb.buyer_address,
-            paymentMethod: newOrderDb.payment_method,
-            fulfillmentType: newOrderDb.fulfillment_type,
-            pickupLocation: newOrderDb.pickup_location,
-            pickupCode: newOrderDb.pickup_code,
-            pickupTime: newOrderDb.pickup_time,
-            deliveryMethod: newOrderDb.delivery_method,
-            deliveryFee: newOrderDb.delivery_fee,
-            productAmount: newOrderDb.product_amount,
-            logisticsPartner: newOrderDb.logistics_partner,
-            pickupLocation: newOrderDb.pickup_location,
-            sellerAgreedPrice: newOrderDb.seller_agreed_price
-        }
-
         try {
-            await orderApi.create(newOrderDb)
-            setOrders([uiOrder, ...orders])
-            if (orderData.productId) markProductReserved(orderData.productId)
-            return uiOrder
+            const res = await orderApi.create({
+                items: orderData.items,
+                buyerName: orderData.buyerName,
+                buyerEmail: orderData.buyerEmail,
+                buyerPhone: orderData.buyerPhone,
+                buyerAddress: orderData.buyerAddress,
+                deliveryZone: orderData.deliveryZone || '',
+                paymentMethod: orderData.paymentMethod || '',
+                fulfillmentType: orderData.fulfillmentType || 'delivery'
+            })
+            const created = res.data?.data
+            if (!created) return { success: false, message: 'Empty response from server' }
+            setOrders(prev => [created, ...prev])
+            bumpOrdersTick()
+            return { success: true, data: created }
         } catch (err) {
             console.error('Add order error:', err)
-            setOrders([uiOrder, ...orders])
-            if (orderData.productId) markProductReserved(orderData.productId)
-            return uiOrder
+            return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
     const updateOrderStatus = async (id, status) => {
         try {
-            await orderApi.updateStatus(id, status);
-            setOrders(orders.map(o => {
-                if (o.id !== id) return o
-                if (status === 'completed' && o.productId) markProductSold(o.productId)
-                return { ...o, status }
-            }))
+            const res = await orderApi.updateStatus(id, status)
+            const updated = res.data?.data
+            setOrders(prev => prev.map(o => (o.id === id || o._id === id) ? updated : o))
+            bumpOrdersTick()
+            refreshStats()
+            return { success: true, data: updated }
         } catch (err) {
             console.error('Update status error:', err)
-            setOrders(orders.map(o => o.id === id ? { ...o, status } : o))
+            return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
-    const updateOrderDelivery = async (orderId, delivery_method, delivery_fee = 0, logistics_partner = '') => {
+    const updateOrderDelivery = async (orderId, deliveryMethod, deliveryZone = '', logisticsPartner = '') => {
         try {
-            const updates = { 
-                delivery_method, 
-                delivery_fee: parseFloat(delivery_fee), 
-                logistics_partner 
-            }
-            await orderApi.updateDelivery(orderId, updates)
-            setOrders(orders.map(o => o.id === orderId ? { 
-                ...o, 
-                deliveryMethod: delivery_method, 
-                deliveryFee: parseFloat(delivery_fee), 
-                logisticsPartner: logistics_partner 
-            } : o))
+            const res = await orderApi.updateDelivery(orderId, { deliveryMethod, deliveryZone, logisticsPartner })
+            const updated = res.data?.data
+            setOrders(prev => prev.map(o => (o.id === orderId || o._id === orderId) ? updated : o))
+            bumpOrdersTick()
+            refreshStats()
+            return { success: true, data: updated }
         } catch (err) {
             console.error('Update delivery error:', err)
-            // Local fallback
-            setOrders(orders.map(o => o.id === orderId ? { 
-                ...o, 
-                deliveryMethod: delivery_method,
-                deliveryFee: parseFloat(delivery_fee),
-                logisticsPartner: logistics_partner
-            } : o))
+            return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
-    const [businessSegments, setBusinessSegments] = useState([
-        { name: 'Gala', desc: 'Sausage rolls', abstract: 'Snacks' }, 
-        { name: 'Supreme', desc: 'Ice cream variants', abstract: 'Desserts' }, 
-        { name: 'Swan', desc: 'Natural spring water', abstract: 'Beverages' }, 
-        { name: 'Funtime', desc: 'Cupcakes', abstract: 'Snacks' }
-    ])
+    const removeOrder = async (id) => {
+        try {
+            await orderApi.delete(id)
+            setOrders(prev => prev.filter(o => o.id !== id && o._id !== id))
+            bumpOrdersTick()
+            refreshStats()
+            return { success: true }
+        } catch (err) {
+            console.error('Delete order error:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
 
-    const [adminProfile, setAdminProfile] = useState({ fullName: 'Sarah Johnson', email: 's.johnson@uacfoods.com', photo: '' })
-    const getOrderById = (id) => orders.find(o => o.id === id)
+    const [businessSegments, setBusinessSegments] = useState([])
+    const [categoriesLoading, setCategoriesLoading] = useState(true)
 
-    const addCategory = (newCat) => setBusinessSegments(prev => [...prev, newCat])
-
-    const categories = useMemo(() => {
-        // Strict brands-only filtering as requested
-        return ['All', 'Gala', 'Supreme', 'Swan', 'Funtime']
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await categoryApi.getAll()
+                if (res.data?.success) setBusinessSegments(res.data.data || [])
+            } catch (err) {
+                console.error('Fetch categories error:', err)
+            } finally {
+                setCategoriesLoading(false)
+            }
+        }
+        fetchCategories()
     }, [])
 
+    useEffect(() => {
+        if (!user) { setAdminProfileState(null); return }
+        // Auth user object already carries the profile fields; use it as the initial value
+        setAdminProfileState(user)
+        let cancelled = false
+        adminApi.getProfile()
+            .then(res => { if (!cancelled && res.data?.success) setAdminProfileState(res.data.data) })
+            .catch(err => console.error('Fetch admin profile failed:', err))
+        return () => { cancelled = true }
+    }, [user])
+
+    const setAdminProfile = async (updates) => {
+        if (!user) return { success: false, message: 'Not signed in' }
+        try {
+            const res = await adminApi.upsertProfile(updates)
+            if (res.data?.success) {
+                setAdminProfileState(res.data.data)
+                return { success: true, data: res.data.data }
+            }
+            return { success: false, message: 'Empty response' }
+        } catch (err) {
+            console.error('Save admin profile failed:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
+    const getOrderById = (id) => orders.find(o => o.id === id)
+
+    const addCategory = async (newCat) => {
+        try {
+            const res = await categoryApi.create({
+                name: newCat.name,
+                abstract: newCat.abstract,
+                parent: newCat.parent || '',
+                color: newCat.color,
+                coverImage: newCat.coverImage || ''
+            })
+            if (res.data?.success) {
+                setBusinessSegments(prev => [...prev, res.data.data])
+                return { success: true }
+            }
+        } catch (err) {
+            console.error('Add category error:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
+
+    const updateCategoryById = async (id, updates) => {
+        try {
+            const res = await categoryApi.update(id, updates)
+            if (res.data?.success) {
+                setBusinessSegments(prev => prev.map(c => c._id === id ? res.data.data : c))
+                return { success: true }
+            }
+        } catch (err) {
+            console.error('Update category error:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
+
+    const removeCategory = async (id) => {
+        try {
+            await categoryApi.delete(id)
+            setBusinessSegments(prev => prev.filter(c => c._id !== id))
+            return { success: true }
+        } catch (err) {
+            console.error('Remove category error:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
+
+    const categories = useMemo(
+        () => ['All', ...businessSegments.map(c => c.name)],
+        [businessSegments]
+    )
+
     const stats = useMemo(() => ({
-        totalProducts: apiStats?.totalProducts || products.length,
+        totalProducts: apiStats?.totalProducts ?? products.length,
         availableProducts: products.filter(p => !p.is_reserved && p.status !== 'sold').length,
-        totalOrders: apiStats?.totalOrders || orders.length,
+        totalOrders: apiStats?.totalOrders ?? orders.length,
         pendingOrders: orders.filter(o => o.status === 'pending').length,
-        totalRevenue: apiStats?.totalRevenue || orders.reduce((sum, o) => sum + (o.amount || 0), 0),
-        totalCustomers: apiStats?.totalCustomers || 0,
+        totalRevenue: apiStats?.totalRevenue ?? orders.reduce((sum, o) => sum + (o.amount || 0), 0),
+        avgOrderValue: apiStats?.avgOrderValue ?? 0,
+        totalCustomers: apiStats?.totalCustomers ?? 0,
+        trends: apiStats?.trends ?? null,
         platformIncome: orders
             .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status))
             .reduce((sum, o) => sum + (o.commission || Math.round((o.amount || 0) * 0.1)), 0),
@@ -354,7 +359,10 @@ export const StoreProvider = ({ children }) => {
             adminProfile, setAdminProfile,
             categories,
             businessSegments,
+            categoriesLoading,
             addCategory,
+            updateCategoryById,
+            removeCategory,
             toggleFavorite,
             isFavorite,
             addProduct,
@@ -370,6 +378,9 @@ export const StoreProvider = ({ children }) => {
             addOrder,
             updateOrderStatus,
             updateOrderDelivery,
+            removeOrder,
+            refreshStats,
+            ordersTick,
             getOrderById,
         }}>
             {children}

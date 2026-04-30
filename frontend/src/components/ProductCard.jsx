@@ -6,7 +6,9 @@ import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
     const { addToCart, isFavorite } = useStore()
-    const isOutOfStock = product.status === 'out_of_stock'
+    const stock = Number(product.stockCount ?? 0)
+    const isOutOfStock = product.status === 'out_of_stock' || stock === 0
+    const isLowStock = !isOutOfStock && stock <= 5
 
     const handleAddToCart = (e) => {
         e.preventDefault()
@@ -59,12 +61,23 @@ const ProductCard = ({ product }) => {
                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white border border-white/20 px-4 py-2 rounded-full">Sold Out</span>
                     </div>
                 )}
+
+                {isLowStock && (
+                    <div className="absolute top-6 left-6 px-3 py-1.5 rounded-full bg-[var(--brand-red)] text-white text-[9px] font-black uppercase tracking-[0.2em] shadow-lg">
+                        Only {stock} left
+                    </div>
+                )}
             </Link>
 
             <div className="flex flex-col items-center text-center">
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-2">{product.category}</span>
                 <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2 tracking-tight uppercase leading-tight max-w-[80%] mx-auto">{product.name}</h3>
                 <p className="text-sm font-bold text-[var(--text-muted)]">₦{product.price.toLocaleString()}</p>
+                {!isOutOfStock && (
+                    <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${isLowStock ? 'text-[var(--brand-red)]' : 'text-emerald-600'}`}>
+                        {isLowStock ? `Only ${stock} left` : 'In stock'}
+                    </p>
+                )}
             </div>
         </motion.div>
     )

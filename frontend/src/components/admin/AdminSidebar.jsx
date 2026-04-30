@@ -6,16 +6,16 @@ import {
     ChevronLeft, ChevronRight, AlertCircle, Sparkles
 } from 'lucide-react'
 
-const AdminSidebar = ({ activeTab, setActiveTab, toggleTheme, isDark, logout, collapsed, setCollapsed }) => {
+const AdminSidebar = ({ activeTab, setActiveTab, toggleTheme, isDark, logout, collapsed, counts = {} }) => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-    
+
     const menuItems = [
         { id: 'overview', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-        { id: 'orders', label: 'Orders', icon: <ShoppingCart size={20} />, count: 24 },
-        { id: 'products', label: 'Products', icon: <Package size={20} /> },
-        { id: 'categories', label: 'Categories', icon: <Layers size={20} /> },
-        { id: 'customers', label: 'Customers', icon: <Users size={20} />, count: 32 },
-        { id: 'reviews', label: 'Reviews', icon: <Star size={20} />, count: 14 },
+        { id: 'orders', label: 'Orders', icon: <ShoppingCart size={20} />, count: counts.orders },
+        { id: 'products', label: 'Products', icon: <Package size={20} />, count: counts.products },
+        { id: 'categories', label: 'Categories', icon: <Layers size={20} />, count: counts.categories },
+        { id: 'customers', label: 'Customers', icon: <Users size={20} />, count: counts.customers },
+        { id: 'reviews', label: 'Reviews', icon: <Star size={20} />, count: counts.reviews },
         { id: 'stats', label: 'Activity stats', icon: <BarChart3 size={20} /> },
         { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
     ]
@@ -35,7 +35,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, toggleTheme, isDark, logout, co
                 </div>
 
                 {/* NAV LINKS */}
-                <nav className="flex-1 px-4 space-y-8 overflow-y-auto no-scrollbar py-6">
+                <nav className="flex-1 px-4 space-y-5 overflow-y-auto no-scrollbar py-6">
                     {menuItems.map((item) => (
                         <NavLink 
                             key={item.id}
