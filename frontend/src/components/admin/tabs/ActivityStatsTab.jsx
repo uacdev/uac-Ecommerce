@@ -85,11 +85,7 @@ const ActivityStatsTab = ({ onExport }) => {
                         <KpiCard title="Avg order value" value={formatMetrics(stats.avgOrderValue)} trend={trends.aov?.label || '—'} isPositive={trends.aov?.positive ?? true} />
                         <KpiCard title="Platform orders" value={stats.totalOrders.toLocaleString()} trend={trends.orders?.label || '—'} isPositive={trends.orders?.positive ?? true} />
                     </div>
-                    {/* flex-1 lets the chart absorb the remaining vertical space in the left column,
-                        so it grows to match the donut+funnel stack height instead of leaving a gap. */}
-                    <div className="flex-1 min-h-[420px]">
-                        <SalesChart />
-                    </div>
+                    <SalesChart />
                 </div>
                 <div className="lg:col-span-4 flex flex-col gap-6">
                     <RevenueDonut />

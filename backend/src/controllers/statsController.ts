@@ -1,7 +1,16 @@
 import { Request, Response } from 'express';
 import { Order } from '../models/Order';
 import { Product } from '../models/Product';
+import { Visit } from '../models/Visit';
+import { CheckoutSession } from '../models/CheckoutSession';
 import { NIGERIAN_STATES } from '../data/nigerianStates';
+
+const utcDayKey = (d: Date) => {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
 
 const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
 
@@ -15,13 +24,63 @@ const fmtTrend = (delta: number) => {
     return `${sign}${delta.toFixed(1)}%`;
 };
 
+// Compute % of buyers (this month) whose lifetime order count > 1.
+// Returns { rate, prevRate } so the caller can derive a month-over-month trend.
+const computeReturningRate = async (thisMonthStart: Date, lastMonthStart: Date) => {
+    const buildRate = async (windowStart: Date, windowEnd: Date) => {
+        const buyersThisWindow: string[] = await Order.distinct('buyerEmail', {
+            date: { $gte: windowStart, $lt: windowEnd },
+            buyerEmail: { $ne: '' }
+        });
+        if (buyersThisWindow.length === 0) return 0;
+        // Of those buyers, how many had a PRIOR order before the window?
+        const returning = await Order.distinct('buyerEmail', {
+            buyerEmail: { $in: buyersThisWindow },
+            date: { $lt: windowStart }
+        });
+        return (returning.length / buyersThisWindow.length) * 100;
+    };
+    const rate = await buildRate(thisMonthStart, new Date());
+    const prevRate = await buildRate(lastMonthStart, thisMonthStart);
+    return { rate, prevRate };
+};
+
+// Abandonment = sessions started in window that never converted / total sessions started.
+const computeAbandonmentRate = async (thisMonthStart: Date, lastMonthStart: Date) => {
+    const buildRate = async (windowStart: Date, windowEnd: Date) => {
+        const total = await CheckoutSession.countDocuments({
+            startedAt: { $gte: windowStart, $lt: windowEnd }
+        });
+        if (total === 0) return 0;
+        const abandoned = await CheckoutSession.countDocuments({
+            startedAt: { $gte: windowStart, $lt: windowEnd },
+            convertedAt: null
+        });
+        return (abandoned / total) * 100;
+    };
+    const rate = await buildRate(thisMonthStart, new Date());
+    const prevRate = await buildRate(lastMonthStart, thisMonthStart);
+    return { rate, prevRate };
+};
+
+// Today's unique-visitor count, plus yesterday's so the UI can render a trend.
+const computeVisitorStats = async () => {
+    const today = utcDayKey(new Date());
+    const yesterday = utcDayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const [todayCount, yesterdayCount] = await Promise.all([
+        Visit.countDocuments({ dateKey: today }),
+        Visit.countDocuments({ dateKey: yesterday })
+    ]);
+    return { today: todayCount, yesterday: yesterdayCount };
+};
+
 export const getKpis = async (_req: Request, res: Response) => {
     try {
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        const [thisMonth, lastMonth, allOrders, totalProducts] = await Promise.all([
+        const [thisMonth, lastMonth, allOrders, totalProducts, returning, abandonment, visitors] = await Promise.all([
             Order.aggregate([
                 { $match: { date: { $gte: thisMonthStart } } },
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
@@ -33,7 +92,10 @@ export const getKpis = async (_req: Request, res: Response) => {
             Order.aggregate([
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
             ]),
-            Product.countDocuments()
+            Product.countDocuments(),
+            computeReturningRate(thisMonthStart, lastMonthStart),
+            computeAbandonmentRate(thisMonthStart, lastMonthStart),
+            computeVisitorStats()
         ]);
 
         const tm = thisMonth[0] || { revenue: 0, count: 0, customers: [] };
@@ -51,6 +113,12 @@ export const getKpis = async (_req: Request, res: Response) => {
         const newLastMonth = (lm.customers || []).length;
         const customersDelta = pctDelta(newThisMonth, newLastMonth);
 
+        // Returning rate is already a percentage — its delta is in percentage points, not relative.
+        const returningDelta = returning.rate - returning.prevRate;
+        // Abandonment going DOWN is good, so flip the sign for `positive`.
+        const abandonmentDelta = abandonment.rate - abandonment.prevRate;
+        const visitorsDelta = pctDelta(visitors.today, visitors.yesterday);
+
         res.json({
             success: true,
             data: {
@@ -59,11 +127,17 @@ export const getKpis = async (_req: Request, res: Response) => {
                 avgOrderValue: all.count > 0 ? all.revenue / all.count : 0,
                 totalCustomers,
                 totalProducts,
+                returningRate: returning.rate,
+                abandonmentRate: abandonment.rate,
+                dailyVisitors: visitors.today,
                 trends: {
                     revenue: { value: revenueDelta, label: fmtTrend(revenueDelta), positive: revenueDelta >= 0 },
                     orders: { value: ordersDelta, label: fmtTrend(ordersDelta), positive: ordersDelta >= 0 },
                     aov: { value: aovDelta, label: fmtTrend(aovDelta), positive: aovDelta >= 0 },
-                    customers: { value: customersDelta, label: fmtTrend(customersDelta), positive: customersDelta >= 0 }
+                    customers: { value: customersDelta, label: fmtTrend(customersDelta), positive: customersDelta >= 0 },
+                    returning: { value: returningDelta, label: `${returningDelta >= 0 ? '+' : ''}${returningDelta.toFixed(1)}%`, positive: returningDelta >= 0 },
+                    abandonment: { value: abandonmentDelta, label: `${abandonmentDelta >= 0 ? '+' : ''}${abandonmentDelta.toFixed(1)}%`, positive: abandonmentDelta <= 0 },
+                    visitors: { value: visitorsDelta, label: fmtTrend(visitorsDelta), positive: visitorsDelta >= 0 }
                 }
             }
         });

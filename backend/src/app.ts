@@ -15,6 +15,7 @@ import authRouter from './routes/authRouter';
 import uploadRouter from './routes/uploadRouter';
 import searchRouter from './routes/searchRouter';
 import customerRouter from './routes/customerRouter';
+import trackingRouter from './routes/trackingRouter';
 import { UPLOAD_DIR } from './lib/storage';
 
 dotenv.config();
@@ -52,6 +53,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/uploads', uploadRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/customer', customerRouter);
+app.use('/api/track', trackingRouter);
 
 app.get('/api', (_req, res) => {
     res.json({ message: 'Welcome to UFL E-Commerce API' });

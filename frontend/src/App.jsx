@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
+import { trackingApi } from './api/client'
+import { getVisitorId } from './lib/visitor'
 import { StoreProvider } from './context/StoreContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -38,6 +41,14 @@ const ProtectedRoute = ({ children }) => {
 function Layout() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
+
+  // Ping the visit tracker on every storefront navigation. Backend dedupes by
+  // (visitorId, dayKey) so a returning visitor on the same day is a free no-op.
+  useEffect(() => {
+    if (isAdmin) return
+    if (location.pathname.startsWith('/account')) return
+    trackingApi.visit(getVisitorId(), location.pathname).catch(() => {})
+  }, [isAdmin, location.pathname])
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>

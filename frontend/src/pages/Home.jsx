@@ -79,6 +79,15 @@ const BRANDS = [
         accent: '#c18a21',
         badge: 'Fan Favourite'
     },
+    {
+        name: 'Zuri',
+        tagline: 'Seasoning, Reimagined',
+        desc: 'All-purpose and recipe-specific Zuri blends — the modern foundation of every Nigerian kitchen.',
+        img: '/images/zuri.png',
+        bg: 'from-[#5b1c2c] to-[#a31d3a]',
+        accent: '#a31d3a',
+        badge: 'Pantry Essential'
+    },
 ]
 
 const TESTIMONIALS = [

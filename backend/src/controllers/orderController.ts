@@ -6,6 +6,8 @@ import { isNigerianState } from '../data/nigerianStates';
 import { sendOrderEmails, sendBackInStockEmails } from '../lib/email';
 import { notify } from '../lib/notify';
 import { StockSubscription } from '../models/StockSubscription';
+import { CheckoutSession } from '../models/CheckoutSession';
+import mongoose from 'mongoose';
 
 const COMMISSION_RATE = 0.10;
 
@@ -112,7 +114,7 @@ export const createOrder = async (req: Request, res: Response) => {
     try {
         const {
             items, buyerName, buyerEmail, buyerPhone, buyerAddress, buyerState,
-            deliveryZone, paymentMethod, fulfillmentType
+            deliveryZone, paymentMethod, fulfillmentType, checkoutSessionId
         } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
@@ -229,6 +231,15 @@ export const createOrder = async (req: Request, res: Response) => {
                 description: `${buyerName} · ${normalizedEmail}`,
                 meta: { email: normalizedEmail, name: buyerName, firstOrderRef: reference }
             });
+        }
+
+        // Mark the checkout session as converted so abandonment-rate stats stay accurate.
+        // Failure here doesn't block the order — analytics is best-effort.
+        if (checkoutSessionId && mongoose.Types.ObjectId.isValid(checkoutSessionId)) {
+            CheckoutSession.updateOne(
+                { _id: checkoutSessionId, convertedAt: null },
+                { $set: { convertedAt: new Date(), orderId: created.id, orderReference: reference } }
+            ).catch(err => console.error('CheckoutSession conversion mark failed:', err));
         }
 
         res.status(201).json({ success: true, data: created });

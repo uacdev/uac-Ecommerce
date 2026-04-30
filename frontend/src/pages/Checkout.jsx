@@ -4,7 +4,8 @@ import { ArrowLeft, ChevronRight, ShieldCheck } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
-import { deliveryApi } from '../api/client'
+import { deliveryApi, trackingApi } from '../api/client'
+import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId } from '../lib/visitor'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
 
@@ -50,6 +51,18 @@ const Checkout = () => {
         })
     }, [])
 
+    // Open a checkout session as soon as the buyer lands here. Reuse an existing
+    // unconverted session id if present so a refresh doesn't inflate abandonment.
+    useEffect(() => {
+        const existing = getCheckoutSessionId()
+        if (existing) return
+        trackingApi.startCheckout(getVisitorId(), customer?.email || '')
+            .then(res => {
+                if (res?.data?.sessionId) setCheckoutSessionId(res.data.sessionId)
+            })
+            .catch(() => { /* analytics best-effort */ })
+    }, [customer])
+
     const isSingleItem = !!id
     const singleProduct = isSingleItem ? products.find(p => p.id === id) : null
     const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: 1 }] : []) : cart
@@ -90,10 +103,12 @@ const Checkout = () => {
                 buyerState: stateName,
                 deliveryZone: zoneName,
                 paymentMethod,
-                fulfillmentType: 'delivery'
+                fulfillmentType: 'delivery',
+                checkoutSessionId: getCheckoutSessionId() || undefined
             })
 
             if (result?.success) {
+                clearCheckoutSessionId()
                 navigate('/delivery-selection', {
                     state: {
                         orderId: result.data.id,
