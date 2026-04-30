@@ -29,6 +29,8 @@ type SeedProduct = {
     price: number;
     description: string;
     packaging: string;
+    stockCount: number;    // Initial inventory; varied per SKU so the dashboard
+                           //   shows realistic numbers instead of a flat 100.
 };
 
 // Hand-curated mapping: archive image → product fields.
@@ -44,7 +46,8 @@ const SEED: SeedProduct[] = [
         category: 'Water',
         price: 2018,
         description: 'Pure premium drinking water in a portable 50cl bottle. Pack of 12 — ideal for households, events, and on-the-go hydration.',
-        packaging: '12 × 50cl bottles per pack'
+        packaging: '12 × 50cl bottles per pack',
+        stockCount: 1240
     },
     {
         file: 'SWAN/75 CL (12pcs).png',
@@ -53,7 +56,8 @@ const SEED: SeedProduct[] = [
         category: 'Water',
         price: 2609,
         description: 'Premium drinking water in a 75cl bottle. Pack of 12 — the everyday office and household choice.',
-        packaging: '12 × 75cl bottles per pack'
+        packaging: '12 × 75cl bottles per pack',
+        stockCount: 980
     },
     {
         file: 'SWAN/75 CL (20pcs).jpg',
@@ -62,7 +66,8 @@ const SEED: SeedProduct[] = [
         category: 'Water',
         price: 4156,
         description: 'Premium drinking water in 75cl bottles. Bulk pack of 20 — the better-value option for events, restaurants, and offices.',
-        packaging: '20 × 75cl bottles per pack'
+        packaging: '20 × 75cl bottles per pack',
+        stockCount: 540
     },
     {
         file: 'SWAN/150 CL.png',
@@ -71,7 +76,8 @@ const SEED: SeedProduct[] = [
         category: 'Water',
         price: 2280,
         description: 'Family-size 1.5 litre bottles. Pack of 6 — convenient for the dining table and household use.',
-        packaging: '6 × 1.5L bottles per pack'
+        packaging: '6 × 1.5L bottles per pack',
+        stockCount: 670
     },
 
     // ── Gala ────────────────────────────────────────────────────
@@ -82,7 +88,8 @@ const SEED: SeedProduct[] = [
         category: 'Snacks',
         price: 4200,
         description: 'The original Nigerian sausage roll since 1962. Tasty, nourishing, and trusted by millions. Carton of 26.',
-        packaging: '26 × 60g sausage rolls per carton'
+        packaging: '26 × 60g sausage rolls per carton',
+        stockCount: 850
     },
     {
         file: 'Gala/Gala Cocktail.jpg',
@@ -91,7 +98,8 @@ const SEED: SeedProduct[] = [
         category: 'Snacks',
         price: 3700,
         description: 'Bite-size Gala in cocktail format — perfect for events, hospitality, and casual entertaining.',
-        packaging: '4-pack cocktail carton'
+        packaging: '4-pack cocktail carton',
+        stockCount: 320
     },
     {
         file: 'Gala/King Size Gala.jpg',
@@ -100,7 +108,8 @@ const SEED: SeedProduct[] = [
         category: 'Snacks',
         price: 10500,
         description: 'Twice the bite. Gala Odogwo packs the classic UAC sausage-roll flavour into a 120g king-size format. Carton of 26.',
-        packaging: '26 × 120g sausage rolls per carton'
+        packaging: '26 × 120g sausage rolls per carton',
+        stockCount: 460
     },
 
     // ── Funtime Coconut Chips ───────────────────────────────────
@@ -111,7 +120,8 @@ const SEED: SeedProduct[] = [
         category: 'Snacks',
         price: 3596,
         description: 'Crunchy roasted coconut chips in a resealable 35g pack. A wholesome on-the-go snack — naturally gluten-free.',
-        packaging: '18 × 35g packs per carton'
+        packaging: '18 × 35g packs per carton',
+        stockCount: 410
     },
     {
         file: 'Fun time coconut chips/Coconut Jar 350g.png',
@@ -120,7 +130,8 @@ const SEED: SeedProduct[] = [
         category: 'Snacks',
         price: 13800,
         description: 'Premium roasted coconut chips in a 350g sharing jar. Family- and pantry-friendly format.',
-        packaging: '6 × 350g jars per carton'
+        packaging: '6 × 350g jars per carton',
+        stockCount: 180
     },
 
     // ── Zuri Seasoning ──────────────────────────────────────────
@@ -131,7 +142,8 @@ const SEED: SeedProduct[] = [
         category: 'Seasoning',
         price: 21000,
         description: 'All-purpose Zuri Classic seasoning — the base flavour every Nigerian kitchen relies on. Available as a 300-pack of 10g sachets or 30-pack of 100g pouches.',
-        packaging: '300 × 10g sachets or 30 × 100g pouches'
+        packaging: '300 × 10g sachets or 30 × 100g pouches',
+        stockCount: 750
     },
     {
         file: 'Zuri seasoning/zuri-jollof.png',
@@ -140,7 +152,8 @@ const SEED: SeedProduct[] = [
         category: 'Seasoning',
         price: 21000,
         description: 'Purpose-blended Zuri Jollof seasoning — gives jollof rice that signature smoky party-pot finish. Available as a 300-pack of 10g sachets or 30-pack of 100g pouches.',
-        packaging: '300 × 10g sachets or 30 × 100g pouches'
+        packaging: '300 × 10g sachets or 30 × 100g pouches',
+        stockCount: 620
     },
     {
         file: 'Zuri seasoning/zuri-chicken.png',
@@ -149,7 +162,8 @@ const SEED: SeedProduct[] = [
         category: 'Seasoning',
         price: 21000,
         description: 'Zuri Chicken seasoning — slow-cooked depth for grills, stews, and chicken stocks. Available as a 300-pack of 10g sachets or 30-pack of 100g pouches.',
-        packaging: '300 × 10g sachets or 30 × 100g pouches'
+        packaging: '300 × 10g sachets or 30 × 100g pouches',
+        stockCount: 540
     },
     {
         file: 'Zuri seasoning/zuri-beef.png',
@@ -158,30 +172,41 @@ const SEED: SeedProduct[] = [
         category: 'Seasoning',
         price: 21000,
         description: 'Zuri Beef seasoning — rich, savoury blend tuned for red-meat dishes, soups, and pepper soup. Available as a 300-pack of 10g sachets or 30-pack of 100g pouches.',
-        packaging: '300 × 10g sachets or 30 × 100g pouches'
+        packaging: '300 × 10g sachets or 30 × 100g pouches',
+        stockCount: 480
     }
 ];
 
-// Distinct categories with cover-image-friendly defaults.
-const CATEGORY_META: Record<string, { abstract: string; color: string }> = {
-    Water: { abstract: 'Premium drinking water — Swan range, household to event sizing.', color: 'bg-sky-50 text-sky-700' },
-    Snacks: { abstract: 'On-the-go and at-home snacks from Gala and Funtime.', color: 'bg-amber-50 text-amber-700' },
-    Seasoning: { abstract: 'All-purpose and recipe-specific seasoning blends from Zuri.', color: 'bg-rose-50 text-rose-700' },
-    Dairy: { abstract: 'Supreme ice cream, yoghurt and dairy treats.', color: 'bg-violet-50 text-violet-700' }
+// Brand metadata — categories ARE brands.
+const BRAND_META: Record<string, { abstract: string; color: string }> = {
+    Gala:    { abstract: "Nigeria's iconic sausage roll since 1962.",                 color: 'bg-rose-50 text-rose-700' },
+    Swan:    { abstract: 'Premium natural spring water — household to event sizing.', color: 'bg-sky-50 text-sky-700' },
+    Funtime: { abstract: 'Crunchy roasted coconut chips, party-snack ready.',         color: 'bg-amber-50 text-amber-700' },
+    Zuri:    { abstract: 'Recipe-specific Nigerian-kitchen seasoning blends.',        color: 'bg-fuchsia-50 text-fuchsia-700' },
+    Supreme: { abstract: 'Rich, creamy ice cream and dairy treats.',                  color: 'bg-violet-50 text-violet-700' }
 };
 
 const upsertCategory = async (name: string, coverImage: string) => {
-    const meta = CATEGORY_META[name] || { abstract: '', color: 'bg-indigo-50 text-indigo-600' };
+    const meta = BRAND_META[name] || { abstract: '', color: 'bg-indigo-50 text-indigo-600' };
+    // Insert path: full payload via $setOnInsert.
     await Category.updateOne(
         { name },
         {
-            $setOnInsert: { name, abstract: meta.abstract, color: meta.color, coverImage },
-            // Keep abstract/color stable across re-runs but refresh coverImage
-            // if the existing one is empty.
-            $set: {}
+            $setOnInsert: {
+                name,
+                abstract: meta.abstract,
+                color: meta.color,
+                coverImage,
+                parent: 'Brand'
+            }
         },
         { upsert: true }
     );
+    // Backfill path: a previous run may have created the row without abstract/
+    // color/parent (e.g. ensureCategoriesFromProducts only sets parent+color).
+    // Fill empty fields without overwriting admin-edited ones.
+    await Category.updateOne({ name, $or: [{ abstract: '' }, { abstract: { $exists: false } }] }, { $set: { abstract: meta.abstract } });
+    await Category.updateOne({ name, parent: { $ne: 'Brand' } }, { $set: { parent: 'Brand' } });
     if (coverImage) {
         await Category.updateOne({ name, coverImage: '' }, { $set: { coverImage } });
     }
@@ -203,9 +228,9 @@ const upsertProduct = async (p: SeedProduct, imageUrl: string) => {
                 location: 'Ojota',
                 status: 'available'
             },
-            // Default stockCount=100 only on first insert; preserve admin-edited
+            // Apply the seeded stockCount only on first insert; preserve admin-edited
             // counts on re-runs so seeding doesn't reset live inventory.
-            $setOnInsert: { stockCount: 100 }
+            $setOnInsert: { stockCount: p.stockCount }
         },
         { upsert: true, new: true }
     );
@@ -237,7 +262,7 @@ const run = async () => {
     }
 
     let uploaded = 0;
-    const categoryCovers = new Map<string, string>();
+    const brandCovers = new Map<string, string>();
 
     for (const p of SEED) {
         const filePath = path.join(ARCHIVE_DIR, p.file);
@@ -245,8 +270,8 @@ const run = async () => {
             const buf = await fs.readFile(filePath);
             const stored = await saveImage(buf, path.basename(p.file), mimeFor(p.file));
             await upsertProduct(p, stored.url);
-            // Use the FIRST product image of each category as that category's cover
-            if (!categoryCovers.has(p.category)) categoryCovers.set(p.category, stored.url);
+            // First product of each brand donates its image as the brand's cover.
+            if (!brandCovers.has(p.brand)) brandCovers.set(p.brand, stored.url);
             uploaded += 1;
             console.log(`  ✓ ${p.name}`);
         } catch (err: any) {
@@ -254,14 +279,14 @@ const run = async () => {
         }
     }
 
-    // Categories: include "Dairy" up-front even though Supreme images are pending,
-    // so the category filter chip exists when product imagery later arrives.
-    const allCategories = ['Water', 'Snacks', 'Seasoning', 'Dairy'];
-    for (const name of allCategories) {
-        await upsertCategory(name, categoryCovers.get(name) || '');
+    // Brand-categories: include Supreme even though images are pending so its
+    // chip exists when imagery later arrives.
+    const allBrands = ['Gala', 'Swan', 'Funtime', 'Zuri', 'Supreme'];
+    for (const name of allBrands) {
+        await upsertCategory(name, brandCovers.get(name) || '');
     }
 
-    console.log(`\n✅ Seeded ${uploaded}/${SEED.length} products into ${allCategories.length} categories.`);
+    console.log(`\n✅ Seeded ${uploaded}/${SEED.length} products into ${allBrands.length} brand categories.`);
     await mongoose.disconnect();
     process.exit(0);
 };

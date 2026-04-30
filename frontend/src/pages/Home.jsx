@@ -143,6 +143,33 @@ const Home = () => {
     const featuredProducts = products.slice(0, 6)
     const topPicks = products.slice(0, 4)
 
+    // Round-robin across brands so "Most popular" reflects the full catalogue
+    // instead of whichever brand happens to come first in the DB sort. Without
+    // this, Zuri's 4 SKUs were eating 4 of 6 slots.
+    const popularMix = useMemo(() => {
+        const byBrand = new Map()
+        for (const p of products) {
+            const key = (p.brand || 'Other').trim()
+            if (!byBrand.has(key)) byBrand.set(key, [])
+            byBrand.get(key).push(p)
+        }
+        const brands = Array.from(byBrand.keys())
+        const out = []
+        let round = 0
+        while (out.length < 6) {
+            const before = out.length
+            for (const b of brands) {
+                if (out.length >= 6) break
+                const pick = byBrand.get(b)[round]
+                if (pick) out.push(pick)
+            }
+            // No brand had a product at this round → catalogue is exhausted.
+            if (out.length === before) break
+            round++
+        }
+        return out
+    }, [products])
+
     // if (loading) return <Preloader />
 
     return (
@@ -410,7 +437,7 @@ const Home = () => {
                     </motion.div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 lg:gap-8">
-                        {products.slice(0, 6).map((p, idx) => (
+                        {popularMix.map((p, idx) => (
                             <motion.div
                                 key={p.id}
                                 variants={fadeUp}

@@ -5,9 +5,38 @@ import { Order } from '../models/Order';
 
 const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
 
+// Categories ARE brands. Walk every product's `brand` and ensure a Category
+// record exists for each. Idempotent — $setOnInsert means we never overwrite
+// admin-edited fields (color, coverImage, abstract). No pruning: a brand
+// without products yet (e.g. Supreme while imagery is pending) stays as a
+// placeholder so the admin can pre-stage covers/copy. Admin-initiated deletes
+// run through deleteCategory, which is the only path that removes one.
+const ensureCategoriesFromProducts = async () => {
+    const products = await Product.find({}, { brand: 1 }).lean();
+    const brands = new Set<string>();
+    for (const p of products) {
+        const b = String(p.brand || '').trim();
+        if (b) brands.add(b);
+    }
+    if (brands.size === 0) return;
+
+    const ops = Array.from(brands).map(name => ({
+        updateOne: {
+            filter: { name },
+            update: { $setOnInsert: { name, parent: 'Brand', color: 'bg-rose-50 text-rose-700' } },
+            upsert: true
+        }
+    }));
+    try { await Category.bulkWrite(ops, { ordered: false }); }
+    catch (err: any) {
+        if (err?.code !== 11000) throw err;
+    }
+};
+
 export const getCategories = async (_req: Request, res: Response) => {
     try {
-        const data = await Category.find().sort({ createdAt: 1 }).lean();
+        await ensureCategoriesFromProducts();
+        const data = await Category.find().sort({ parent: 1, name: 1 }).lean();
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
         console.error('Error in getCategories:', err);
@@ -54,8 +83,8 @@ export const getCategoryStats = async (req: Request, res: Response) => {
         const category = await Category.findById(id);
         if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
 
-        // Products in this category (matched by name — products store category as a string)
-        const products = await Product.find({ category: category.name }).sort({ created_at: -1 });
+        // Categories are brand-keyed — match products by brand name.
+        const products = await Product.find({ brand: category.name }).sort({ created_at: -1 });
         const productIds = products.map(p => String(p._id));
 
         // No products yet — return early with empty shape

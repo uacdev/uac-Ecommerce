@@ -19,16 +19,20 @@ const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
         return () => { cancelled = true }
     }, [])
 
-    // Aggregate per category: count products + units sold + revenue
+    // Aggregate per brand-category: count products + units sold + revenue.
+    // Categories are keyed on product.brand (Gala, Swan, …), not the legacy
+    // type field, so the lookup must match.
     const statsByCategory = useMemo(() => {
         const map = new Map()
         products.forEach(p => {
+            const key = (p.brand || '').trim()
+            if (!key) return
             const sales = salesById[p.id] || { soldUnits: 0, revenue: 0 }
-            const cur = map.get(p.category) || { productCount: 0, soldUnits: 0, revenue: 0 }
+            const cur = map.get(key) || { productCount: 0, soldUnits: 0, revenue: 0 }
             cur.productCount += 1
             cur.soldUnits += sales.soldUnits || 0
             cur.revenue += sales.revenue || 0
-            map.set(p.category, cur)
+            map.set(key, cur)
         })
         return map
     }, [products, salesById])

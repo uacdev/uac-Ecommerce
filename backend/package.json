@@ -4,6 +4,9 @@
   "description": "Backend API for UFL E-Commerce Platform",
   "main": "dist/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "tsx src/server.ts",
     "dev": "nodemon --exec tsx src/server.ts",
