@@ -29,7 +29,6 @@ const Footer = () => {
                             <li><Link to="/" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Home</Link></li>
                             <li><a href="#how-it-works" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Process</a></li>
                             <li><a href="#all-products" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Collection</a></li>
-                            <li><Link to="/admin" className="text-white/40 hover:text-[var(--brand-red)] text-xs font-medium transition-colors">Admin</Link></li>
                         </ul>
                     </div>
  

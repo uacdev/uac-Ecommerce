@@ -5,8 +5,9 @@ import SalesChart from '../ui/SalesChart'
 import { InsightRow, CustomerRow, CustomDatePicker } from '../ui/shared_ui'
 import { statsApi } from '../../../api/client'
 import { useStore } from '../../../context/StoreContext'
+import { cdnCard } from '../../../lib/img'
 
-const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, onExport }) => {
+const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, onExport, onSeeAllCustomers }) => {
     const { stats } = useStore()
 
     const handleExport = () => {
@@ -44,7 +45,16 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
         return () => { cancelled = true }
     }, [])
 
-    const displayProducts = bestSellers.length > 0 ? bestSellers : products.slice(0, 5)
+    // Best-seller payloads sometimes come back with image='' (early orders that
+    // captured items pre-Cloudinary). Fill from the live products store before
+    // rendering so the row never falls back to a broken-image icon.
+    const productImageById = React.useMemo(() => {
+        const m = new Map()
+        for (const p of products) m.set(String(p.id), p.image)
+        return m
+    }, [products])
+    const displayProducts = (bestSellers.length > 0 ? bestSellers : products.slice(0, 5))
+        .map(p => ({ ...p, image: p.image || productImageById.get(String(p.id)) || '/images/uac_logo.png' }))
 
     // Derived from server-aggregated customer data so it stays correct with paginated orders.
     const topContributors = React.useMemo(
@@ -124,7 +134,7 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
                                     <div key={p.id} className="flex items-center justify-between group">
                                         <div className="flex items-center gap-4">
                                             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white border border-[var(--divider)] shrink-0 shadow-sm group-hover:shadow-md transition-all duration-500">
-                                                <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                                                <img src={cdnCard(p.image)} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.name} />
                                             </div>
                                             <div>
                                                 <p className="text-[12px] font-bold tracking-tight text-[var(--text-primary)] line-clamp-1">{p.name}</p>
@@ -159,7 +169,7 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
                         <div className="mt-8 pt-8 border-t border-[var(--divider)]">
                             <div className="flex justify-between items-center mb-4">
                                 <h4 className="text-[12px] font-bold tracking-tight text-[var(--text-primary)]">Top contributors</h4>
-                                <button className="text-[10px] font-bold text-[#ed0000] uppercase tracking-widest hover:underline">See all</button>
+                                <button onClick={onSeeAllCustomers} className="text-[10px] font-bold text-[#ed0000] uppercase tracking-widest hover:underline">See all</button>
                             </div>
                             <div className="space-y-3">
                                 {topContributors.length > 0 ? topContributors.map((c, i) => (

@@ -263,16 +263,25 @@ export const getBestSellers = async (_req: Request, res: Response) => {
             });
         }
 
+        // Backfill name/image/price from the live Product when the order item
+        // captured them as empty strings (early orders pre-Cloudinary did this).
+        const productIds = top.map(t => String(t._id));
+        const products = await Product.find({ _id: { $in: productIds } });
+        const productMap = new Map(products.map(p => [String(p._id), p]));
+
         res.json({
             success: true,
-            data: top.map(t => ({
-                id: t._id,
-                name: t.name,
-                image: t.image,
-                price: t.price,
-                unitsSold: t.unitsSold,
-                revenue: t.revenue
-            }))
+            data: top.map(t => {
+                const live = productMap.get(String(t._id));
+                return {
+                    id: t._id,
+                    name: t.name || live?.name || '',
+                    image: t.image || live?.image || '',
+                    price: t.price ?? live?.price ?? 0,
+                    unitsSold: t.unitsSold,
+                    revenue: t.revenue
+                };
+            })
         });
     } catch (err: any) {
         console.error('Error in getBestSellers:', err);
