@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Plus, Minus, ShoppingBag, MessageCircle, Instagram, ArrowLeft } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
+import { cdnHero } from '../lib/img'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
 import NotifyWhenInStock from '../components/NotifyWhenInStock'
@@ -64,12 +65,13 @@ const ProductDetails = () => {
                     {/* Editorial Gallery */}
                     <div className="space-y-8">
                         <div className="aspect-[3/4] rounded-[60px] overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] relative">
-                            <motion.img 
+                            <motion.img
                                 key={activeImage}
                                 initial={{ opacity: 0, scale: 1.05 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 1 }}
-                                src={productImages[activeImage]} 
+                                src={cdnHero(productImages[activeImage])}
+                                alt={product.name}
                                 className="w-full h-full object-cover grayscale-0"
                             />
                             

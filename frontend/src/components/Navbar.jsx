@@ -22,8 +22,8 @@ const Navbar = () => {
     const brandCategories = [
         { name: 'Gala', icon: UtensilsCrossed, desc: 'The King of Snacks since 1962', filter: 'Gala', img: '/images/gala.jpg' },
         { name: 'Supreme', icon: IceCream, desc: 'Rich and Creamy Indulgence', filter: 'Supreme', img: '/images/supreme_ice_cream.jpg' },
-        { name: 'Swan', icon: Waves, desc: 'Natural Spring Water', filter: 'Swan', img: '/images/swan_water.jpg' },
-        { name: 'Funtime', icon: Cookie, desc: 'Tasty Coconut Chips & More', filter: 'Funtime', img: '/images/funtime_chips.jpg' },
+        { name: 'Swan', icon: Waves, desc: 'Natural Spring Water', filter: 'Swan', img: '/images/swan_water.png' },
+        { name: 'Funtime', icon: Cookie, desc: 'Tasty Coconut Chips & More', filter: 'Funtime', img: '/images/funtime_chips.png' },
         { name: 'Zuri', icon: UtensilsCrossed, desc: 'Seasoning, Reimagined', filter: 'Zuri', img: '/images/zuri.png' }
     ]
 

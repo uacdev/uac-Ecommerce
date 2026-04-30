@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Plus, ShoppingBag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
+import { cdnCard } from '../lib/img'
 import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
@@ -37,9 +38,10 @@ const ProductCard = ({ product }) => {
             className="group cursor-pointer"
         >
             <Link to={`/product/${product.id}`} className="block relative aspect-[3/4] rounded-[48px] overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] mb-8">
-                <img 
-                    src={product.image} 
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
+                <img
+                    src={cdnCard(product.image)}
+                    loading="lazy"
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                     alt={product.name}
                 />
                 
