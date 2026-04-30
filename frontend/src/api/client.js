@@ -115,7 +115,8 @@ export const statsApi = {
     getGeography: () => api.get('/stats/geography'),
     getRevenueByCategory: () => api.get('/stats/revenue-by-category'),
     getOrdersByHour: () => api.get('/stats/orders-by-hour'),
-    getStatusFunnel: () => api.get('/stats/status-funnel')
+    getStatusFunnel: () => api.get('/stats/status-funnel'),
+    getWebAnalytics: (days = 30) => api.get(`/stats/web-analytics?days=${days}`)
 };
 
 export const categoryApi = {
@@ -154,7 +155,13 @@ export const searchApi = {
 };
 
 export const trackingApi = {
-    visit: (visitorId, path) => api.post('/track/visit', { visitorId, path }),
+    visit: (visitorId, path) => api.post('/track/visit', {
+        visitorId,
+        path,
+        // Pass document.referrer explicitly — the HTTP Referer header isn't
+        // always populated for SPA navigations or when COOP/COEP strips it.
+        referrer: typeof document !== 'undefined' ? document.referrer || '' : ''
+    }),
     startCheckout: (visitorId, email) => api.post('/track/checkout-start', { visitorId, email })
 };
 

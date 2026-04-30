@@ -482,6 +482,108 @@ export const getStatusFunnel = async (_req: Request, res: Response) => {
     }
 };
 
+// Country code → display name. We only store the ISO-2 code on Visit so we
+// can render the chart with full names. Limited to the relevant set; everything
+// else just shows the raw code.
+const COUNTRY_NAMES: Record<string, string> = {
+    NG: 'Nigeria', GB: 'United Kingdom', US: 'United States', CA: 'Canada',
+    GH: 'Ghana', ZA: 'South Africa', KE: 'Kenya', DE: 'Germany',
+    FR: 'France', IT: 'Italy', ES: 'Spain', NL: 'Netherlands',
+    IE: 'Ireland', AU: 'Australia', AE: 'United Arab Emirates', SA: 'Saudi Arabia',
+    IN: 'India', CN: 'China', JP: 'Japan', BR: 'Brazil',
+    EG: 'Egypt', MA: 'Morocco', SN: 'Senegal', CM: 'Cameroon'
+};
+
+// GET /api/stats/web-analytics?days=30
+// Aggregates the Visit collection into the cards/charts the admin tab renders.
+export const getWebAnalytics = async (req: Request, res: Response) => {
+    try {
+        const days = Math.min(365, Math.max(1, parseInt(String(req.query.days || '30'), 10)));
+        const since = new Date();
+        since.setUTCDate(since.getUTCDate() - days + 1);
+        since.setUTCHours(0, 0, 0, 0);
+        const sinceKey = since.toISOString().slice(0, 10);
+
+        const matchWindow = { dateKey: { $gte: sinceKey } };
+
+        const [
+            totalsAgg,
+            byCountry,
+            bySource,
+            byDay,
+            byPath,
+            byNigeriaState
+        ] = await Promise.all([
+            Visit.aggregate([
+                { $match: matchWindow },
+                { $group: { _id: null, total: { $sum: 1 }, uniqueVisitors: { $addToSet: '$visitorId' } } },
+                { $project: { _id: 0, total: 1, uniqueVisitors: { $size: '$uniqueVisitors' } } }
+            ]),
+            Visit.aggregate([
+                { $match: { ...matchWindow, countryCode: { $ne: '' } } },
+                { $group: { _id: '$countryCode', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 12 }
+            ]),
+            Visit.aggregate([
+                { $match: matchWindow },
+                { $group: { _id: '$referrerSource', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]),
+            Visit.aggregate([
+                { $match: matchWindow },
+                { $group: { _id: '$dateKey', count: { $sum: 1 } } },
+                { $sort: { _id: 1 } }
+            ]),
+            Visit.aggregate([
+                { $match: { ...matchWindow, path: { $ne: '' } } },
+                { $group: { _id: '$path', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 10 }
+            ]),
+            Visit.aggregate([
+                { $match: { ...matchWindow, countryCode: 'NG', region: { $ne: '' } } },
+                { $group: { _id: '$region', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 12 }
+            ])
+        ]);
+
+        // Pad the daily series so the chart shows zero-buckets, not gaps.
+        const dailyMap = new Map<string, number>();
+        for (const r of byDay) dailyMap.set(r._id, r.count);
+        const daily: { date: string; count: number }[] = [];
+        const cursor = new Date(since);
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        while (cursor <= today) {
+            const k = cursor.toISOString().slice(0, 10);
+            daily.push({ date: k, count: dailyMap.get(k) || 0 });
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+        }
+
+        res.json({
+            success: true,
+            data: {
+                window: { days, since: sinceKey },
+                totals: totalsAgg[0] || { total: 0, uniqueVisitors: 0 },
+                byCountry: byCountry.map(c => ({
+                    code: c._id,
+                    name: COUNTRY_NAMES[c._id] || c._id,
+                    count: c.count
+                })),
+                bySource: bySource.map(s => ({ source: s._id || 'direct', count: s.count })),
+                byPath: byPath.map(p => ({ path: p._id, count: p.count })),
+                byNigeriaState: byNigeriaState.map(s => ({ region: s._id, count: s.count })),
+                daily
+            }
+        });
+    } catch (err: any) {
+        console.error('Error in getWebAnalytics:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 export const getCustomers = async (_req: Request, res: Response) => {
     try {
         const rows = await Order.aggregate([

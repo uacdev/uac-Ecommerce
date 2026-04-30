@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard, ShoppingCart, Package, Users, BarChart3,
-    Settings, LogOut, Sun, Moon, Star, Layers,
+    Settings, LogOut, Sun, Moon, Star, Layers, Globe2,
     ChevronLeft, ChevronRight, AlertCircle, Sparkles, X
 } from 'lucide-react'
 
@@ -32,6 +32,7 @@ const AdminSidebar = ({
         { id: 'customers', label: 'Customers', icon: <Users size={20} />, count: counts.customers },
         { id: 'reviews', label: 'Reviews', icon: <Star size={20} />, count: counts.reviews },
         { id: 'stats', label: 'Activity stats', icon: <BarChart3 size={20} /> },
+        { id: 'web-analytics', label: 'Web analytics', icon: <Globe2 size={20} /> },
         { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
     ]
 

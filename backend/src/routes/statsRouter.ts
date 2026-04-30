@@ -15,5 +15,6 @@ router.get('/geography', statsController.getGeography);
 router.get('/revenue-by-category', statsController.getRevenueByCategory);
 router.get('/orders-by-hour', statsController.getOrdersByHour);
 router.get('/status-funnel', statsController.getStatusFunnel);
+router.get('/web-analytics', statsController.getWebAnalytics);
 
 export default router;

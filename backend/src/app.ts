@@ -22,6 +22,11 @@ dotenv.config();
 
 const app = express();
 
+// Trust the proxy chain so req.ip resolves to the real client IP behind
+// Railway's load balancer (not the LB's internal address). Required for the
+// IP-to-country lookup in /api/track/visit to work in production.
+app.set('trust proxy', true);
+
 // Middleware
 // crossOriginResourcePolicy disabled so /uploads images can be loaded by the frontend on a different port
 app.use(helmet({ crossOriginResourcePolicy: false }));

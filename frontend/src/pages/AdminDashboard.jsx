@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import { notificationApi, searchApi, reviewApi, orderApi } from '../api/client'
 import { formatDistanceToNow } from 'date-fns'
 
-const VALID_TABS = ['overview', 'orders', 'products', 'categories', 'customers', 'reviews', 'stats', 'settings']
+const VALID_TABS = ['overview', 'orders', 'products', 'categories', 'customers', 'reviews', 'stats', 'web-analytics', 'settings']
 
 // UI Components
 import Preloader from '../components/Preloader'
@@ -25,6 +25,7 @@ import CategoriesTab from '../components/admin/tabs/CategoriesTab'
 import CustomersTab from '../components/admin/tabs/CustomersTab'
 import ReviewsTab from '../components/admin/tabs/ReviewsTab'
 import ActivityStatsTab from '../components/admin/tabs/ActivityStatsTab'
+import WebAnalyticsTab from '../components/admin/tabs/WebAnalyticsTab'
 import SettingsTab from '../components/admin/tabs/SettingsTab'
 import CustomerStatsPage from '../components/admin/tabs/CustomerStatsPage'
 import ProductDetailPage from '../components/admin/tabs/ProductDetailPage'
@@ -425,6 +426,7 @@ const AdminDashboard = () => {
                             {activeTab === 'reviews' && <ReviewsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
                             {viewCustomerStats && <CustomerStatsPage customer={viewCustomerStats} onBack={() => setViewCustomerStats(null)} />}
                             {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={products} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
+                            {activeTab === 'web-analytics' && <WebAnalyticsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
                             {activeTab === 'settings' && <SettingsTab />}
                         </>
                     )}
