@@ -5,9 +5,48 @@ import { Order } from '../models/Order';
 
 const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed'];
 
+// Walk every product's `category` and `brand` and ensure a Category record
+// exists for each. Brand entries get parent='Brand', type entries parent='Type',
+// so the admin tab can group/filter them. Idempotent — $setOnInsert means we
+// never overwrite admin-edited fields (color, coverImage, abstract).
+const ensureCategoriesFromProducts = async () => {
+    const products = await Product.find({}, { brand: 1, category: 1 }).lean();
+    const brands = new Set<string>();
+    const types = new Set<string>();
+    for (const p of products) {
+        const b = String(p.brand || '').trim();
+        const c = String(p.category || '').trim();
+        if (b) brands.add(b);
+        if (c) types.add(c);
+    }
+    const ops: any[] = [];
+    for (const name of brands) {
+        ops.push({ updateOne: {
+            filter: { name },
+            update: { $setOnInsert: { name, parent: 'Brand', color: 'bg-rose-50 text-rose-700' } },
+            upsert: true
+        } });
+    }
+    for (const name of types) {
+        ops.push({ updateOne: {
+            filter: { name },
+            update: { $setOnInsert: { name, parent: 'Type', color: 'bg-sky-50 text-sky-700' } },
+            upsert: true
+        } });
+    }
+    if (ops.length > 0) {
+        try { await Category.bulkWrite(ops, { ordered: false }); }
+        catch (err: any) {
+            // Duplicate-key races between concurrent calls are expected and harmless.
+            if (err?.code !== 11000) throw err;
+        }
+    }
+};
+
 export const getCategories = async (_req: Request, res: Response) => {
     try {
-        const data = await Category.find().sort({ createdAt: 1 }).lean();
+        await ensureCategoriesFromProducts();
+        const data = await Category.find().sort({ parent: 1, name: 1 }).lean();
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
         console.error('Error in getCategories:', err);

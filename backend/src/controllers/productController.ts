@@ -74,6 +74,19 @@ export const createProduct = async (req: Request, res: Response) => {
         payload.status = stock > 0 ? 'available' : 'out_of_stock';
 
         const created = await Product.create(payload);
+
+        // Auto-register the brand + type as Category records so the admin
+        // Categories tab reflects the storefront without manual upkeep.
+        // Best-effort — failures here don't block the create.
+        try {
+            const ops: any[] = [];
+            if (payload.brand) ops.push({ updateOne: { filter: { name: payload.brand }, update: { $setOnInsert: { name: payload.brand, parent: 'Brand', color: 'bg-rose-50 text-rose-700' } }, upsert: true } });
+            if (payload.category) ops.push({ updateOne: { filter: { name: payload.category }, update: { $setOnInsert: { name: payload.category, parent: 'Type', color: 'bg-sky-50 text-sky-700' } }, upsert: true } });
+            if (ops.length) await (await import('../models/Category')).Category.bulkWrite(ops, { ordered: false });
+        } catch (catErr: any) {
+            if (catErr?.code !== 11000) console.warn('Auto-category sync failed (non-fatal):', catErr?.message);
+        }
+
         res.status(201).json({ success: true, data: created });
     } catch (err: any) {
         console.error('Error in createProduct:', err);
