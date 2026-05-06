@@ -281,7 +281,7 @@ export const getBestSellers = async (_req: Request, res: Response) => {
             return {
                 id: live?._id || t._id,
                 name: live?.name || t.name || '',
-                image: live?.image || t.image || '',
+                image: live?.image || live?.images?.[0] || t.image || '',
                 price: live?.price ?? t.price ?? 0,
                 unitsSold: t.unitsSold,
                 revenue: t.revenue

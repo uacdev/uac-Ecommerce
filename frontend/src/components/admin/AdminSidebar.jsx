@@ -54,7 +54,7 @@ const AdminSidebar = ({
             </AnimatePresence>
 
             <motion.aside
-                animate={{ width: collapsed ? 100 : 280 }}
+                animate={{ width: collapsed ? 80 : 220 }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 // Off-canvas on mobile (translate -100%), drops back into view when
                 // mobileOpen flips. lg+: always in normal flow.
@@ -63,7 +63,7 @@ const AdminSidebar = ({
                 }`}
             >
                 {/* BRAND LOGO & MOBILE CLOSE BUTTON */}
-                <div className={`shrink-0 flex items-center h-32 ${collapsed ? 'justify-center' : 'px-8 justify-between'}`}>
+                <div className={`shrink-0 flex items-center h-28 ${collapsed ? 'justify-center' : 'px-5 justify-between'}`}>
                     <div className="flex items-center gap-3">
                         <img src="/images/uac_foods_full.png" className="h-16 w-auto object-contain transition-transform hover:scale-105" alt="UAC" />
                     </div>
@@ -157,7 +157,7 @@ const NavLink = ({ icon, label, active, onClick, collapsed, count }) => (
                     {label}
                 </span>
                 {count && (
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${active ? 'bg-[#ed0000] text-white' : 'bg-[var(--bg-primary)] text-[var(--text-muted)] border border-[var(--divider)]'}`}>
+                    <span className={`ml-auto pl-3 text-[9px] font-bold px-2 py-0.5 rounded-md ${active ? 'bg-[#ed0000] text-white' : 'bg-[var(--bg-primary)] text-[var(--text-muted)] border border-[var(--divider)]'}`}>
                         {count}
                     </span>
                 )}

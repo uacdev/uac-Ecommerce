@@ -53,8 +53,19 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
         for (const p of products) m.set(String(p.id), p.image)
         return m
     }, [products])
+    const productImageByName = React.useMemo(() => {
+        const m = new Map()
+        for (const p of products) if (p.image) m.set((p.name || '').toLowerCase().trim(), p.image)
+        return m
+    }, [products])
     const displayProducts = (bestSellers.length > 0 ? bestSellers : products.slice(0, 5))
-        .map(p => ({ ...p, image: p.image || productImageById.get(String(p.id)) || '' }))
+        .map(p => ({
+            ...p,
+            image: p.image
+                || productImageById.get(String(p.id))
+                || productImageByName.get((p.name || '').toLowerCase().trim())
+                || ''
+        }))
 
     // Derived from server-aggregated customer data so it stays correct with paginated orders.
     const topContributors = React.useMemo(

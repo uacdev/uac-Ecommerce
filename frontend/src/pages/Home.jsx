@@ -598,8 +598,7 @@ const Home = () => {
                         </Link>
                     </motion.div>
                     <div className="relative min-h-[280px] flex items-end justify-center overflow-hidden">
-                        <img src="/images/funtime_chips.png" alt="Promo" className="w-full h-full object-cover opacity-30 lg:opacity-50" />
-                        <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#ED0000] hidden lg:block" />
+                        <img src="/images/funtime_chips.png" alt="Promo" className="w-full h-full object-contain p-8" />
                     </div>
                 </div>
             </section>
