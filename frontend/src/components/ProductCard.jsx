@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
-import { Plus, ShoppingBag } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { cdnCard } from '../lib/img'
 import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
-    const { addToCart, isFavorite } = useStore()
+    const { addToCart } = useStore()
     const stock = Number(product.stockCount ?? 0)
     const isOutOfStock = product.status === 'out_of_stock' || stock === 0
     const isLowStock = !isOutOfStock && stock <= 5
@@ -41,7 +41,7 @@ const ProductCard = ({ product }) => {
                 <img
                     src={cdnCard(product.image)}
                     loading="lazy"
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
                     alt={product.name}
                 />
                 

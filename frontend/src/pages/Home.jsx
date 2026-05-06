@@ -9,23 +9,30 @@ import toast from 'react-hot-toast'
 const CountUp = ({ end, duration = 2 }) => {
     const isNumeric = /[0-9]/.test(end)
     const [count, setCount] = useState(isNumeric ? 0 : end)
+    const [started, setStarted] = useState(false)
+    const ref = useRef(null)
     const endVal = isNumeric ? parseInt(end.replace(/\D/g, '')) : 0
     const suffix = isNumeric ? end.replace(/[0-9]/g, '') : ''
-    
+
     useEffect(() => {
-        if (!isNumeric) {
-            setCount(end)
-            return
-        }
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setStarted(true); observer.disconnect() } },
+            { threshold: 0.3 }
+        )
+        if (ref.current) observer.observe(ref.current)
+        return () => observer.disconnect()
+    }, [])
+
+    useEffect(() => {
+        if (!started || !isNumeric) return
         let start = 0
         if (start === endVal) return
-        
-        let totalMilisecDur = duration * 1000
-        let increments = endVal
-        let incrementTime = Math.max(totalMilisecDur / increments, 30) // Minimum 30ms for smooth UI
-        let step = Math.max(Math.floor(endVal / (totalMilisecDur / 30)), 1)
-        
-        let timer = setInterval(() => {
+
+        const totalMs = duration * 1000
+        const incrementTime = Math.max(totalMs / endVal, 30)
+        const step = Math.max(Math.floor(endVal / (totalMs / 30)), 1)
+
+        const timer = setInterval(() => {
             start += step
             if (start >= endVal) {
                 setCount(endVal)
@@ -34,11 +41,11 @@ const CountUp = ({ end, duration = 2 }) => {
                 setCount(start)
             }
         }, incrementTime)
-        
+
         return () => clearInterval(timer)
-    }, [endVal, end, isNumeric, duration])
-    
-    return <span>{isNumeric ? count + suffix : count}</span>
+    }, [started, endVal, isNumeric, duration])
+
+    return <span ref={ref}>{isNumeric ? count + suffix : count}</span>
 }
 
 const BRANDS = [
@@ -157,7 +164,7 @@ const Home = () => {
         const brands = Array.from(byBrand.keys())
         const out = []
         let round = 0
-        while (out.length < 6) {
+        while (out.length < 9) {
             const before = out.length
             for (const b of brands) {
                 if (out.length >= 6) break
@@ -174,6 +181,7 @@ const Home = () => {
     // if (loading) return <Preloader />
 
     return (
+        <>
         <div className="bg-white font-['Sen',sans-serif] overflow-x-hidden">
 
             {/* ══════════════════════════════════════════════════════
@@ -393,7 +401,7 @@ const Home = () => {
                         </div>
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {BRANDS.map((b, i) => (
                             <motion.div
                                 key={b.name}
@@ -403,19 +411,19 @@ const Home = () => {
                                 whileInView="visible"
                                 viewport={{ once: true }}
                             >
-                                <Link to={`/products?brand=${b.name}`} className="group block rounded-3xl overflow-hidden relative min-h-[320px] shadow-sm hover:shadow-2xl transition-shadow duration-500">
+                                <Link to={`/products?brand=${b.name}`} className="group block rounded-2xl overflow-hidden relative min-h-[180px] shadow-sm hover:shadow-xl transition-shadow duration-500">
                                     <div className={`absolute inset-0 bg-gradient-to-br ${b.bg} opacity-90`} />
                                     <img src={b.img} alt={b.name} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay group-hover:scale-105 transition-transform duration-700" />
-                                    <div className="relative z-10 h-full min-h-[320px] flex flex-col justify-between p-8 md:p-10">
+                                    <div className="relative z-10 h-full min-h-[180px] flex flex-col justify-between p-5">
                                         <div className="flex items-start justify-between">
-                                            <span className="bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[10px] font-bold px-3 py-1.5 rounded-full">{b.badge}</span>
-                                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white group-hover:text-gray-900 transition-all">
-                                                <ArrowUpRight size={16} className="text-white group-hover:text-gray-900 transition-colors" />
+                                            <span className="bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[9px] font-bold px-2 py-1 rounded-full">{b.badge}</span>
+                                            <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white group-hover:text-gray-900 transition-all">
+                                                <ArrowUpRight size={13} className="text-white group-hover:text-gray-900 transition-colors" />
                                             </div>
                                         </div>
                                         <div>
-                                            <h3 className="text-4xl font-bold text-white mb-2">{b.name}</h3>
-                                            <p className="text-white/70 text-sm">{b.tagline}</p>
+                                            <h3 className="text-xl font-bold text-white mb-1">{b.name}</h3>
+                                            <p className="text-white/70 text-xs">{b.tagline}</p>
                                         </div>
                                     </div>
                                 </Link>
@@ -437,7 +445,7 @@ const Home = () => {
                         </h2>
                     </motion.div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 lg:gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         {popularMix.map((p, idx) => (
                             <motion.div
                                 key={p.id}
@@ -449,9 +457,9 @@ const Home = () => {
                                 className="group"
                             >
                                 <Link to={`/product/${p.id}`}>
-                                    <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm group-hover:shadow-xl transition-shadow duration-500 relative">
+                                    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm group-hover:shadow-lg transition-shadow duration-500 relative">
                                         {/* Image */}
-                                        <div className="aspect-square bg-white flex items-center justify-center p-8 relative overflow-hidden">
+                                        <div className="aspect-square bg-white flex items-center justify-center p-4 relative overflow-hidden">
                                             <img
                                                 src={p.image}
                                                 alt={p.name}
@@ -474,20 +482,20 @@ const Home = () => {
                                                         }
                                                     });
                                                 }}
-                                                className={`absolute bottom-4 right-4 w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${addedId === p.id ? 'bg-emerald-500 scale-125' : 'bg-[#ED0000] opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0'}`}
+                                                className={`absolute bottom-3 right-3 w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${addedId === p.id ? 'bg-emerald-500 scale-125' : 'bg-[#ED0000] opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0'}`}
                                             >
-                                                <Plus size={18} className="text-white" />
+                                                <Plus size={14} className="text-white" />
                                             </button>
                                         </div>
                                         {/* Info */}
-                                        <div className="p-5 border-t border-gray-50">
-                                            <p className="text-[10px] text-[#ED0000] font-bold tracking-widest uppercase mb-1">{p.category || 'UAC Foods'}</p>
-                                            <h3 className="text-[15px] font-bold text-gray-900 mb-2 leading-snug">{p.name}</h3>
+                                        <div className="p-3 border-t border-gray-50">
+                                            <p className="text-[9px] text-[#ED0000] font-bold tracking-widest uppercase mb-1">{p.category || 'UAC Foods'}</p>
+                                            <h3 className="text-[13px] font-bold text-gray-900 mb-1.5 leading-snug">{p.name}</h3>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-bold text-gray-900">₦{p.price?.toLocaleString()}</span>
+                                                <span className="text-[13px] font-bold text-gray-900">₦{p.price?.toLocaleString()}</span>
                                                 <div className="flex items-center gap-0.5">
                                                     {[...Array(5)].map((_, s) => (
-                                                        <Star key={s} size={10} className="text-amber-400 fill-amber-400" />
+                                                        <Star key={s} size={9} className="text-amber-400 fill-amber-400" />
                                                     ))}
                                                 </div>
                                             </div>
@@ -758,6 +766,21 @@ const Home = () => {
             </section>
 
         </div>
+
+            {/* Sticky WhatsApp CTA */}
+            <a
+                href="https://wa.me/+2349098050402"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fixed bottom-8 right-8 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-300 hover:scale-110"
+                style={{ background: '#25D366' }}
+                aria-label="Chat on WhatsApp"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="white">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+            </a>
+        </>
     )
 }
 

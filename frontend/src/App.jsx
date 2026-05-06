@@ -24,6 +24,9 @@ import TrackOrder from './pages/TrackOrder'
 import Favorites from './pages/Favorites'
 import Products from './pages/Products'
 import AboutUs from './pages/AboutUs'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import DataProtection from './pages/DataProtection'
+import TermsAndConditions from './pages/TermsAndConditions'
 
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -70,6 +73,9 @@ function Layout() {
             <Route path="/success-delivery" element={<SuccessDelivery />} />
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/data-protection" element={<DataProtection />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/favorites" element={<Favorites />} />
 
             <Route path="/account/login" element={<AccountLogin />} />
