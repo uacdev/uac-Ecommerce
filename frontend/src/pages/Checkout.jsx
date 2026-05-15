@@ -218,13 +218,13 @@ const Checkout = () => {
                     <div className="lg:col-span-5">
                         <div className="lg:sticky lg:top-40 space-y-12">
                             <div className="bg-[var(--bg-secondary)] rounded-[60px] p-12 border border-[var(--divider)]">
-                                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-12">Your Bag</h2>
+                                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-12">Your Cart</h2>
                                 
                                 <div className="space-y-8 mb-12 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
                                     {checkoutItems.map(item => (
                                         <div key={item.id} className="flex gap-6 group">
                                             <div className="w-24 h-32 rounded-[24px] overflow-hidden bg-[var(--bg-primary)] border border-[var(--divider)] shrink-0">
-                                                <img src={item.image} className="w-full h-full object-cover grayscale" />
+                                                <img src={item.image} className="w-full h-full object-cover" />
                                             </div>
                                             <div className="flex flex-col justify-center flex-1">
                                                 <h4 className="text-sm font-black uppercase tracking-wider mb-2 text-[var(--text-primary)]">{item.name}</h4>

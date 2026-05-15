@@ -168,7 +168,7 @@ const ProductDetails = () => {
                                     onClick={handleAddToCart}
                                     className="w-full bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl"
                                 >
-                                    Add to Bag
+                                    Add to Cart
                                 </button>
                             )}
                             

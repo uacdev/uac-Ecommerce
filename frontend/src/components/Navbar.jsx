@@ -72,10 +72,6 @@ const Navbar = () => {
                             <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
                         </Link>
  
-                        <Link to="/track-order" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
-                            Track
-                            <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
-                        </Link>
                     </div>
 
                     {/* Desktop Actions - Right Aligned */}
@@ -233,8 +229,7 @@ const Navbar = () => {
                             <div className="flex flex-col gap-2 overflow-y-auto flex-1">
                                 <Link to="/shop" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">Our portfolio</Link>
                                 <Link to="/about" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">About us</Link>
-                                <Link to="/track-order" onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)]">Track delivery</Link>
-                                <Link to={accountHref} onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)] flex items-center gap-3">
+                                                <Link to={accountHref} onClick={() => setIsOpen(false)} className="text-xl font-bold px-4 py-3 rounded-2xl text-[var(--text-primary)] flex items-center gap-3">
                                     <User size={18} className="text-[var(--brand-red)]" />
                                     {customer ? `Hi, ${customer.fullName?.split(' ')[0] || 'you'}` : 'Sign in / Create account'}
                                 </Link>

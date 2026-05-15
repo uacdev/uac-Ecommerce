@@ -111,12 +111,12 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
                         <KpiCard title="Total sales" value={`₦${(stats.totalRevenue || 0).toLocaleString()}`} trend={trends.revenue?.label || '—'} isPositive={trends.revenue?.positive ?? true} />
                         <KpiCard title="Orders placed" value={stats.totalOrders} trend={trends.orders?.label || '—'} isPositive={trends.orders?.positive ?? true} />
                         <KpiCard title="Average order value" value={`₦${Math.floor(stats.avgOrderValue || 0).toLocaleString()}`} trend={trends.aov?.label || '—'} isPositive={trends.aov?.positive ?? true} />
-                        <KpiCard title="Returning rate" value={`${(stats.returningRate || 0).toFixed(1)}%`} trend={trends.returning?.label || '—'} isPositive={trends.returning?.positive ?? true} />
-                        <KpiCard title="Abandonment rate" value={`${(stats.abandonmentRate || 0).toFixed(1)}%`} trend={trends.abandonment?.label || '—'} isPositive={trends.abandonment?.positive ?? true} />
-                        <KpiCard title="Daily visitors" value={(stats.dailyVisitors || 0).toLocaleString()} trend={trends.visitors?.label || '—'} isPositive={trends.visitors?.positive ?? true} />
                         <KpiCard title="Total customers" value={(stats.totalCustomers || 0).toLocaleString()} trend={trends.customers?.label || '—'} isPositive={trends.customers?.positive ?? true} />
                         <KpiCard title="Pending orders" value={stats.pendingOrders} trend={`${stats.pendingOrders} awaiting`} isPositive={stats.pendingOrders === 0} />
                         <KpiCard title="Active products" value={`${stats.availableProducts} / ${stats.totalProducts}`} trend="In catalogue" isPositive />
+                        <KpiCard title="Returning rate" value={`${(stats.returningRate || 0).toFixed(1)}%`} trend={trends.returning?.label || '—'} isPositive={trends.returning?.positive ?? true} />
+                        <KpiCard title="Abandonment rate" value={`${(stats.abandonmentRate || 0).toFixed(1)}%`} trend={trends.abandonment?.label || '—'} isPositive={trends.abandonment?.positive ?? true} />
+                        <KpiCard title="Daily visitors" value={(stats.dailyVisitors || 0).toLocaleString()} trend={trends.visitors?.label || '—'} isPositive={trends.visitors?.positive ?? true} />
                     </div>
 
                     <SalesChart />
