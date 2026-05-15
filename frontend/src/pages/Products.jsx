@@ -88,7 +88,7 @@ const Products = () => {
                         <div className="flex-1 w-full relative">
                             <input 
                                 type="text"
-                                placeholder="SEARCH CATALOGUE"
+                                placeholder="SEARCH CATALOG"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-transparent border-b-2 border-[var(--divider)] py-6 text-2xl font-black uppercase tracking-tight outline-none focus:border-[var(--brand-red)] transition-all text-[var(--text-primary)] placeholder:text-[var(--divider)]"
