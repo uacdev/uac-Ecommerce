@@ -10,10 +10,4 @@ export default defineConfig({
     port: 5180,
     strictPort: false, // fall back to next free port if 5180 is taken
   },
-  css: {
-    // Override global C:\postcss.config.mjs that references @tailwindcss/postcss
-    postcss: {
-      plugins: [],
-    },
-  },
 })
