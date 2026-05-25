@@ -165,4 +165,9 @@ export const trackingApi = {
     startCheckout: (visitorId, email) => api.post('/track/checkout-start', { visitorId, email })
 };
 
+export const paymentApi = {
+    initiate: (data) => api.post('/payment/initiate', data),
+    verify: (reference) => api.post('/payment/verify', { reference }),
+};
+
 export default api;

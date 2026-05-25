@@ -83,7 +83,7 @@ const TrackOrder = () => {
                                 <input 
                                     required
                                     type="text" 
-                                    placeholder="UAC-2026-XXXX" 
+                                    placeholder="UFL-2026-XXXX"
                                     value={orderId}
                                     onChange={e => setOrderId(e.target.value)}
                                     className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl pl-12 pr-4 py-4 text-sm font-bold outline-none focus:border-[var(--brand-red)] transition-all"

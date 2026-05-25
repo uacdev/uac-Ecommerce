@@ -16,28 +16,27 @@ import uploadRouter from './routes/uploadRouter';
 import searchRouter from './routes/searchRouter';
 import customerRouter from './routes/customerRouter';
 import trackingRouter from './routes/trackingRouter';
+import paymentRouter from './routes/paymentRouter';
 import { UPLOAD_DIR } from './lib/storage';
 
 dotenv.config();
 
 const app = express();
 
-// Trust the proxy chain so req.ip resolves to the real client IP behind
-// Railway's load balancer (not the LB's internal address). Required for the
-// IP-to-country lookup in /api/track/visit to work in production.
 app.set('trust proxy', true);
 
-// Middleware
-// crossOriginResourcePolicy disabled so /uploads images can be loaded by the frontend on a different port
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors());
 app.use(morgan('dev'));
+
+// Payment router is mounted BEFORE express.json() so the webhook route can
+// apply express.raw() and capture the exact body bytes for HMAC verification
+app.use('/api/payment', paymentRouter);
+
 app.use(express.json());
 
-// Static — uploaded images
 app.use('/uploads', express.static(UPLOAD_DIR));
 
-// Routes
 app.get('/health', (_req, res) => {
     res.json({
         status: 'UP',

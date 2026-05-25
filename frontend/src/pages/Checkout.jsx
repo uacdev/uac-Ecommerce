@@ -4,7 +4,7 @@ import { ArrowLeft, ChevronRight, ShieldCheck } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
-import { deliveryApi, trackingApi } from '../api/client'
+import { deliveryApi, trackingApi, paymentApi } from '../api/client'
 import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId } from '../lib/visitor'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
@@ -13,7 +13,7 @@ const Checkout = () => {
     const { id } = useParams()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
-    const [paymentMethod, setPaymentMethod] = useState('monnify')
+    const [paymentMethod, setPaymentMethod] = useState('opay')
     const { products, addOrder, cart, cartTotal } = useStore()
     const { customer } = useCustomerAuth() || {}
 
@@ -86,42 +86,66 @@ const Checkout = () => {
         }
         setLoading(true)
 
-        // Simulate Monnify Integration / Processing
-        setTimeout(async () => {
-            const result = await addOrder({
-                items: checkoutItems.map(it => ({
-                    productId: it.id,
-                    name: it.name,
-                    image: it.image,
-                    price: it.price,
-                    quantity: it.quantity || 1
-                })),
-                buyerName: buyer.name,
-                buyerPhone: buyer.phone,
-                buyerEmail: buyer.email,
-                buyerAddress: buyer.address,
-                buyerState: stateName,
-                deliveryZone: zoneName,
-                paymentMethod,
-                fulfillmentType: 'delivery',
-                checkoutSessionId: getCheckoutSessionId() || undefined
-            })
+        const result = await addOrder({
+            items: checkoutItems.map(it => ({
+                productId: it.id,
+                name: it.name,
+                image: it.image,
+                price: it.price,
+                quantity: it.quantity || 1
+            })),
+            buyerName: buyer.name,
+            buyerPhone: buyer.phone,
+            buyerEmail: buyer.email,
+            buyerAddress: buyer.address,
+            buyerState: stateName,
+            deliveryZone: zoneName,
+            paymentMethod,
+            fulfillmentType: 'delivery',
+            checkoutSessionId: getCheckoutSessionId() || undefined
+        })
 
-            if (result?.success) {
-                clearCheckoutSessionId()
-                navigate('/delivery-selection', {
-                    state: {
-                        orderId: result.data.id,
-                        reference: result.data.reference,
-                        amount: result.data.amount,
-                        deliveryZone: result.data.deliveryZone
-                    }
-                })
+        if (!result?.success) {
+            toast.error(result?.message || 'ORDER FAILED')
+            setLoading(false)
+            return
+        }
+
+        clearCheckoutSessionId()
+
+        // Bank deposit — go straight to delivery selection, no payment gateway
+        if (paymentMethod === 'bank') {
+            navigate('/delivery-selection', {
+                state: {
+                    orderId: result.data.id,
+                    reference: result.data.reference,
+                    amount: result.data.amount,
+                    deliveryZone: result.data.deliveryZone
+                }
+            })
+            return
+        }
+
+        // OPay — call backend to get cashier URL then redirect
+        try {
+            const { data } = await paymentApi.initiate({
+                reference: result.data.reference,
+                amount: result.data.amount,
+                buyerName: buyer.name,
+                buyerEmail: buyer.email,
+                buyerPhone: buyer.phone,
+                productName: isSingleItem ? checkoutItems[0].name : `Cart (${checkoutItems.length} items)`,
+            })
+            if (data?.cashierUrl) {
+                window.location.href = data.cashierUrl
             } else {
-                toast.error(result?.message || 'ORDER FAILED')
-                setLoading(false)
+                throw new Error('No cashier URL returned')
             }
-        }, 2000)
+        } catch (err) {
+            console.error('OPay initiation error:', err)
+            toast.error('Payment gateway error. Please try again.')
+            setLoading(false)
+        }
     }
 
     return (
@@ -195,18 +219,21 @@ const Checkout = () => {
                             <section>
                                 <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-12 border-b border-[var(--divider)] pb-4 w-fit">02 Payment Gateway</h2>
                                 <div className="space-y-4">
-                                    {['monnify', 'bank'].map(method => (
-                                        <button 
-                                            key={method}
+                                    {[
+                                        { id: 'opay', label: 'Pay with OPay', tag: 'INSTANT' },
+                                        { id: 'bank', label: 'Direct Bank Deposit', tag: 'MANUAL' },
+                                    ].map(method => (
+                                        <button
+                                            key={method.id}
                                             type="button"
-                                            onClick={() => setPaymentMethod(method)}
-                                            className={`w-full flex justify-between items-center p-8 rounded-[32px] border-2 transition-all ${paymentMethod === method ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/5' : 'border-[var(--divider)] hover:border-[var(--text-muted)]'}`}
+                                            onClick={() => setPaymentMethod(method.id)}
+                                            className={`w-full flex justify-between items-center p-8 rounded-[32px] border-2 transition-all ${paymentMethod === method.id ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/5' : 'border-[var(--divider)] hover:border-[var(--text-muted)]'}`}
                                         >
                                             <div className="flex items-center gap-6">
-                                                <div className={`w-4 h-4 rounded-full border-2 ${paymentMethod === method ? 'border-[var(--brand-red)] bg-[var(--brand-red)]' : 'border-[var(--divider)]'}`} />
-                                                <span className="text-xl font-black uppercase tracking-tighter text-[var(--text-primary)]">{method === 'monnify' ? 'Credit Card / Transfer' : 'Direct Bank Deposit'}</span>
+                                                <div className={`w-4 h-4 rounded-full border-2 ${paymentMethod === method.id ? 'border-[var(--brand-red)] bg-[var(--brand-red)]' : 'border-[var(--divider)]'}`} />
+                                                <span className="text-xl font-black uppercase tracking-tighter text-[var(--text-primary)]">{method.label}</span>
                                             </div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">{method === 'monnify' ? 'FAST' : 'WAIT'}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">{method.tag}</span>
                                         </button>
                                     ))}
                                 </div>

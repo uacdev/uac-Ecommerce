@@ -11,6 +11,8 @@ import { CustomerAuthProvider } from './context/CustomerAuthContext'
 import Home from './pages/Home'
 import ProductDetails from './pages/ProductDetails'
 import Checkout from './pages/Checkout'
+import Success from './pages/Success'
+import OrderFailed from './pages/OrderFailed'
 import DeliverySelection from './pages/DeliverySelection'
 import SuccessDelivery from './pages/SuccessDelivery'
 import AdminDashboard from './pages/AdminDashboard'
@@ -67,6 +69,8 @@ function Layout() {
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/checkout/:id" element={<Checkout />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/order-failed" element={<OrderFailed />} />
             <Route path="/delivery-selection" element={<DeliverySelection />} />
             {/* Back-compat for the old typo'd path */}
             <Route path="/deliver-selection" element={<DeliverySelection />} />
