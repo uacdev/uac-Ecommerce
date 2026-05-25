@@ -207,14 +207,17 @@ export const createOrder = async (req: Request, res: Response) => {
             paymentMethod: paymentMethod || ''
         }).save();
 
-        // Fire-and-don't-wait emails. We respond fast; failures get logged but don't block the order.
-        sendOrderEmails({
-            reference,
-            buyerName, buyerEmail, buyerPhone, buyerAddress,
-            items: created.items as any,
-            productAmount, deliveryFee, deliveryZone: zone?.name,
-            amount, paymentMethod
-        }).catch(err => console.error('Email dispatch failed:', err));
+        // For OPay, email is deferred until the webhook confirms payment.
+        // For all other methods (bank transfer, etc.) send immediately.
+        if (paymentMethod !== 'opay') {
+            sendOrderEmails({
+                reference,
+                buyerName, buyerEmail, buyerPhone, buyerAddress,
+                items: created.items as any,
+                productAmount, deliveryFee, deliveryZone: zone?.name,
+                amount, paymentMethod
+            }).catch(err => console.error('Email dispatch failed:', err));
+        }
 
         notify({
             type: 'order',

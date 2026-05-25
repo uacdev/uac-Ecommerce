@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { Order } from '../models/Order';
+import { sendOrderEmails } from '../lib/email';
 
 const OPAY_MERCHANT_ID = process.env.OPAY_MERCHANT_ID || '';
 const OPAY_PUBLIC_KEY = process.env.OPAY_PUBLIC_KEY || '';
@@ -95,8 +96,23 @@ export const handleWebhook = async (req: Request, res: Response) => {
         }
 
         if (status === 'SUCCESS') {
-            await Order.findOneAndUpdate({ reference }, { status: 'paid' });
+            const order = await Order.findOneAndUpdate({ reference }, { status: 'paid' }, { new: true });
             console.log(`[OPay] Order ${reference} marked as paid via webhook`);
+            if (order) {
+                sendOrderEmails({
+                    reference: order.reference,
+                    buyerName: order.buyerName,
+                    buyerEmail: order.buyerEmail,
+                    buyerPhone: order.buyerPhone,
+                    buyerAddress: order.buyerAddress,
+                    items: order.items as any,
+                    productAmount: order.productAmount,
+                    deliveryFee: order.deliveryFee,
+                    deliveryZone: order.deliveryZone,
+                    amount: order.amount,
+                    paymentMethod: 'opay'
+                }).catch(err => console.error('[OPay] Email dispatch failed:', err));
+            }
         } else if (status === 'FAIL' || status === 'CLOSED') {
             await Order.findOneAndUpdate({ reference }, { status: 'cancelled' });
             console.log(`[OPay] Order ${reference} cancelled via webhook`);
