@@ -57,7 +57,7 @@ const renderItemsTable = (items: OrderItem[]) => `
 const customerHtml = (o: OrderEmailPayload) => `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
         <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
-            <h1 style="margin:0;font-size:22px;color:#ed0000;letter-spacing:-0.5px;">UAC Foods</h1>
+            <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
             <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Order confirmation</p>
         </div>
 
@@ -120,7 +120,7 @@ type ResetEmailPayload = {
 const resetHtml = (p: ResetEmailPayload) => `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111;">
         <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
-            <h1 style="margin:0;font-size:22px;color:#ed0000;letter-spacing:-0.5px;">UAC Foods</h1>
+            <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
             <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Password reset</p>
         </div>
 
@@ -168,7 +168,7 @@ type RestockEmailPayload = {
 const restockHtml = (productName: string, productLink: string) => `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#111;">
         <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
-            <h1 style="margin:0;font-size:22px;color:#ed0000;letter-spacing:-0.5px;">UAC Foods</h1>
+            <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
             <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">It's back in stock</p>
         </div>
 

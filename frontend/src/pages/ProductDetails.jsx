@@ -35,7 +35,7 @@ const ProductDetails = () => {
 
     const handleAddToCart = () => {
         addToCart(product, quantity)
-        toast.success(`ADDED TO BAG`, {
+        toast.success(`ADDED TO CART`, {
             style: {
                 background: 'var(--bg-primary)',
                 color: 'var(--text-primary)',
