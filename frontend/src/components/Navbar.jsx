@@ -21,6 +21,7 @@ const Navbar = () => {
 
     const brandCategories = [
         { name: 'Gala', icon: UtensilsCrossed, desc: 'The King of Snacks since 1962', filter: 'Gala', img: '/images/gala.jpg' },
+        { name: 'Gala Chinchin', icon: Cookie, desc: 'Memories in Every Crunch', filter: 'Gala Chinchin', img: '/images/gala-chinchin.png' },
         { name: 'Supreme', icon: IceCream, desc: 'Rich and Creamy Indulgence', filter: 'Supreme', img: '/images/supreme_ice_cream.jpg' },
         { name: 'Swan', icon: Waves, desc: 'Natural Spring Water', filter: 'Swan', img: '/images/swan_water.png' },
         { name: 'Funtime', icon: Cookie, desc: 'Tasty Coconut Chips & More', filter: 'Funtime', img: '/images/funtime_chips.png' },
@@ -128,7 +129,7 @@ const Navbar = () => {
                             className="absolute top-full left-0 w-full bg-white border-b border-[var(--divider)] shadow-2xl py-12 z-[100]"
                         >
                             <div className="max-w-[1440px] mx-auto px-12">
-                                <div className="grid grid-cols-5 gap-6">
+                                <div className="grid grid-cols-6 gap-6">
                                     {brandCategories.map((brand) => (
                                         <button
                                             key={brand.name}

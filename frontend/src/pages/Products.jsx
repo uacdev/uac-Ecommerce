@@ -8,11 +8,11 @@ import EmptyState from '../components/EmptyState'
 import Preloader from '../components/Preloader'
 
 const Products = () => {
-    const { products } = useStore()
+    const { products, categories } = useStore()
     const [searchParams] = useSearchParams()
     const [searchQuery, setSearchQuery] = useState('')
-    // Filter chips are brand-based (Gala / Supreme / Swan / Funtime / Zuri),
-    // matching the navbar dropdown and the home brand grid. "All" sees everything.
+    // Filter chips now use the categories from the database (via StoreContext).
+    // 'All' sees everything.
     const [activeBrand, setActiveBrand] = useState('All')
     const [sortBy, setSortBy] = useState('latest')
     const [sortOpen, setSortOpen] = useState(false)
@@ -29,18 +29,11 @@ const Products = () => {
         }
     }, [searchParams])
 
-    // Derive the chip set from the products themselves so a new brand auto-appears
-    // the moment its first product is seeded.
-    const brands = useMemo(() => {
-        const seen = new Set(products.map(p => (p.brand || '').trim()).filter(Boolean))
-        return ['All', ...Array.from(seen).sort()]
-    }, [products])
-
     const filteredProducts = useMemo(() => {
         const norm = (s) => (s || '').trim().toLowerCase()
         const target = norm(activeBrand)
         return products.filter(p => {
-            const matchesBrand = activeBrand === 'All' || norm(p.brand) === target
+            const matchesBrand = activeBrand === 'All' || norm(p.brand) === target || norm(p.category) === target
             const matchesSearch = !searchQuery ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase())
             return matchesBrand && matchesSearch
@@ -95,13 +88,13 @@ const Products = () => {
                             />
                         </div>
                         <div className="flex gap-4 flex-wrap justify-center">
-                            {brands.map(b => (
+                            {categories.map(c => (
                                 <button
-                                    key={b}
-                                    onClick={() => setActiveBrand(b)}
-                                    className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeBrand === b ? 'bg-[var(--brand-red)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                                    key={c}
+                                    onClick={() => setActiveBrand(c)}
+                                    className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeBrand === c ? 'bg-[var(--brand-red)] text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                                 >
-                                    {b}
+                                    {c}
                                 </button>
                             ))}
                         </div>

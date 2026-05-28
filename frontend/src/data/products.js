@@ -25,4 +25,4 @@ export const PRODUCTS = [
     { id: 'zuri-beef',   name: 'Zuri Beef Seasoning',                             brand: 'Zuri',     category: 'Seasoning', price: 21000, stockCount: 480,  image: '/images/zuri.png',           images: ['/images/zuri.png'],          description: 'Zuri Beef — rich, savoury blend for red-meat dishes and pepper soup.',           location: 'Ojota',  packaging: '300 × 10g sachets or 30 × 100g pouches', status: 'available', is_reserved: false }
 ];
 
-export const CATEGORIES = ['All', 'Gala', 'Supreme', 'Swan', 'Funtime', 'Zuri'];
+export const CATEGORIES = ['All', 'Gala', 'Gala Chinchin', 'Supreme', 'Swan', 'Funtime', 'Zuri'];

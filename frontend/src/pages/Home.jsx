@@ -60,6 +60,15 @@ const BRANDS = [
         stats: [['60+', 'Years'], ['4', 'Brands'], ['M+', 'Consumers']]
     },
     {
+        name: 'Gala Chinchin',
+        tagline: 'Memories in Every Crunch',
+        desc: 'Delicious, crunchy & yummy — Gala Chinchin is the perfect companion for every moment. A beloved Nigerian snack.',
+        img: '/images/gala-chinchin.png',
+        bg: 'from-[#9B6B1A] to-[#D4A017]',
+        accent: '#D4A017',
+        badge: 'New Arrival'
+    },
+    {
         name: 'Supreme',
         tagline: 'Creamy, Rich & Delicious',
         desc: 'Premium ice cream crafted with the finest dairy. Available in over 20 exciting flavours for every occasion.',
@@ -411,10 +420,10 @@ const Home = () => {
                                 whileInView="visible"
                                 viewport={{ once: true }}
                             >
-                                <Link to={`/products?brand=${b.name}`} className="group block rounded-2xl overflow-hidden relative min-h-[180px] shadow-sm hover:shadow-xl transition-shadow duration-500">
-                                    <div className={`absolute inset-0 bg-gradient-to-br ${b.bg} opacity-90`} />
-                                    <img src={b.img} alt={b.name} className="absolute inset-0 w-full h-full object-cover mix-blend-overlay group-hover:scale-105 transition-transform duration-700" />
-                                    <div className="relative z-10 h-full min-h-[180px] flex flex-col justify-between p-5">
+                                <Link to={`/products?brand=${b.name}`} className="group block rounded-2xl overflow-hidden relative min-h-[300px] md:min-h-[360px] shadow-sm hover:shadow-xl transition-shadow duration-500">
+                                    <img src={b.img} alt={b.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                                    <div className="relative z-10 h-full min-h-[300px] md:min-h-[360px] flex flex-col justify-between p-5">
                                         <div className="flex items-start justify-between">
                                             <span className="bg-white/20 backdrop-blur-sm border border-white/30 text-white text-[9px] font-bold px-2 py-1 rounded-full">{b.badge}</span>
                                             <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:bg-white group-hover:text-gray-900 transition-all">
