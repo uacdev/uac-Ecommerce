@@ -26,6 +26,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
         const amountInKobo = Math.round(Number(amount) * 100);
 
         const payload = {
+            merchantId: OPAY_MERCHANT_ID,
             reference,
             mchShortName: 'UFL Foods',
             productName: productName || 'UFL Foods Order',
@@ -35,9 +36,9 @@ export const initiatePayment = async (req: Request, res: Response) => {
             returnUrl: `${FRONTEND_URL}/success?ref=${reference}`,
             failureReturnUrl: `${FRONTEND_URL}/order-failed?ref=${reference}`,
             currency: 'NGN',
-            totalAmount: {
+            amount: {
                 total: amountInKobo,
-                details: { subtotal: amountInKobo }
+                currency: 'NGN'
             },
             clientInfo: {
                 userAgent: req.headers['user-agent'] || '',
