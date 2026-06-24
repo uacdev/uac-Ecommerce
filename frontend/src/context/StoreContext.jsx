@@ -112,7 +112,7 @@ export const StoreProvider = ({ children }) => {
     const clearCart = () => setCart([])
 
     const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+    const cartCount = cart.length
 
     // ─── Favorites Actions ───
     const toggleFavorite = (product) => {
