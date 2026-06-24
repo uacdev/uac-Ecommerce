@@ -11,19 +11,21 @@ export const StoreProvider = ({ children }) => {
     const { user } = useAuth()
     const [products, setProducts] = useState([])
     const [orders, setOrders] = useState([])
-    const [cart, setCart] = useState([])
-    const [favorites, setFavorites] = useState([])
+    const [cart, setCart] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ufl_cart')
+            return saved ? JSON.parse(saved) : []
+        } catch { return [] }
+    })
+    const [favorites, setFavorites] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ufl_favorites')
+            return saved ? JSON.parse(saved) : []
+        } catch { return [] }
+    })
     const [loading, setLoading] = useState(true)
     const [apiStats, setApiStats] = useState(null)
     const [adminProfile, setAdminProfileState] = useState(null)
-
-    // Persistence load for Cart & Favorites
-    useEffect(() => {
-        const savedCart = localStorage.getItem('ufl_cart')
-        if (savedCart) setCart(JSON.parse(savedCart))
-        const savedFavs = localStorage.getItem('ufl_favorites')
-        if (savedFavs) setFavorites(JSON.parse(savedFavs))
-    }, [])
 
     // Persistence save for Cart
     useEffect(() => {
