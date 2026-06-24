@@ -61,7 +61,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${signature}`,
+                'Authorization': `Bearer ${OPAY_PUBLIC_KEY}`,
                 'MerchantId': OPAY_MERCHANT_ID
             },
             body: payloadString
