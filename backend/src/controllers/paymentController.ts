@@ -50,7 +50,13 @@ export const initiatePayment = async (req: Request, res: Response) => {
             metadata: { reference, buyerName, buyerEmail, buyerPhone }
         };
 
-        const response = await fetch(`${OPAY_BASE_URL}/cashier/create`, {
+        const opayUrl = `${OPAY_BASE_URL}/cashier/create`;
+        console.log('[OPay] POST', opayUrl);
+        console.log('[OPay] MerchantId:', OPAY_MERCHANT_ID);
+        console.log('[OPay] PublicKey prefix:', OPAY_PUBLIC_KEY.slice(0, 12) + '…');
+        console.log('[OPay] Payload:', JSON.stringify(payload));
+
+        const response = await fetch(opayUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -60,11 +66,16 @@ export const initiatePayment = async (req: Request, res: Response) => {
             body: JSON.stringify(payload)
         });
 
-        const data = await response.json() as any;
+        const rawText = await response.text();
+        console.log('[OPay] HTTP status:', response.status);
+        console.log('[OPay] Raw response:', rawText);
+
+        let data: any;
+        try { data = JSON.parse(rawText); } catch { data = { code: 'PARSE_ERR', message: rawText }; }
 
         if (data.code !== '00000') {
-            console.error('[OPay] initiate failed:', data);
-            return res.status(400).json({ success: false, message: data.message || 'Payment initiation failed' });
+            console.error('[OPay] initiate failed — code:', data.code, '| message:', data.message, '| full:', JSON.stringify(data));
+            return res.status(400).json({ success: false, message: data.message || 'Payment initiation failed', opayCode: data.code, opayData: data });
         }
 
         res.json({ success: true, cashierUrl: data.data?.cashierUrl, reference });
