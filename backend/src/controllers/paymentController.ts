@@ -51,6 +51,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
 
         const opayUrl = `${OPAY_BASE_URL}/cashier/create`;
         const payloadString = JSON.stringify(payload);
+        const signature = buildHmacSignature(payloadString);
 
         console.log('[OPay] POST', opayUrl);
         console.log('[OPay] MerchantId:', OPAY_MERCHANT_ID);
@@ -60,7 +61,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPAY_PUBLIC_KEY}`,
+                'Authorization': `Bearer ${signature}`,
                 'MerchantId': OPAY_MERCHANT_ID
             },
             body: payloadString
