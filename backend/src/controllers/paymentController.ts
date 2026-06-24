@@ -4,7 +4,6 @@ import { Order } from '../models/Order';
 import { sendOrderEmails } from '../lib/email';
 
 const OPAY_MERCHANT_ID = process.env.OPAY_MERCHANT_ID || '';
-const OPAY_PUBLIC_KEY = process.env.OPAY_PUBLIC_KEY || '';
 const OPAY_SECRET_KEY = process.env.OPAY_SECRET_KEY || '';
 const OPAY_BASE_URL = process.env.OPAY_BASE_URL || 'https://sandboxapi.opaycheckout.com/api/v1/international';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -51,19 +50,21 @@ export const initiatePayment = async (req: Request, res: Response) => {
         };
 
         const opayUrl = `${OPAY_BASE_URL}/cashier/create`;
+        const payloadString = JSON.stringify(payload);
+        const signature = buildHmacSignature(payloadString);
+
         console.log('[OPay] POST', opayUrl);
         console.log('[OPay] MerchantId:', OPAY_MERCHANT_ID);
-        console.log('[OPay] PublicKey prefix:', OPAY_PUBLIC_KEY.slice(0, 12) + '…');
-        console.log('[OPay] Payload:', JSON.stringify(payload));
+        console.log('[OPay] Payload:', payloadString);
 
         const response = await fetch(opayUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPAY_PUBLIC_KEY}`,
+                'Authorization': `Bearer ${signature}`,
                 'MerchantId': OPAY_MERCHANT_ID
             },
-            body: JSON.stringify(payload)
+            body: payloadString
         });
 
         const rawText = await response.text();
