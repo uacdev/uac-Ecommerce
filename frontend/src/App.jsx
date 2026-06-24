@@ -24,6 +24,7 @@ import AccountResetPassword from './pages/AccountResetPassword'
 import Account from './pages/Account'
 import TrackOrder from './pages/TrackOrder'
 import Favorites from './pages/Favorites'
+import Cart from './pages/Cart'
 import Products from './pages/Products'
 import AboutUs from './pages/AboutUs'
 import PrivacyPolicy from './pages/PrivacyPolicy'
@@ -80,6 +81,7 @@ function Layout() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/data-protection" element={<DataProtection />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/cart" element={<Cart />} />
             <Route path="/favorites" element={<Favorites />} />
 
             <Route path="/account/login" element={<AccountLogin />} />

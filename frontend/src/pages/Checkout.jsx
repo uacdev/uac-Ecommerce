@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, ShieldCheck } from 'lucide-react'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { ArrowLeft, ChevronRight, ShieldCheck, Minus, Plus } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
@@ -12,9 +12,10 @@ import Preloader from '../components/Preloader'
 const Checkout = () => {
     const { id } = useParams()
     const navigate = useNavigate()
+    const location = useLocation()
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState('opay')
-    const { products, addOrder, cart, cartTotal } = useStore()
+    const { products, addOrder, cart, cartTotal, updateCartQuantity } = useStore()
     const { customer } = useCustomerAuth() || {}
 
     const [buyer, setBuyer] = useState({
@@ -65,8 +66,10 @@ const Checkout = () => {
 
     const isSingleItem = !!id
     const singleProduct = isSingleItem ? products.find(p => p.id === id) : null
-    const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: 1 }] : []) : cart
-    const subtotal = isSingleItem ? (singleProduct?.price || 0) : cartTotal
+    const [singleQty, setSingleQty] = useState(location.state?.quantity || 1)
+
+    const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: singleQty }] : []) : cart
+    const subtotal = isSingleItem ? (singleProduct?.price || 0) * singleQty : cartTotal
 
     const selectedZone = useMemo(() => zones.find(z => z.name === zoneName), [zones, zoneName])
     const deliveryFee = selectedZone?.fee || 0
@@ -249,15 +252,41 @@ const Checkout = () => {
                                 
                                 <div className="space-y-8 mb-12 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
                                     {checkoutItems.map(item => (
-                                        <div key={item.id} className="flex gap-6 group">
+                                        <div key={item.id} className="flex gap-6">
                                             <div className="w-24 h-32 rounded-[24px] overflow-hidden bg-[var(--bg-primary)] border border-[var(--divider)] shrink-0">
                                                 <img src={item.image} className="w-full h-full object-cover" />
                                             </div>
-                                            <div className="flex flex-col justify-center flex-1">
-                                                <h4 className="text-sm font-black uppercase tracking-wider mb-2 text-[var(--text-primary)]">{item.name}</h4>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-[var(--text-muted)]">QTY: {item.quantity}</span>
-                                                    <span className="text-sm font-black text-[var(--brand-red)]">₦{(item.price * item.quantity).toLocaleString()}</span>
+                                            <div className="flex flex-col justify-between flex-1 py-1">
+                                                <div>
+                                                    <h4 className="text-sm font-black uppercase tracking-wider text-[var(--text-primary)] leading-tight">{item.name}</h4>
+                                                    <span className="text-sm font-black text-[var(--brand-red)] mt-1 block">₦{(item.price * item.quantity).toLocaleString()}</span>
+                                                    <span className="text-[10px] font-bold text-[var(--text-muted)]">₦{item.price.toLocaleString()} each</span>
+                                                </div>
+                                                {/* Qty controls */}
+                                                <div className="flex items-center gap-3 border border-[var(--divider)] rounded-full px-3 py-1.5 w-fit mt-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => isSingleItem
+                                                            ? setSingleQty(q => Math.max(1, q - 1))
+                                                            : updateCartQuantity(item.id, item.quantity - 1)
+                                                        }
+                                                        disabled={item.quantity <= 1}
+                                                        className="text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors disabled:opacity-30"
+                                                    >
+                                                        <Minus size={12} strokeWidth={3} />
+                                                    </button>
+                                                    <span className="text-xs font-black w-5 text-center text-[var(--text-primary)]">{item.quantity}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => isSingleItem
+                                                            ? setSingleQty(q => Math.min(item.stockCount ?? 999, q + 1))
+                                                            : updateCartQuantity(item.id, item.quantity + 1)
+                                                        }
+                                                        disabled={item.quantity >= (item.stockCount ?? 999)}
+                                                        className="text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Plus size={12} strokeWidth={3} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

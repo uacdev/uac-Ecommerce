@@ -84,7 +84,7 @@ const Navbar = () => {
                             <Search size={18} strokeWidth={3} />
                         </button>
 
-                        <Link to="/checkout" className="p-2 relative text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors">
+                        <Link to="/cart" className="p-2 relative text-[var(--text-primary)] hover:text-[var(--brand-red)] transition-colors">
                             <ShoppingBag size={18} strokeWidth={3} />
                             {cartCount > 0 && (
                                 <motion.span 
@@ -105,7 +105,7 @@ const Navbar = () => {
                     </div>
 
                     <div className="md:hidden flex items-center gap-4">
-                        <Link to="/checkout" className="p-2 relative text-[var(--text-primary)]">
+                        <Link to="/cart" className="p-2 relative text-[var(--text-primary)]">
                             <ShoppingBag size={18} strokeWidth={3} />
                         </Link>
                         <button 
