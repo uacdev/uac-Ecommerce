@@ -339,3 +339,91 @@ export const deleteProduct = async (req: Request, res: Response) => {
         res.status(400).json({ success: false, message: err.message || 'Error deleting product' });
     }
 };
+
+export const bulkCreateProducts = async (req: Request, res: Response) => {
+    try {
+        const { products } = req.body;
+        if (!Array.isArray(products) || products.length === 0) {
+            return res.status(400).json({ success: false, message: 'An array of products is required' });
+        }
+
+        const validProducts = [];
+        const errors = [];
+        const brandsToCreate = new Set<string>();
+        const categoryNamesNeeded = new Set<string>();
+
+        // First pass: validate rows and collect category names we need to resolve
+        for (let i = 0; i < products.length; i++) {
+            const payload = sanitize(products[i]);
+            const rowNum = i + 1;
+
+            if (!payload.name) { errors.push(`Row ${rowNum}: name is required`); continue; }
+            if (!payload.category) { errors.push(`Row ${rowNum}: category is required`); continue; }
+            if (payload.price === undefined || payload.price === null || payload.price === '') {
+                errors.push(`Row ${rowNum}: price is required`); continue;
+            }
+            if (!payload.location || !PRODUCT_LOCATIONS.includes(payload.location)) {
+                errors.push(`Row ${rowNum}: location must be one of ${PRODUCT_LOCATIONS.join(', ')}`); continue;
+            }
+
+            const stock = Number(payload.stockCount ?? 0);
+            payload.stockCount = stock;
+            payload.status = stock > 0 ? 'available' : 'out_of_stock';
+
+            if (payload.brand) brandsToCreate.add(payload.brand);
+
+            // Track which categories need image lookup (only when no image supplied)
+            if (!payload.image) categoryNamesNeeded.add(payload.category);
+
+            validProducts.push(payload);
+        }
+
+        if (errors.length > 0) {
+            return res.status(400).json({ success: false, message: 'Validation failed for some products', errors });
+        }
+
+        // Fetch all needed categories in one query and build a name → coverImage map
+        const { Category } = await import('../models/Category');
+        const categoryImageMap: Record<string, string> = {};
+        if (categoryNamesNeeded.size > 0) {
+            const cats = await Category.find(
+                { name: { $in: Array.from(categoryNamesNeeded) } },
+                { name: 1, coverImage: 1 }
+            );
+            for (const c of cats) {
+                if (c.coverImage) categoryImageMap[c.name] = c.coverImage;
+            }
+        }
+
+        // Second pass: apply category image fallback
+        for (const payload of validProducts) {
+            if (!payload.image && categoryImageMap[payload.category]) {
+                payload.image = categoryImageMap[payload.category];
+            }
+        }
+
+        const created = await Product.insertMany(validProducts);
+
+        // Auto-sync brands as Category records (best-effort)
+        if (brandsToCreate.size > 0) {
+            try {
+                const bulkOps = Array.from(brandsToCreate).map(brand => ({
+                    updateOne: {
+                        filter: { name: brand },
+                        update: { $setOnInsert: { name: brand, parent: 'Brand', color: 'bg-rose-50 text-rose-700' } },
+                        upsert: true
+                    }
+                }));
+                await Category.bulkWrite(bulkOps);
+            } catch (catErr: any) {
+                console.warn('Auto-category sync failed for bulk insert (non-fatal):', catErr?.message);
+            }
+        }
+
+        res.status(201).json({ success: true, count: created.length, data: created });
+    } catch (err: any) {
+        console.error('Error in bulkCreateProducts:', err);
+        res.status(400).json({ success: false, message: err.message || 'Error creating products in bulk' });
+    }
+};
+

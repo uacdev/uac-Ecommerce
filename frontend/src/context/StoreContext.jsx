@@ -150,6 +150,20 @@ export const StoreProvider = ({ children }) => {
         }
     }
 
+    const bulkAddProducts = async (productsArray) => {
+        try {
+            const res = await productApi.bulkCreate(productsArray)
+            const added = res.data?.data || []
+            if (added.length > 0) {
+                setProducts(prev => [...added, ...prev])
+            }
+            return { success: true, count: added.length, data: added }
+        } catch (err) {
+            console.error('Bulk add error:', err)
+            return { success: false, message: err.response?.data?.message || err.message, errors: err.response?.data?.errors }
+        }
+    }
+
     const updateProduct = async (id, updates) => {
         try {
             const res = await productApi.update(id, updates)
@@ -373,6 +387,7 @@ export const StoreProvider = ({ children }) => {
             toggleFavorite,
             isFavorite,
             addProduct,
+            bulkAddProducts,
             updateProduct,
             removeProduct,
             addToCart,

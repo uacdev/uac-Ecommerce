@@ -14,6 +14,7 @@ router.get('/:id/stats', requireAdmin, productController.getProductStats);
 
 // Admin only
 router.post('/', requireAdmin, productController.createProduct);
+router.post('/bulk', requireAdmin, productController.bulkCreateProducts);
 router.put('/:id', requireAdmin, productController.updateProduct);
 router.patch('/:id/stock', requireAdmin, productController.updateProduct);
 router.delete('/:id', requireAdmin, productController.deleteProduct);

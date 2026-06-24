@@ -22,6 +22,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.34.1",
     "lucide-react": "^0.574.0",
+    "papaparse": "^5.5.4",
     "prop-types": "^15.8.1",
     "react": "^19.2.0",
     "react-datepicker": "^9.1.0",

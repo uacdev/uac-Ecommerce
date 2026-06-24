@@ -77,6 +77,7 @@ export const uploadApi = {
 export const productApi = {
     getAll: () => api.get('/products'),
     create: (data) => api.post('/products', data),
+    bulkCreate: (data) => api.post('/products/bulk', { products: data }),
     update: (id, data) => api.put(`/products/${id}`, data),
     delete: (id) => api.delete(`/products/${id}`),
     toggleStock: (id, status) => api.patch(`/products/${id}/stock`, { status }),
