@@ -116,19 +116,6 @@ const Checkout = () => {
 
         clearCheckoutSessionId()
 
-        // Bank deposit — go straight to delivery selection, no payment gateway
-        if (paymentMethod === 'bank') {
-            navigate('/delivery-selection', {
-                state: {
-                    orderId: result.data.id,
-                    reference: result.data.reference,
-                    amount: result.data.amount,
-                    deliveryZone: result.data.deliveryZone
-                }
-            })
-            return
-        }
-
         // OPay — call backend to get cashier URL then redirect
         try {
             const { data } = await paymentApi.initiate({
@@ -219,26 +206,16 @@ const Checkout = () => {
                                 </div>
                             </section>
 
-                            <section>
+                                <section>
                                 <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-12 border-b border-[var(--divider)] pb-4 w-fit">02 Payment Gateway</h2>
                                 <div className="space-y-4">
-                                    {[
-                                        { id: 'opay', label: 'Pay with OPay', tag: 'INSTANT' },
-                                        { id: 'bank', label: 'Direct Bank Deposit', tag: 'MANUAL' },
-                                    ].map(method => (
-                                        <button
-                                            key={method.id}
-                                            type="button"
-                                            onClick={() => setPaymentMethod(method.id)}
-                                            className={`w-full flex justify-between items-center p-8 rounded-[32px] border-2 transition-all ${paymentMethod === method.id ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/5' : 'border-[var(--divider)] hover:border-[var(--text-muted)]'}`}
-                                        >
-                                            <div className="flex items-center gap-6">
-                                                <div className={`w-4 h-4 rounded-full border-2 ${paymentMethod === method.id ? 'border-[var(--brand-red)] bg-[var(--brand-red)]' : 'border-[var(--divider)]'}`} />
-                                                <span className="text-xl font-black uppercase tracking-tighter text-[var(--text-primary)]">{method.label}</span>
-                                            </div>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">{method.tag}</span>
-                                        </button>
-                                    ))}
+                                    <div className="w-full flex justify-between items-center p-8 rounded-[32px] border-2 border-[var(--brand-red)] bg-[var(--brand-red)]/5">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-4 h-4 rounded-full border-2 border-[var(--brand-red)] bg-[var(--brand-red)]" />
+                                            <span className="text-xl font-black uppercase tracking-tighter text-[var(--text-primary)]">Pay with OPay</span>
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">INSTANT</span>
+                                    </div>
                                 </div>
                             </section>
                         </form>
