@@ -10,9 +10,9 @@ const OPAY_BASE_URL = process.env.OPAY_BASE_URL || 'https://sandboxapi.opaycheck
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 function buildHmacSignature(payload: string): string {
-    return Buffer.from(
-        crypto.createHmac('sha512', OPAY_SECRET_KEY).update(payload).digest()
-    ).toString('base64');
+    const hmac = crypto.createHmac('sha512', OPAY_SECRET_KEY);
+    hmac.update(payload);
+    return hmac.digest('hex');
 }
 
 export const initiatePayment = async (req: Request, res: Response) => {
@@ -26,28 +26,27 @@ export const initiatePayment = async (req: Request, res: Response) => {
         const amountInKobo = Math.round(Number(amount) * 100);
 
         const payload = {
-            merchantId: OPAY_MERCHANT_ID,
+            country: 'NG',
             reference,
-            mchShortName: 'UFL Foods',
-            productName: productName || 'UFL Foods Order',
-            productDesc: productName || 'UFL Foods Order',
-            supplierReference: reference,
-            callbackUrl: `${FRONTEND_URL}/success?ref=${reference}`,
-            returnUrl: `${FRONTEND_URL}/success?ref=${reference}`,
-            failureReturnUrl: `${FRONTEND_URL}/order-failed?ref=${reference}`,
-            currency: 'NGN',
             amount: {
                 total: amountInKobo,
                 currency: 'NGN'
             },
-            clientInfo: {
-                userAgent: req.headers['user-agent'] || '',
-                ipAddress: ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim(),
-                acceptLanguage: req.headers['accept-language'] || 'en-US',
-                screenHeight: '900',
-                screenWidth: '1440'
+            returnUrl: `${FRONTEND_URL}/success?ref=${reference}`,
+            callbackUrl: `${FRONTEND_URL}/success?ref=${reference}`,
+            cancelUrl: `${FRONTEND_URL}/order-failed?ref=${reference}`,
+            displayName: 'UFL Foods',
+            customerVisitSource: 'BROWSER',
+            userClientIP: ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim(),
+            userInfo: {
+                userName: buyerName || '',
+                userEmail: buyerEmail || '',
+                userMobile: buyerPhone || ''
             },
-            metadata: { reference, buyerName, buyerEmail, buyerPhone }
+            product: {
+                name: productName || 'UFL Foods Order',
+                description: productName || 'UFL Foods Order'
+            }
         };
 
         const opayUrl = `${OPAY_BASE_URL}/cashier/create`;
@@ -88,21 +87,18 @@ export const initiatePayment = async (req: Request, res: Response) => {
 
 export const handleWebhook = async (req: Request, res: Response) => {
     try {
-        const rawBody = req.body instanceof Buffer
-            ? req.body.toString('utf8')
-            : JSON.stringify(req.body);
-
-        const authHeader = (req.headers['authorization'] || '') as string;
-        const receivedSig = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-        const expectedSig = buildHmacSignature(rawBody);
+        const payloadObj = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        
+        const receivedSig = payloadObj.sha512;
+        const payloadToSign = JSON.stringify(payloadObj.payload);
+        const expectedSig = buildHmacSignature(payloadToSign);
 
         if (receivedSig !== expectedSig) {
             console.warn('[OPay] Webhook signature mismatch');
             return res.status(401).json({ code: '02003', message: 'Signature mismatch' });
         }
 
-        const payload = JSON.parse(rawBody);
-        const { reference, status } = payload;
+        const { reference, status } = payloadObj.payload;
 
         if (!reference) {
             return res.status(400).json({ code: '00002', message: 'Missing reference' });
