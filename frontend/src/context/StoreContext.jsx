@@ -45,9 +45,9 @@ export const StoreProvider = ({ children }) => {
             .then(res => {
                 if (cancelled) return
                 const fetched = res.data?.data || []
-                setProducts(fetched.length > 0 ? fetched : INITIAL_PRODUCTS)
+                setProducts(fetched)
             })
-            .catch(() => { if (!cancelled) setProducts(INITIAL_PRODUCTS) })
+            .catch(() => { if (!cancelled) setProducts([]) })
             .finally(() => { if (!cancelled) setLoading(false) })
         return () => { cancelled = true }
     }, [])

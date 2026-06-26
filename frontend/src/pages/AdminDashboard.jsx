@@ -390,7 +390,7 @@ const AdminDashboard = () => {
                                 {adminProfile?.photo ? <img src={adminProfile.photo} className="w-full h-full object-cover" alt="" /> : (adminProfile?.fullName?.charAt(0) || 'S')}
                             </div>
                             <div className="text-right hidden sm:block">
-                                <p className="text-[13px] font-bold leading-none tracking-tight">{adminProfile?.fullName || 'Sarah Johnson'}</p>
+                                <p className="text-[13px] font-bold leading-none tracking-tight">{adminProfile?.fullName || 'Admin User'}</p>
                                 <p className="text-[11px] text-[var(--text-muted)] font-medium mt-1 uppercase tracking-tight">System admin</p>
                             </div>
                         </div>

@@ -107,12 +107,7 @@ const BRANDS = [
     },
 ]
 
-const TESTIMONIALS = [
-    { name: 'Adaeze O.', role: 'Lagos', text: 'Gala has been part of my family since childhood. The quality never changes — always fresh and delicious!', stars: 5, avatar: 'A' },
-    { name: 'Emeka N.', role: 'Abuja', text: 'Swan water is the only brand I trust for my household. Clean, refreshing and always consistent.', stars: 5, avatar: 'E' },
-    { name: 'Fatima A.', role: 'Kano', text: 'Supreme ice cream is my kids\' absolute favourite. The mango flavour is incredible — we order it every week!', stars: 5, avatar: 'F' },
-    { name: 'Tunde B.', role: 'Ibadan', text: 'Funtime chips are my go-to snack for movie nights. Super crunchy and the flavours are on point.', stars: 5, avatar: 'T' },
-]
+const TESTIMONIALS = []
 
 const fadeUp = {
     hidden: { opacity: 0, y: 40 },
@@ -600,7 +595,7 @@ const Home = () => {
                             Get 20% off<br />your first order
                         </h2>
                         <p className="text-white/80 text-[15px] leading-relaxed max-w-sm">
-                            New to UAC Foods? Enjoy an exclusive 20% discount on your first purchase. Use code <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded">UACWELCOME</span> at checkout.
+                            Shopping with UAC Foods for the first time? Sign up today and look out for exclusive offers and discounts in your inbox.
                         </p>
                         <Link to="/products" className="inline-flex items-center gap-3 bg-white text-[#ED0000] px-8 py-4 rounded-full text-[12px] font-bold w-fit hover:bg-gray-100 transition-colors shadow-2xl">
                             Shop now <ArrowRight size={14} />
