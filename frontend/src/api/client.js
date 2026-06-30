@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const ADMIN_TOKEN_KEY = 'uac_admin_token';
 const CUSTOMER_TOKEN_KEY = 'uac_customer_token';
+const DEFAULT_API_URL = 'http://localhost:4000/api';
 
 export const getToken = () => localStorage.getItem(ADMIN_TOKEN_KEY);
 export const setToken = (token) => {
@@ -17,8 +18,18 @@ export const setCustomerToken = (token) => {
 };
 export const clearCustomerToken = () => localStorage.removeItem(CUSTOMER_TOKEN_KEY);
 
+const normalizeApiBaseUrl = (rawUrl) => {
+    const trimmed = String(rawUrl || DEFAULT_API_URL).trim().replace(/\/+$/, '');
+    try {
+        const url = new URL(trimmed);
+        return url.pathname.replace(/\/+$/, '').endsWith('/api') ? trimmed : `${trimmed}/api`;
+    } catch {
+        return trimmed;
+    }
+};
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+    baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_URL),
     headers: {
         'Content-Type': 'application/json'
     }

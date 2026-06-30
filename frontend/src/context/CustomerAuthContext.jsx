@@ -36,8 +36,11 @@ export const CustomerAuthProvider = ({ children }) => {
     const signIn = async (email, password) => {
         try {
             const res = await customerApi.login(email, password)
+            if (!res.data || typeof res.data !== 'object') {
+                return { success: false, message: 'Login API returned an unexpected response. Check VITE_API_URL in production.' }
+            }
             const { token, customer: c } = res.data || {}
-            if (!token) return { success: false, message: 'No token returned' }
+            if (!token) return { success: false, message: res.data.message || 'Login API did not return a token. Check the production API URL.' }
             setCustomerToken(token)
             setCustomer(c || null)
             return { success: true, customer: c }
@@ -49,8 +52,11 @@ export const CustomerAuthProvider = ({ children }) => {
     const signUp = async (data) => {
         try {
             const res = await customerApi.signup(data)
+            if (!res.data || typeof res.data !== 'object') {
+                return { success: false, message: 'Signup API returned an unexpected response. Check VITE_API_URL in production.' }
+            }
             const { token, customer: c } = res.data || {}
-            if (!token) return { success: false, message: 'No token returned' }
+            if (!token) return { success: false, message: res.data.message || 'Signup API did not return a token. Check the production API URL.' }
             setCustomerToken(token)
             setCustomer(c || null)
             return { success: true, customer: c }

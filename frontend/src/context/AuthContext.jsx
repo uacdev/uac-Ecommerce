@@ -36,8 +36,11 @@ export const AuthProvider = ({ children }) => {
     const signIn = async (email, password) => {
         try {
             const res = await authApi.login(email, password)
+            if (!res.data || typeof res.data !== 'object') {
+                return { success: false, message: 'Login API returned an unexpected response. Check VITE_API_URL in production.' }
+            }
             const { token, admin } = res.data || {}
-            if (!token) return { success: false, message: 'No token returned' }
+            if (!token) return { success: false, message: res.data.message || 'Login API did not return a token. Check the production API URL.' }
             setToken(token)
             setUser(admin || null)
             return { success: true, admin }
