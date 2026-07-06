@@ -7,24 +7,99 @@ import Papa from 'papaparse';
 
 const LOCATIONS = ['Ojota', 'Oregun', 'Kerang'];
 
-const PACKAGING_LABEL_BY_CATEGORY = {
-    Swan: 'Size in Pack',
-    Supreme: 'Packs / Pieces',
-    Gala: 'Cartons / Pieces',
-    Funtime: 'Cartons / Pieces',
-    Zuri: 'Pieces'
+const normalizeCategoryKey = (category = '') => String(category || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+const PRODUCT_NAMES_BY_CATEGORY = {
+    swan: ['50CL', '75CL', '150CL'],
+    supreme: ['3LITRES', '2LITRES', '900ML', '450ML', '220ML', '120ML', 'ORANGE LOLLY', 'FUNBLAST', '90ML VANILLA POUCH', '130ML VANILLA POUCH', '120ML YOGHURT'],
+    gala: ['GALA CLASSIC 60G', 'GALA ODOGWO 120G', 'COCKTAIL'],
+    funtime: ['FUNTIME COCOUNT CHIPS', 'FUNTIME COCOUNT JAR', 'GALA CHIN CHIN'],
+    zuri: ['ZURI CLASSIC 10G', 'ZURI JOLLOF 10G', 'ZURI CHICKEN 10', 'ZURI CLASSIC 100G', 'ZURI BEEF 100G', 'ZURI JOLLOF 100G', 'ZURI CHICKEN 100G', 'ZURI BEEF 10G'],
+    kingswaybread: ['Jumbo 1300g', 'Family Loaf 800g', 'Midi Loaf 400g']
 };
 
-const PACKAGING_PLACEHOLDER_BY_CATEGORY = {
-    Swan: 'e.g. 75cl x 12',
-    Supreme: 'e.g. 1 pack of 24 pieces',
-    Gala: 'e.g. 1 carton of 24 pieces',
-    Funtime: 'e.g. 1 carton of 12 pieces',
-    Zuri: 'e.g. 6 pieces'
+const PACKAGING_BY_PRODUCT_NAME = {
+    '50CL': [{ label: '50CL', value: '50CL', price: 2018.14 }],
+    '75CL': [
+        { label: '75CL', value: '75CL', price: 2609.17 },
+        { label: '75CL', value: '75CL', price: 4156.17 }
+    ],
+    '150CL': [{ label: '150CL', value: '150CL', price: 2279.61 }],
+    '3LITRES': [{ label: '3LITRES', value: '3LITRES', price: 17199.60 }],
+    '2LITRES': [{ label: '2LITRES', value: '2LITRES', price: 21496.20 }],
+    '900ML': [{ label: '900ML', value: '900ML', price: 39414.10 }],
+    '450ML': [{ label: '450ML', value: '450ML', price: 22781.85 }],
+    '220ML': [{ label: '220ML', value: '220ML', price: 18331.50 }],
+    '120ML': [{ label: '120ML', value: '120ML', price: 19431.50 }],
+    'ORANGE LOLLY': [{ label: 'ORANGE LOLLY', value: 'ORANGE LOLLY', price: 2902.90 }],
+    'FUNBLAST': [{ label: 'FUNBLAST', value: 'FUNBLAST', price: 24933.00 }],
+    '90ML VANILLA POUCH': [{ label: '90ML VANILLA POUCH', value: '90ML VANILLA POUCH', price: 6800.00 }],
+    '130ML VANILLA POUCH': [{ label: '130ML VANILLA POUCH', value: '130ML VANILLA POUCH', price: 7550.00 }],
+    '120ML YOGHURT': [{ label: '120ML YOGHURT', value: '120ML YOGHURT', price: 5350.00 }],
+    'GALA CLASSIC 60G': [{ label: 'GALA CLASSIC 60G', value: 'GALA CLASSIC 60G', price: 4200.00 }],
+    'GALA ODOGWO 120G': [{ label: 'GALA ODOGWO 120G', value: 'GALA ODOGWO 120G', price: 10500.00 }],
+    'COCKTAIL': [{ label: 'COCKTAIL', value: 'COCKTAIL', price: 3700.00 }],
+    'FUNTIME COCOUNT CHIPS': [{ label: 'FUNTIME COCOUNT CHIPS', value: 'FUNTIME COCOUNT CHIPS', price: 3596.00 }],
+    'FUNTIME COCOUNT JAR': [{ label: 'FUNTIME COCOUNT JAR', value: 'FUNTIME COCOUNT JAR', price: 13800.00 }],
+    'GALA CHIN CHIN': [{ label: 'GALA CHIN CHIN', value: 'GALA CHIN CHIN', price: 7725.00 }],
+    'ZURI CLASSIC 10G': [{ label: 'ZURI CLASSIC 10G', value: 'ZURI CLASSIC 10G', price: 21000.00 }],
+    'ZURI JOLLOF 10G': [{ label: 'ZURI JOLLOF 10G', value: 'ZURI JOLLOF 10G', price: 21000.00 }],
+    'ZURI CHICKEN 10': [{ label: 'ZURI CHICKEN 10', value: 'ZURI CHICKEN 10', price: 21000.00 }],
+    'ZURI CLASSIC 100G': [{ label: 'ZURI CLASSIC 100G', value: 'ZURI CLASSIC 100G', price: 21000.00 }],
+    'ZURI BEEF 100G': [{ label: 'ZURI BEEF 100G', value: 'ZURI BEEF 100G', price: 21000.00 }],
+    'ZURI JOLLOF 100G': [{ label: 'ZURI JOLLOF 100G', value: 'ZURI JOLLOF 100G', price: 21000.00 }],
+    'ZURI CHICKEN 100G': [{ label: 'ZURI CHICKEN 100G', value: 'ZURI CHICKEN 100G', price: 21000.00 }],
+    'ZURI BEEF 10G': [{ label: 'ZURI BEEF 10G', value: 'ZURI BEEF 10G', price: 21000.00 }],
+    'Jumbo 1300g': [{ label: 'Jumbo 1300g', value: 'Jumbo 1300g', price: 1850.00 }],
+    'Family Loaf 800g': [{ label: 'Family Loaf 800g', value: 'Family Loaf 800g', price: 1400.00 }],
+    'Midi Loaf 400g': [{ label: 'Midi Loaf 400g', value: 'Midi Loaf 400g', price: 700.00 }]
+};
+
+const STOCK_UNIT_BY_PRODUCT_NAME = {
+    '50CL': 'pack',
+    '75CL': 'pack',
+    '150CL': 'pack',
+    '3LITRES': 'pack',
+    '2LITRES': 'pack',
+    '900ML': 'pack',
+    '450ML': 'pack',
+    '220ML': 'pack',
+    '120ML': 'pack',
+    'ORANGE LOLLY': 'pack',
+    'FUNBLAST': 'pack',
+    '90ML VANILLA POUCH': 'pack',
+    '130ML VANILLA POUCH': 'pack',
+    '120ML YOGHURT': 'pack',
+    'GALA CLASSIC 60G': 'carton',
+    'GALA ODOGWO 120G': 'carton',
+    'COCKTAIL': 'carton',
+    'FUNTIME COCOUNT CHIPS': 'carton',
+    'FUNTIME COCOUNT JAR': 'carton',
+    'GALA CHIN CHIN': 'carton',
+    'ZURI CLASSIC 10G': 'carton',
+    'ZURI JOLLOF 10G': 'carton',
+    'ZURI CHICKEN 10': 'carton',
+    'ZURI CLASSIC 100G': 'carton',
+    'ZURI BEEF 100G': 'carton',
+    'ZURI JOLLOF 100G': 'carton',
+    'ZURI CHICKEN 100G': 'carton',
+    'ZURI BEEF 10G': 'carton',
+    'Jumbo 1300g': 'piece',
+    'Family Loaf 800g': 'piece',
+    'Midi Loaf 400g': 'piece'
+};
+
+const STOCK_UNIT_BY_CATEGORY = {
+    swan: 'pack',
+    supreme: 'pack',
+    gala: 'carton',
+    funtime: 'carton',
+    zuri: 'carton',
+    kingswaybread: 'piece'
 };
 
 const AddProductPage = ({ product, onClose }) => {
-    const { addProduct, updateProduct, bulkAddProducts, businessSegments } = useStore();
+    const { addProduct, updateProduct, bulkAddProducts, businessSegments, products } = useStore();
     const [loading, setLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [error, setError] = useState('');
@@ -50,7 +125,7 @@ const AddProductPage = ({ product, onClose }) => {
         if (product) {
             setFormData({
                 name: product.name || '',
-                brand: product.brand || '',
+                brand: product.brand || product.category || '',
                 description: product.description || '',
                 category: product.category || '',
                 image: product.image || '',
@@ -62,18 +137,62 @@ const AddProductPage = ({ product, onClose }) => {
         }
     }, [product]);
 
-    const packagingLabel = useMemo(
-        () => PACKAGING_LABEL_BY_CATEGORY[formData.category] || 'Packaging',
-        [formData.category]
-    );
-    const packagingPlaceholder = useMemo(
-        () => PACKAGING_PLACEHOLDER_BY_CATEGORY[formData.category] || 'Specify packaging',
-        [formData.category]
-    );
+    const packagingOptions = useMemo(() => {
+        const categoryKey = normalizeCategoryKey(formData.category);
+        const matchingCategory = businessSegments.find((segment) => normalizeCategoryKey(segment?.name) === categoryKey);
+        const productOptions = formData.name ? PACKAGING_BY_PRODUCT_NAME[formData.name] || [] : [];
+        return productOptions.length > 0 ? productOptions : (matchingCategory?.packagingOptions || []);
+    }, [businessSegments, formData.category, formData.name]);
+
+    const productNameOptions = useMemo(() => {
+        const categoryKey = normalizeCategoryKey(formData.category);
+        if (!categoryKey) return [];
+
+        return PRODUCT_NAMES_BY_CATEGORY[categoryKey] || [];
+    }, [formData.category]);
+
+    const stockUnit = useMemo(() => {
+        const categoryKey = normalizeCategoryKey(formData.category);
+        if (formData.name) {
+            return STOCK_UNIT_BY_PRODUCT_NAME[formData.name] || STOCK_UNIT_BY_CATEGORY[categoryKey] || 'unit';
+        }
+        return STOCK_UNIT_BY_CATEGORY[categoryKey] || 'unit';
+    }, [formData.category, formData.name]);
+
+    const stockUnitLabel = stockUnit === 'carton' ? 'carton' : stockUnit === 'pack' ? 'pack' : stockUnit === 'piece' ? 'piece' : 'unit';
+    const packagingFieldLabel = stockUnit === 'carton' ? 'Cartons' : stockUnit === 'pack' ? 'Packs / Pieces' : stockUnit === 'piece' ? 'Pieces' : 'Packs / Pieces';
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            if (name === 'category') {
+                return { ...prev, category: value, brand: value, name: '', packaging: '', price: '' };
+            }
+            if (name === 'name') {
+                const nextName = value;
+                const categoryKey = normalizeCategoryKey(prev.category);
+                const matchingCategory = businessSegments.find((segment) => normalizeCategoryKey(segment?.name) === categoryKey);
+                const productOptions = nextName ? PACKAGING_BY_PRODUCT_NAME[nextName] || [] : [];
+                const fallbackOption = productOptions[0] || matchingCategory?.packagingOptions?.[0];
+
+                return {
+                    ...prev,
+                    name: nextName,
+                    packaging: fallbackOption?.value || '',
+                    price: fallbackOption?.price != null ? String(Number(fallbackOption.price)) : ''
+                };
+            }
+            if (name === 'packaging') {
+                const selectedOption = e.target.selectedOptions?.[0];
+                const selectedPrice = selectedOption?.getAttribute('data-price');
+                return {
+                    ...prev,
+                    packaging: value,
+                    price: selectedPrice ? String(Number(selectedPrice)) : ''
+                };
+            }
+            return { ...prev, [name]: value };
+        });
     };
 
     const handleFileChange = async (e) => {
@@ -273,27 +392,7 @@ const AddProductPage = ({ product, onClose }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Row 1 — identity */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[12px] font-bold text-[var(--text-primary)]">Name of Product *</label>
-                                <input
-                                    name="name" value={formData.name} onChange={handleChange} required
-                                    placeholder="e.g. Gala Sausage Roll"
-                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[12px] font-bold text-[var(--text-primary)]">Brand</label>
-                                <input
-                                    name="brand" value={formData.brand} onChange={handleChange}
-                                    placeholder="e.g. Gala Cocktail"
-                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Row 2 — category / location */}
+                        {/* Row 1 — category / brand */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[12px] font-bold text-[var(--text-primary)]">Product Type (Category) *</label>
@@ -304,6 +403,31 @@ const AddProductPage = ({ product, onClose }) => {
                                     <option value="">Select product type</option>
                                     {businessSegments.map(seg => (
                                         <option key={seg._id || seg.name} value={seg.name}>{seg.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[12px] font-bold text-[var(--text-primary)]">Brand</label>
+                                <input
+                                    name="brand" value={formData.brand} readOnly
+                                    placeholder="Auto-filled from category"
+                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53] cursor-not-allowed"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Row 2 — product name / location */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[12px] font-bold text-[var(--text-primary)]">Name of Product *</label>
+                                <select
+                                    name="name" value={formData.name} onChange={handleChange} required
+                                    disabled={!formData.category}
+                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="">Select product name</option>
+                                    {productNameOptions.map((productName) => (
+                                        <option key={productName} value={productName}>{productName}</option>
                                     ))}
                                 </select>
                             </div>
@@ -350,28 +474,35 @@ const AddProductPage = ({ product, onClose }) => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[12px] font-bold text-[var(--text-primary)]">
-                                    {packagingLabel}
+                                    {packagingFieldLabel}
                                     {!formData.category && <span className="text-[var(--text-muted)] font-medium ml-1">(pick a category first)</span>}
                                 </label>
-                                <input
+                                <select
                                     name="packaging" value={formData.packaging} onChange={handleChange}
-                                    disabled={!formData.category}
-                                    placeholder={packagingPlaceholder}
+                                    disabled={!formData.category || !formData.name || packagingOptions.length === 0}
                                     className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53] disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                                >
+                                    <option value="">Select packaging</option>
+                                    {packagingOptions.map((option) => (
+                                        <option key={option.value} value={option.value} data-price={option.price}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[12px] font-bold text-[var(--text-primary)]">Price (₦) *</label>
                                 <input
                                     name="price" type="number" min="0" step="1"
                                     value={formData.price} onChange={handleChange} required
+                                    disabled={!formData.category || !formData.name || !formData.packaging}
                                     placeholder="e.g. 1500"
-                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
+                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53] disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[12px] font-bold text-[var(--text-primary)]">
-                                    Stock count *
+                                    Stock count ({stockUnitLabel}) *
                                     {Number(formData.stockCount) === 0 && formData.stockCount !== '' && (
                                         <span className="ml-2 text-[10px] font-bold uppercase tracking-widest text-[#ed0000]">Out of stock</span>
                                     )}
@@ -379,10 +510,10 @@ const AddProductPage = ({ product, onClose }) => {
                                 <input
                                     name="stockCount" type="number" min="0" step="1"
                                     value={formData.stockCount} onChange={handleChange} required
-                                    placeholder="e.g. 100"
+                                    placeholder={`e.g. 10 ${stockUnitLabel}s`}
                                     className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
                                 />
-                                <p className="text-[10px] text-[var(--text-muted)] font-medium">Auto-decreases on each order. 0 marks the product out of stock.</p>
+                                <p className="text-[10px] text-[var(--text-muted)] font-medium">Enter the number of {stockUnitLabel}s in stock. This is the main inventory unit for the selected product.</p>
                             </div>
                         </div>
 

@@ -6,6 +6,18 @@ import { productApi } from '../../../api/client'
 
 const VIEW_KEY = 'uac_products_view' // 'grid' | 'list'
 
+const normalizePackagingLabel = (value = '', product = {}) => {
+    if (!value) return ''
+
+    const text = String(value).trim()
+    const stripped = text
+        .replace(/\s*-\s*\d+(?:\.\d+)?\s*(?:cartons?|pieces?|packs?|piece|pack)\b/gi, '')
+        .replace(/\s*\(.*\)\s*$/gi, '')
+        .trim()
+
+    return stripped || text
+}
+
 const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSelect, categoryFilter, onBack, onExport }) => {
     const { products } = useStore()
     const [openMenuId, setOpenMenuId] = useState(null)
@@ -143,7 +155,7 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
 
                                     <div className="flex items-baseline justify-between mt-3">
                                         <span className="text-xl font-bold text-[#ed0000] tracking-tight">₦{(p.price || 0).toLocaleString()}</span>
-                                        {p.packaging && <span className="text-[10px] text-[var(--text-muted)] font-medium truncate max-w-[55%]">{p.packaging}</span>}
+                                        {p.packaging && <span className="text-[10px] text-[var(--text-muted)] font-medium truncate max-w-[55%]">{normalizePackagingLabel(p.packaging, p)}</span>}
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-[var(--divider)]">

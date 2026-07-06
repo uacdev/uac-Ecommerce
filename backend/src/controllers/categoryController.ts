@@ -46,11 +46,18 @@ export const getCategories = async (_req: Request, res: Response) => {
 
 export const createCategory = async (req: Request, res: Response) => {
     try {
-        const { name, abstract, parent, color, coverImage } = req.body;
+        const { name, abstract, parent, color, coverImage, packagingOptions } = req.body;
         if (!name || !String(name).trim()) {
             return res.status(400).json({ success: false, message: 'name is required' });
         }
-        const created = await Category.create({ name: name.trim(), abstract, parent, color, coverImage });
+        const created = await Category.create({
+            name: name.trim(),
+            abstract,
+            parent,
+            color,
+            coverImage,
+            packagingOptions: Array.isArray(packagingOptions) ? packagingOptions : []
+        });
         res.status(201).json({ success: true, data: created });
     } catch (err: any) {
         if (err?.code === 11000) {
@@ -64,7 +71,11 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const updated = await Category.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+        const payload = req.body;
+        if (payload?.packagingOptions && !Array.isArray(payload.packagingOptions)) {
+            return res.status(400).json({ success: false, message: 'packagingOptions must be an array' });
+        }
+        const updated = await Category.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
         if (!updated) return res.status(404).json({ success: false, message: 'Category not found' });
         res.json({ success: true, data: updated });
     } catch (err: any) {

@@ -5,6 +5,26 @@ import { useAuth } from './AuthContext'
 
 const StoreContext = createContext()
 
+const FALLBACK_CATEGORY_NAMES = ['SWAN', 'Supreme', 'Gala', 'Funtime', 'Zuri', 'Kingsway Bread']
+
+const buildFallbackSegments = (products = []) => {
+    const names = new Set(FALLBACK_CATEGORY_NAMES)
+    products.forEach((product) => {
+        if (product?.brand) names.add(String(product.brand).trim())
+        if (product?.category) names.add(String(product.category).trim())
+    })
+
+    return Array.from(names)
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b))
+        .map((name) => ({
+            _id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            name,
+            parent: 'Brand',
+            color: 'bg-indigo-50 text-indigo-600'
+        }))
+}
+
 export const useStore = () => useContext(StoreContext)
 
 export const StoreProvider = ({ children }) => {
@@ -127,6 +147,7 @@ export const StoreProvider = ({ children }) => {
 
     // ─── Product Actions ───
     const addProduct = async (product) => {
+        const stockCount = Number(product.stockCount ?? 0)
         const payload = {
             name: product.name,
             brand: product.brand || '',
@@ -137,7 +158,8 @@ export const StoreProvider = ({ children }) => {
             location: product.location,
             packaging: product.packaging || '',
             price: Number(product.price),
-            status: product.status || 'available'
+            stockCount,
+            status: stockCount > 0 ? 'available' : 'out_of_stock'
         }
         try {
             const res = await productApi.create(payload)
@@ -265,15 +287,22 @@ export const StoreProvider = ({ children }) => {
         const fetchCategories = async () => {
             try {
                 const res = await categoryApi.getAll()
-                if (res.data?.success) setBusinessSegments(res.data.data || [])
+                const fetched = Array.isArray(res.data?.data) ? res.data.data : []
+                if (fetched.length > 0) {
+                    setBusinessSegments(fetched)
+                    return
+                }
+
+                setBusinessSegments(buildFallbackSegments(products))
             } catch (err) {
                 console.error('Fetch categories error:', err)
+                setBusinessSegments(buildFallbackSegments(products))
             } finally {
                 setCategoriesLoading(false)
             }
         }
         fetchCategories()
-    }, [])
+    }, [products])
 
     useEffect(() => {
         if (!user) { setAdminProfileState(null); return }

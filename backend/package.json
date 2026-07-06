@@ -13,6 +13,7 @@
     "build": "echo \"No build step — runtime uses tsx\"",
     "seed:admin": "tsx src/scripts/seedAdmin.ts",
     "seed:products": "tsx src/scripts/seedProducts.ts",
+    "seed:category-pricing": "tsx src/scripts/seedCategoryPricing.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
