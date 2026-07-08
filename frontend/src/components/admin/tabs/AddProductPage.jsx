@@ -179,16 +179,17 @@ const AddProductPage = ({ product, onClose }) => {
                     ...prev,
                     name: nextName,
                     packaging: fallbackOption?.value || '',
-                    price: fallbackOption?.price != null ? String(Number(fallbackOption.price)) : ''
+                    price: fallbackOption?.price != null ? Number(fallbackOption.price).toFixed(2) : ''
                 };
             }
             if (name === 'packaging') {
                 const selectedOption = e.target.selectedOptions?.[0];
                 const selectedPrice = selectedOption?.getAttribute('data-price');
+                const numericPrice = Number(selectedPrice);
                 return {
                     ...prev,
                     packaging: value,
-                    price: selectedPrice ? String(Number(selectedPrice)) : ''
+                    price: Number.isFinite(numericPrice) ? numericPrice.toFixed(2) : ''
                 };
             }
             return { ...prev, [name]: value };
@@ -493,10 +494,10 @@ const AddProductPage = ({ product, onClose }) => {
                             <div className="space-y-2">
                                 <label className="text-[12px] font-bold text-[var(--text-primary)]">Price (₦) *</label>
                                 <input
-                                    name="price" type="number" min="0" step="1"
+                                    name="price" type="number" min="0" step="0.01" inputMode="decimal"
                                     value={formData.price} onChange={handleChange} required
                                     disabled={!formData.category || !formData.name || !formData.packaging}
-                                    placeholder="e.g. 1500"
+                                    placeholder="e.g. 1500.00"
                                     className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53] disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
