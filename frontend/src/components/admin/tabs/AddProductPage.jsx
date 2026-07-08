@@ -21,8 +21,8 @@ const PRODUCT_NAMES_BY_CATEGORY = {
 const PACKAGING_BY_PRODUCT_NAME = {
     '50CL': [{ label: '50CL', value: '50CL', price: 2018.14 }],
     '75CL': [
-        { label: '75CL', value: '75CL', price: 2609.17 },
-        { label: '75CL', value: '75CL', price: 4156.17 }
+        { label: '75CL*12', value: '75CL*12', price: 2609.17 },
+        { label: '75CL*20', value: '75CL*20', price: 4156.17 }
     ],
     '150CL': [{ label: '150CL', value: '150CL', price: 2279.61 }],
     '3LITRES': [{ label: '3LITRES', value: '3LITRES', price: 17199.60 }],
