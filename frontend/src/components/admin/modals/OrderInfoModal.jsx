@@ -92,6 +92,7 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
 
     const items = order.items || []
     const itemsCount = items.reduce((n, it) => n + (it.quantity || 1), 0)
+    const isSelfMethod = (order.fulfillmentType === 'pickup') || (methodDraft === 'self')
 
     return (
         <motion.div
@@ -141,18 +142,33 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                             <a href={`tel:${order.buyerPhone}`} className="flex items-center gap-2 text-[12px] text-[var(--text-muted)] hover:text-[#ed0000]"><Phone size={13} /> {order.buyerPhone}</a>
                         </div>
                         <div className="space-y-3">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">Delivery</p>
-                            <p className="flex items-start gap-2 text-[13px] text-[var(--text-primary)] font-medium leading-relaxed">
-                                <MapPin size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
-                                <span>{order.buyerAddress}</span>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">
+                                {(order.fulfillmentType === 'pickup') ? (
+                                    <span className="flex items-center gap-2"><Package size={12} /> Self-arranged — buyer pickup or own rider</span>
+                                ) : (
+                                    <span className="flex items-center gap-2"><Truck size={12} /> Delivery</span>
+                                )}
                             </p>
-                            {order.deliveryZone && (
-                                <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                    Zone · {order.deliveryZone}
-                                </p>
-                            )}
-                            {order.fulfillmentType === 'pickup' && order.pickupCode && (
-                                <p className="text-[11px] font-bold text-[#ed0000]">Pickup code · {order.pickupCode}</p>
+                            {order.fulfillmentType === 'pickup' ? (
+                                <>
+                                    {order.pickupCode ? (
+                                        <p className="text-[13px] font-bold text-[#ed0000]">Pickup code · {order.pickupCode}</p>
+                                    ) : (
+                                        <p className="text-[13px] font-medium text-[var(--text-primary)]">Self-arranged — buyer pickup or own rider</p>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <p className="flex items-start gap-2 text-[13px] text-[var(--text-primary)] font-medium leading-relaxed">
+                                        <MapPin size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" />
+                                        <span>{order.buyerAddress}</span>
+                                    </p>
+                                    {order.deliveryZone && (
+                                        <p className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                            Zone · {order.deliveryZone}
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </div>
                     </section>
@@ -228,7 +244,13 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
 
                         {/* DELIVERY */}
                         <div className="space-y-3">
-                            <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-2"><Truck size={12} /> Delivery</label>
+                            <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-2">
+                                {isSelfMethod ? (
+                                    <><Package size={12} /> Self-arranged — buyer pickup or own rider</>
+                                ) : (
+                                    <><Truck size={12} /> Delivery</>
+                                )}
+                            </label>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <select
                                     value={methodDraft}
@@ -237,21 +259,25 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                 >
                                     {DELIVERY_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                                 </select>
-                                <select
-                                    value={zoneDraft}
-                                    onChange={(e) => setZoneDraft(e.target.value)}
-                                    className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50"
-                                >
-                                    <option value="">— No zone —</option>
-                                    {zones.map(z => <option key={z.name} value={z.name}>{z.name} · {fmt(z.fee)}</option>)}
-                                </select>
-                                <input
-                                    type="text"
-                                    value={partnerDraft}
-                                    onChange={(e) => setPartnerDraft(e.target.value)}
-                                    placeholder="Logistics partner (optional)"
-                                    className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50"
-                                />
+                                {!isSelfMethod && (
+                                    <select
+                                        value={zoneDraft}
+                                        onChange={(e) => setZoneDraft(e.target.value)}
+                                        className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50"
+                                    >
+                                        <option value="">— No zone —</option>
+                                        {zones.map(z => <option key={z.name} value={z.name}>{z.name} · {fmt(z.fee)}</option>)}
+                                    </select>
+                                )}
+                                {!isSelfMethod && (
+                                    <input
+                                        type="text"
+                                        value={partnerDraft}
+                                        onChange={(e) => setPartnerDraft(e.target.value)}
+                                        placeholder="Logistics partner (optional)"
+                                        className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50"
+                                    />
+                                )}
                             </div>
                             <div className="flex justify-end">
                                 <button

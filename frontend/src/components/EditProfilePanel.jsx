@@ -20,7 +20,14 @@ const EditProfilePanel = ({ open, onClose }) => {
 
     useEffect(() => {
         if (open) {
-            deliveryApi.getStates().then(res => setStates(res.data?.data || [])).catch(() => {})
+            deliveryApi.getStates()
+                .then(res => {
+                    const fetched = res.data?.data || []
+                    setStates(Array.isArray(fetched)
+                        ? fetched.filter(s => String(s).trim().toLowerCase() === 'lagos')
+                        : ['Lagos'])
+                })
+                .catch(() => setStates(['Lagos']))
             setProfileMsg(''); setProfileErr(''); setPwdMsg(''); setPwdErr('')
         }
     }, [open])

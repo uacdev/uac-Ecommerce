@@ -34,23 +34,41 @@ const Checkout = () => {
             phone: b.phone || customer.phone || '',
             address: b.address || customer.defaultAddress || ''
         }))
-        if (customer.defaultState) setStateName(s => s || customer.defaultState)
+        setStateName('Lagos')
     }, [customer])
 
     const [zones, setZones] = useState([])
     const [zonesLoading, setZonesLoading] = useState(true)
     const [zoneName, setZoneName] = useState('')
+    const [fulfillmentType, setFulfillmentType] = useState('pickup')
 
     const [states, setStates] = useState([])
-    const [stateName, setStateName] = useState('')
+    const [stateName, setStateName] = useState('Lagos')
 
     useEffect(() => {
         Promise.allSettled([deliveryApi.getZones(), deliveryApi.getStates()]).then(([zRes, sRes]) => {
             if (zRes.status === 'fulfilled') setZones(zRes.value.data?.data || [])
-            if (sRes.status === 'fulfilled') setStates(sRes.value.data?.data || [])
+            if (sRes.status === 'fulfilled') {
+                const fetchedStates = sRes.value.data?.data || []
+                setStates(
+                    Array.isArray(fetchedStates)
+                        ? fetchedStates.filter(s => String(s).trim().toLowerCase() === 'lagos')
+                        : ['Lagos']
+                )
+            }
             setZonesLoading(false)
         })
     }, [])
+
+    useEffect(() => {
+        if (fulfillmentType === 'pickup') {
+            setStateName('')
+            setZoneName('')
+            setBuyer(b => ({ ...b, address: '' }))
+        } else if (fulfillmentType === 'delivery') {
+            setStateName('Lagos')
+        }
+    }, [fulfillmentType])
 
     // Open a checkout session as soon as the buyer lands here. Reuse an existing
     // unconverted session id if present so a refresh doesn't inflate abandonment.
@@ -79,13 +97,31 @@ const Checkout = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!stateName) {
-            toast.error('PICK YOUR STATE')
+        if (!buyer.name?.trim()) {
+            toast.error('ENTER YOUR NAME')
             return
         }
-        if (!zoneName) {
-            toast.error('PICK A DELIVERY ZONE')
+        if (!buyer.phone?.trim()) {
+            toast.error('ENTER YOUR PHONE NUMBER')
             return
+        }
+        if (!buyer.email?.trim()) {
+            toast.error('ENTER YOUR EMAIL ADDRESS')
+            return
+        }
+        if (fulfillmentType === 'delivery') {
+            if (!buyer.address?.trim()) {
+                toast.error('ENTER DELIVERY LOCATION')
+                return
+            }
+            if (!stateName) {
+                toast.error('PICK YOUR STATE')
+                return
+            }
+            if (!zoneName) {
+                toast.error('PICK A DELIVERY ZONE')
+                return
+            }
         }
         setLoading(true)
 
@@ -100,11 +136,11 @@ const Checkout = () => {
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
             buyerEmail: buyer.email,
-            buyerAddress: buyer.address,
-            buyerState: stateName,
-            deliveryZone: zoneName,
+            buyerAddress: fulfillmentType === 'delivery' ? buyer.address : '',
+            buyerState: fulfillmentType === 'delivery' ? stateName : '',
+            deliveryZone: fulfillmentType === 'delivery' ? zoneName : '',
             paymentMethod,
-            fulfillmentType: 'delivery',
+            fulfillmentType,
             checkoutSessionId: getCheckoutSessionId() || undefined
         })
 
@@ -165,8 +201,15 @@ const Checkout = () => {
                         <form id="checkout-form" onSubmit={handleSubmit} className="space-y-20">
                             
                             <section>
-                                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-12 border-b border-[var(--divider)] pb-4 w-fit">01 Delivery Information</h2>
+                                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-12 border-b border-[var(--divider)] pb-4 w-fit">01 Fulfillment Details</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Fulfillment Type</label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${fulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Self Pickup</button>
+                                            <button type="button" onClick={() => setFulfillmentType('delivery')} className={`py-4 px-6 rounded-[32px] border-2 ${fulfillmentType === 'delivery' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Delivery</button>
+                                        </div>
+                                    </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Full Name</label>
                                         <input required type="text" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="YOUR NAME" />
@@ -179,30 +222,29 @@ const Checkout = () => {
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Email</label>
                                         <input required type="email" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="EMAIL@EXAMPLE.COM" />
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Street Address</label>
-                                        <input required type="text" value={buyer.address} onChange={e => setBuyer({...buyer, address: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none uppercase" placeholder="DELIVERY LOCATION" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">State</label>
-                                        <select required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none appearance-none cursor-pointer">
-                                            <option value="">SELECT STATE</option>
-                                            {states.map(s => (
-                                                <option key={s} value={s}>{s.toUpperCase()}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Delivery Zone</label>
-                                        <select required value={zoneName} onChange={e => setZoneName(e.target.value)} disabled={zonesLoading} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none appearance-none cursor-pointer">
-                                            <option value="">{zonesLoading ? 'LOADING ZONES…' : 'SELECT YOUR ZONE'}</option>
-                                            {zones.map(z => (
-                                                <option key={z.name} value={z.name}>
-                                                    {z.name.toUpperCase()} — ₦{z.fee.toLocaleString()}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    {fulfillmentType === 'delivery' && (
+                                        <>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">State</label>
+                                                <div className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase text-[var(--text-primary)] flex items-center h-14">LAGOS</div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Delivery Zone</label>
+                                                <select required value={zoneName} onChange={e => setZoneName(e.target.value)} disabled={zonesLoading} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none appearance-none cursor-pointer">
+                                                    <option value="">{zonesLoading ? 'LOADING ZONES…' : 'SELECT YOUR ZONE'}</option>
+                                                    {zones.map(z => (
+                                                        <option key={z.name} value={z.name}>
+                                                            {z.name.toUpperCase()} — ₦{z.fee.toLocaleString()}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Street Address</label>
+                                                <input required type="text" value={buyer.address} onChange={e => setBuyer({...buyer, address: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none uppercase" placeholder="DELIVERY LOCATION" />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </section>
 
@@ -276,9 +318,12 @@ const Checkout = () => {
                                         <span className="text-[var(--text-primary)]">₦{subtotal.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-                                        <span>Delivery {selectedZone ? `· ${selectedZone.name}` : ''}</span>
-                                        <span className={selectedZone ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
-                                            {selectedZone ? `₦${deliveryFee.toLocaleString()}` : 'PICK A ZONE'}
+                                        <span>{fulfillmentType === 'delivery' ? `Delivery ${selectedZone ? `· ${selectedZone.name}` : ''}` : 'Self Pickup'}</span>
+                                        <span className={fulfillmentType === 'delivery' && selectedZone ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+                                            {fulfillmentType === 'delivery'
+                                                ? selectedZone ? `₦${deliveryFee.toLocaleString()}` : 'PICK A ZONE'
+                                                : '₦0'
+                                            }
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center pt-8 mt-4 border-t-2 border-[var(--divider)]">

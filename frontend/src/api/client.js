@@ -141,7 +141,16 @@ export const categoryApi = {
 
 export const deliveryApi = {
     getZones: () => api.get('/delivery/zones'),
-    getStates: () => api.get('/delivery/states')
+    getStates: () => api.get('/delivery/states'),
+    createZone: (data) => api.post('/delivery/zones', data),
+    updateZone: (id, data) => api.put(`/delivery/zones/${id}`, data),
+    deleteZone: (id) => api.delete(`/delivery/zones/${id}`)
+};
+
+export const settingsApi = {
+    getSetting: (key) => api.get(`/settings/${encodeURIComponent(key)}`),
+    upsertSetting: (key, data) => api.put(`/settings/${encodeURIComponent(key)}`, data),
+    deleteSetting: (key) => api.delete(`/settings/${encodeURIComponent(key)}`)
 };
 
 export const reviewApi = {

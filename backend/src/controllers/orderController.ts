@@ -1,13 +1,18 @@
 import { Request, Response } from 'express';
 import { Order, ORDER_STATUSES, DELIVERY_METHODS } from '../models/Order';
 import { Product } from '../models/Product';
-import { findZoneByName } from '../data/deliveryZones';
+import { DeliveryZone } from '../models/DeliveryZone';
 import { isNigerianState } from '../data/nigerianStates';
 import { sendOrderEmails, sendBackInStockEmails } from '../lib/email';
 import { notify } from '../lib/notify';
 import { StockSubscription } from '../models/StockSubscription';
 import { CheckoutSession } from '../models/CheckoutSession';
 import mongoose from 'mongoose';
+
+const resolveZoneByName = async (name?: string) => {
+    if (!name || !String(name).trim()) return null;
+    return DeliveryZone.findOne({ name: new RegExp(`^${String(name).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+};
 
 const COMMISSION_RATE = 0.10;
 
@@ -39,7 +44,7 @@ const restoreOrderStock = async (orderItems: any[]) => {
         const updated = await Product.findByIdAndUpdate(
             pid,
             { $inc: { stockCount: qty } },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!updated) continue;
         // If it was out, and now has stock, flip status and fire restock emails
@@ -120,21 +125,47 @@ export const createOrder = async (req: Request, res: Response) => {
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'items must contain at least one product' });
         }
-        if (!buyerName || !buyerEmail || !buyerPhone || !buyerAddress) {
-            return res.status(400).json({ success: false, message: 'buyerName, buyerEmail, buyerPhone and buyerAddress are required' });
+        const fulfillment = String(fulfillmentType || 'delivery').trim();
+        const isDelivery = fulfillment === 'delivery';
+        const address = String(buyerAddress || '').trim();
+        const normalizedState = String(buyerState || '').trim();
+
+        if (isDelivery) {
+            if (!buyerName || !buyerEmail || !buyerPhone || !address) {
+                return res.status(400).json({ success: false, message: 'buyerName, buyerEmail, buyerPhone and buyerAddress are required for delivery orders' });
+            }
+        } else {
+            // pickup: require name, email, phone only
+            if (!buyerName || !buyerEmail || !buyerPhone) {
+                return res.status(400).json({ success: false, message: 'buyerName, buyerEmail and buyerPhone are required for pickup orders' });
+            }
         }
-        if (buyerState && !isNigerianState(String(buyerState).trim())) {
+        if (isDelivery) {
+            if (!normalizedState) {
+                return res.status(400).json({ success: false, message: 'buyerState is required for delivery' });
+            }
+            if (normalizedState.toLowerCase() !== 'lagos') {
+                return res.status(400).json({ success: false, message: 'Delivery is only available within Lagos State' });
+            }
+        }
+        if (isDelivery && !deliveryZone) {
+            return res.status(400).json({ success: false, message: 'deliveryZone is required for delivery orders' });
+        }
+        if (normalizedState && !isNigerianState(normalizedState)) {
             return res.status(400).json({ success: false, message: 'buyerState must be a valid Nigerian state name' });
         }
 
         const productAmount = items.reduce((sum: number, it: any) => sum + (Number(it.price) * Number(it.quantity)), 0);
-        const zone = deliveryZone ? findZoneByName(deliveryZone) : null;
+        const zone = isDelivery ? await resolveZoneByName(deliveryZone) : null;
+        if (isDelivery && deliveryZone && !zone) {
+            return res.status(400).json({ success: false, message: 'deliveryZone is invalid' });
+        }
         const deliveryFee = zone?.fee ?? 0;
         const amount = productAmount + deliveryFee;
         const commission = Math.round(productAmount * COMMISSION_RATE);
 
         const reference = generateReference();
-        const pickupCode = fulfillmentType === 'pickup' ? generatePickupCode() : '';
+        const pickupCode = fulfillment === 'pickup' ? generatePickupCode() : '';
 
         // ─── Stock reservation ─────────────────────────────────────────
         // Atomic conditional decrement per item. If any item fails, roll back the
@@ -155,7 +186,7 @@ export const createOrder = async (req: Request, res: Response) => {
             const updated = await Product.findOneAndUpdate(
                 { _id: pid, stockCount: { $gte: qty } },
                 { $inc: { stockCount: -qty } },
-                { new: true }
+                { returnDocument: 'after' }
             );
             if (!updated) {
                 await rollbackStock(decremented);
@@ -199,10 +230,10 @@ export const createOrder = async (req: Request, res: Response) => {
             buyerName,
             buyerEmail: normalizedEmail,
             buyerPhone,
-            buyerAddress,
-            buyerState: buyerState ? String(buyerState).trim() : '',
-            deliveryZone: zone?.name || '',
-            fulfillmentType: fulfillmentType || 'delivery',
+            buyerAddress: isDelivery ? address : '',
+            buyerState: isDelivery ? normalizedState : '',
+            deliveryZone: isDelivery ? zone?.name || '' : '',
+            fulfillmentType: fulfillment || 'delivery',
             pickupCode,
             paymentMethod: paymentMethod || ''
         }).save();
@@ -262,7 +293,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         const before = await Order.findById(id);
         if (!before) return res.status(404).json({ success: false, message: 'Order not found' });
 
-        const updated = await Order.findByIdAndUpdate(id, { status }, { new: true });
+        const updated = await Order.findByIdAndUpdate(id, { status }, { returnDocument: 'after' });
         if (!updated) return res.status(404).json({ success: false, message: 'Order not found' });
 
         // Cancellation: hand the inventory back, re-trigger restock subscribers if applicable.
@@ -288,7 +319,7 @@ export const customerSelectDeliveryMethod = async (req: Request, res: Response) 
         if (!['assisted', 'self'].includes(deliveryMethod)) {
             return res.status(400).json({ success: false, message: 'deliveryMethod must be "assisted" or "self"' });
         }
-        const updated = await Order.findByIdAndUpdate(id, { deliveryMethod }, { new: true });
+        const updated = await Order.findByIdAndUpdate(id, { deliveryMethod }, { returnDocument: 'after' });
         if (!updated) return res.status(404).json({ success: false, message: 'Order not found' });
         res.json({ success: true, data: updated });
     } catch (err: any) {
@@ -334,12 +365,12 @@ export const updateOrderDelivery = async (req: Request, res: Response) => {
             updates.deliveryMethod = deliveryMethod;
         }
         if (deliveryZone !== undefined) {
-            const zone = findZoneByName(deliveryZone);
+            const zone = await resolveZoneByName(deliveryZone);
             if (deliveryZone && !zone) {
                 return res.status(400).json({ success: false, message: 'Unknown delivery zone' });
             }
             updates.deliveryZone = zone?.name || '';
-            if (zone) updates.deliveryFee = zone.fee;
+            updates.deliveryFee = zone?.fee ?? 0;
         }
         if (logisticsPartner !== undefined) updates.logisticsPartner = logisticsPartner;
 

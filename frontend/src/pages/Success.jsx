@@ -3,6 +3,7 @@ import { useLocation, useSearchParams, Link } from 'react-router-dom'
 import { CheckCircle, Clock, Instagram, MessageCircle, Copy, Check, Loader2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { paymentApi } from '../api/client'
+import { useStore } from '../context/StoreContext'
 
 const Success = () => {
     const location = useLocation()
@@ -110,15 +111,25 @@ const Success = () => {
                             <Instagram size={24} className="group-hover:text-[#E1306C] transition-colors" />
                             <span style={{ color: 'var(--text-primary)' }}>Instagram Direct</span>
                         </a>
-                        <a
-                            href={`https://wa.me/2349098050402?text=Hi, my Order ID is ${orderId}. Please confirm.`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-3 py-4 glass transition-all font-bold group"
-                        >
-                            <MessageCircle size={24} className="group-hover:text-[#25D366] transition-colors" />
-                            <span style={{ color: 'var(--text-primary)' }}>WhatsApp Chat</span>
-                        </a>
+                        {(() => {
+                            const { whatsappNumber } = useStore() || {}
+                            const digits = String(whatsappNumber || '').replace(/\D/g, '')
+                            const base = digits
+                                ? (digits.startsWith('0') ? `https://wa.me/234${digits.replace(/^0+/, '')}` : (digits.startsWith('234') ? `https://wa.me/${digits}` : `https://wa.me/${digits}`))
+                                : 'https://wa.me/2349098050402'
+                            const href = `${base}?text=${encodeURIComponent(`Hi, my Order ID is ${orderId}. Please confirm.`)}`
+                            return (
+                                <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-3 py-4 glass transition-all font-bold group"
+                                >
+                                    <MessageCircle size={24} className="group-hover:text-[#25D366] transition-colors" />
+                                    <span style={{ color: 'var(--text-primary)' }}>WhatsApp Chat</span>
+                                </a>
+                            )
+                        })()}
                     </div>
 
                     <Link to="/" className="inline-block mt-8 text-sm font-medium transition-colors hover:text-[var(--brand-red)]" style={{ color: 'var(--text-muted)' }}>

@@ -75,7 +75,7 @@ export const updateCategory = async (req: Request, res: Response) => {
         if (payload?.packagingOptions && !Array.isArray(payload.packagingOptions)) {
             return res.status(400).json({ success: false, message: 'packagingOptions must be an array' });
         }
-        const updated = await Category.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+        const updated = await Category.findByIdAndUpdate(id, payload, { returnDocument: 'after', runValidators: true });
         if (!updated) return res.status(404).json({ success: false, message: 'Category not found' });
         res.json({ success: true, data: updated });
     } catch (err: any) {

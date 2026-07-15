@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products'
-import { productApi, orderApi, statsApi, categoryApi, adminApi } from '../api/client'
+import { productApi, orderApi, statsApi, categoryApi, adminApi, settingsApi } from '../api/client'
 import { useAuth } from './AuthContext'
 
 const StoreContext = createContext()
@@ -46,6 +46,7 @@ export const StoreProvider = ({ children }) => {
     const [loading, setLoading] = useState(true)
     const [apiStats, setApiStats] = useState(null)
     const [adminProfile, setAdminProfileState] = useState(null)
+    const [whatsappNumber, setWhatsAppNumber] = useState('')
 
     // Persistence save for Cart
     useEffect(() => {
@@ -69,6 +70,19 @@ export const StoreProvider = ({ children }) => {
             })
             .catch(() => { if (!cancelled) setProducts([]) })
             .finally(() => { if (!cancelled) setLoading(false) })
+        return () => { cancelled = true }
+    }, [])
+
+    useEffect(() => {
+        let cancelled = false
+        settingsApi.getSetting('whatsapp_number')
+            .then(res => {
+                if (cancelled) return
+                if (res.data?.success && res.data.data?.value) {
+                    setWhatsAppNumber(res.data.data.value)
+                }
+            })
+            .catch(() => { /* fallback to default */ })
         return () => { cancelled = true }
     }, [])
 
@@ -329,6 +343,35 @@ export const StoreProvider = ({ children }) => {
             return { success: false, message: err.response?.data?.message || err.message }
         }
     }
+
+    const updateWhatsAppNumber = async (value) => {
+        try {
+            const res = await settingsApi.upsertSetting('whatsapp_number', { value })
+            if (res.data?.success) {
+                setWhatsAppNumber(res.data.data?.value || value)
+                return { success: true, data: res.data.data }
+            }
+            return { success: false, message: 'Could not save WhatsApp number' }
+        } catch (err) {
+            console.error('Update WhatsApp number failed:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
+
+    const deleteWhatsAppNumber = async () => {
+        try {
+            const res = await settingsApi.deleteSetting('whatsapp_number')
+            if (res.data?.success) {
+                setWhatsAppNumber('')
+                return { success: true }
+            }
+            return { success: false, message: res.data?.message || 'Could not delete WhatsApp number' }
+        } catch (err) {
+            console.error('Delete WhatsApp number failed:', err)
+            return { success: false, message: err.response?.data?.message || err.message }
+        }
+    }
+
     const getOrderById = (id) => orders.find(o => o.id === id)
 
     const addCategory = async (newCat) => {
@@ -407,6 +450,9 @@ export const StoreProvider = ({ children }) => {
             loading,
             stats,
             adminProfile, setAdminProfile,
+            whatsappNumber,
+            updateWhatsAppNumber,
+            deleteWhatsAppNumber,
             categories,
             businessSegments,
             categoriesLoading,

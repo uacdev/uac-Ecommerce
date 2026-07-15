@@ -31,7 +31,7 @@ export const upsertProfile = async (req: Request, res: Response) => {
         const profile = await Admin.findOneAndUpdate(
             { email },
             { $set: updates },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
         if (!profile) return res.status(404).json({ success: false, message: 'Admin not found' });
         res.json({ success: true, data: profile });

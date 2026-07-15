@@ -37,7 +37,16 @@ export const initiatePayment = async (req: Request, res: Response) => {
             cancelUrl: `${FRONTEND_URL}/order-failed?ref=${reference}`,
             displayName: 'UFL Foods',
             customerVisitSource: 'BROWSER',
-            userClientIP: ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim(),
+            userClientIP: (() => {
+                let raw = ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim();
+                if (!raw) return '127.0.0.1';
+                // Normalize common IPv6 -> IPv4 mappings
+                if (raw.startsWith('::ffff:')) raw = raw.replace('::ffff:', '');
+                if (raw === '::1' || raw === '::') raw = '127.0.0.1';
+                // OPay expects length between 7 and 50; ensure a reasonable fallback for local dev
+                if (raw.length < 7) raw = '127.0.0.1';
+                return raw;
+            })(),
             userInfo: {
                 userName: buyerName || '',
                 userEmail: buyerEmail || '',
@@ -53,16 +62,25 @@ export const initiatePayment = async (req: Request, res: Response) => {
         const payloadString = JSON.stringify(payload);
         const signature = buildHmacSignature(payloadString);
 
+        // Resolve env vars at request-time in case they were not available at module load
+        const merchantId = process.env.OPAY_MERCHANT_ID || OPAY_MERCHANT_ID || '';
+        const publicKey = process.env.OPAY_PUBLIC_KEY || OPAY_PUBLIC_KEY || '';
+
         console.log('[OPay] POST', opayUrl);
-        console.log('[OPay] MerchantId:', OPAY_MERCHANT_ID);
+        console.log('[OPay] MerchantId:', merchantId);
         console.log('[OPay] Payload:', payloadString);
+
+        if (!merchantId || !publicKey) {
+            console.error('[OPay] Missing configuration: MerchantId or PublicKey not set');
+            return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
+        }
 
         const response = await fetch(opayUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPAY_PUBLIC_KEY}`,
-                'MerchantId': OPAY_MERCHANT_ID
+                'Authorization': `Bearer ${publicKey}`,
+                'MerchantId': merchantId
             },
             body: payloadString
         });
@@ -106,7 +124,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
         }
 
         if (status === 'SUCCESS') {
-            const order = await Order.findOneAndUpdate({ reference }, { status: 'paid' }, { new: true });
+            const order = await Order.findOneAndUpdate({ reference }, { status: 'paid' }, { returnDocument: 'after' });
             console.log(`[OPay] Order ${reference} marked as paid via webhook`);
             if (order) {
                 sendOrderEmails({

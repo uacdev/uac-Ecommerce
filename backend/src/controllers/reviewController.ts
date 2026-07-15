@@ -63,7 +63,7 @@ export const updateReview = async (req: Request, res: Response) => {
         if (req.body.comment !== undefined) updates.comment = req.body.comment;
         if (req.body.approved !== undefined) updates.approved = !!req.body.approved;
 
-        const updated = await Review.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+        const updated = await Review.findByIdAndUpdate(id, updates, { returnDocument: 'after', runValidators: true });
         if (!updated) return res.status(404).json({ success: false, message: 'Review not found' });
         res.json({ success: true, data: updated });
     } catch (err: any) {

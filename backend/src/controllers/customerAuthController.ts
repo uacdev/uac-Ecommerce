@@ -96,7 +96,7 @@ export const updateProfile = async (req: Request, res: Response) => {
             }
             updates.defaultState = s;
         }
-        const customer = await Customer.findByIdAndUpdate(req.customer!.id, updates, { new: true });
+        const customer = await Customer.findByIdAndUpdate(req.customer!.id, updates, { returnDocument: 'after' });
         if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
         res.json({ success: true, customer });
     } catch (err: any) {

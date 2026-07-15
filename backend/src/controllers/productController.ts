@@ -120,7 +120,7 @@ export const updateProduct = async (req: Request, res: Response) => {
             delete payload.status;
         }
 
-        const updated = await Product.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+        const updated = await Product.findByIdAndUpdate(id, payload, { returnDocument: 'after', runValidators: true });
         if (!updated) return res.status(404).json({ success: false, message: 'Product not found' });
 
         const beforeStatus = String(before.status);

@@ -30,7 +30,7 @@ const orderSchema = new Schema(
         buyerName: { type: String, required: true, trim: true },
         buyerEmail: { type: String, required: true, trim: true, lowercase: true },
         buyerPhone: { type: String, required: true, trim: true },
-        buyerAddress: { type: String, required: true, trim: true },
+        buyerAddress: { type: String, required: function(this: any) { return String(this.fulfillmentType || 'delivery') === 'delivery' }, trim: true },
         buyerState: { type: String, default: '', trim: true, index: true },
 
         deliveryZone: { type: String, default: '' },

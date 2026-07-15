@@ -119,10 +119,12 @@ const ProductDetails = () => {
                         })()}
 
                         <div className="space-y-12 mb-16">
-                            <div>
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Description</h3>
-                                <p className="text-lg text-[var(--text-primary)] font-medium leading-relaxed max-w-lg">{product.description || "The original Nigerian snack since 1962. Tasty, nourishing, and trusted by millions."}</p>
-                            </div>
+                            {product.description ? (
+                                <div>
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Description</h3>
+                                    <p className="text-lg text-[var(--text-primary)] font-medium leading-relaxed max-w-lg">{product.description}</p>
+                                </div>
+                            ) : null}
 
                             <div className="flex items-start gap-12 pt-8 border-t border-[var(--divider)]">
                                 <div className="w-32">
@@ -172,15 +174,20 @@ const ProductDetails = () => {
                                 </button>
                             )}
                             
-                            <div className="grid grid-cols-2 gap-4 mt-8">
-                                <a href="https://wa.me/+2349098050402" target="_blank" className="flex items-center justify-center gap-3 py-6 border border-[var(--divider)] rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
-                                    <MessageCircle size={18} />
-                                    WhatsApp
-                                </a>
-                                <a href="https://instagram.com" target="_blank" className="flex items-center justify-center gap-3 py-6 border border-[var(--divider)] rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
-                                    <Instagram size={18} />
-                                    Instagram
-                                </a>
+                            <div className="grid grid-cols-1 gap-4 mt-8">
+                                {(() => {
+                                    const { whatsappNumber } = useStore() || {}
+                                    const digits = String(whatsappNumber || '').replace(/\D/g, '')
+                                    const href = digits
+                                        ? (digits.startsWith('0') ? `https://wa.me/234${digits.replace(/^0+/, '')}` : (digits.startsWith('234') ? `https://wa.me/${digits}` : `https://wa.me/${digits}`))
+                                        : 'https://wa.me/2349098050402'
+                                    return (
+                                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-6 border border-[var(--divider)] rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
+                                            <MessageCircle size={18} />
+                                            WhatsApp
+                                        </a>
+                                    )
+                                })()}
                             </div>
                         </div>
                     </div>

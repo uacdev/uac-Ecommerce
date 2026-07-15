@@ -232,7 +232,7 @@ const upsertProduct = async (p: SeedProduct, imageUrl: string) => {
             // counts on re-runs so seeding doesn't reset live inventory.
             $setOnInsert: { stockCount: p.stockCount }
         },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
     );
 };
 
