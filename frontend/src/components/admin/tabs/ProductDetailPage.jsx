@@ -93,11 +93,12 @@ const ProductDetailPage = ({ productId, onBack, onEdit, onDelete }) => {
                             {product.description && <p className="text-[13px] text-[var(--text-muted)] font-medium mt-3 leading-relaxed">{product.description}</p>}
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6 pt-6 border-t border-[var(--divider)]">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mt-6 pt-6 border-t border-[var(--divider)]">
                             <Detail label="Price" value={fmt(product.price)} accent />
                             <Detail label="Category" value={product.category} />
                             <Detail label="Location" value={product.location || '—'} />
                             <Detail label="Packaging" value={product.packaging || '—'} />
+                            <Detail label="Pieces / pack" value={product.piecesPerPack != null ? String(product.piecesPerPack) : '—'} />
                         </div>
                     </div>
                 </div>

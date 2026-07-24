@@ -3,7 +3,7 @@ import { Order, ORDER_STATUSES, DELIVERY_METHODS } from '../models/Order';
 import { Product } from '../models/Product';
 import { DeliveryZone } from '../models/DeliveryZone';
 import { isNigerianState } from '../data/nigerianStates';
-import { sendOrderEmails, sendBackInStockEmails } from '../lib/email';
+import { sendOrderEmails, sendBackInStockEmails, sendPickupOrderReceivedEmail, sendPickupReminderEmail } from '../lib/email';
 import { notify } from '../lib/notify';
 import { StockSubscription } from '../models/StockSubscription';
 import { CheckoutSession } from '../models/CheckoutSession';
@@ -15,6 +15,33 @@ const resolveZoneByName = async (name?: string) => {
 };
 
 const COMMISSION_RATE = 0.10;
+
+const resolvePickupLocation = async (items: any[] = []) => {
+    const ids = Array.from(new Set((items || []).map((it: any) => String(it.productId || it.id || '')).filter(Boolean)));
+    if (!ids.length) return 'UAC Foods pickup point';
+
+    const products = await Product.find({ _id: { $in: ids } }, { location: 1, name: 1 });
+    const locations = Array.from(new Set(products.map(p => String(p.location || '')).filter(Boolean)));
+    return locations.length ? locations.join(', ') : 'UAC Foods pickup point';
+};
+
+const maybeSendPickupReceivedEmail = async (order: any) => {
+    if (!order || String(order.fulfillmentType || '').toLowerCase() !== 'pickup') return;
+    if (String(order.status || '').toLowerCase() !== 'paid') return;
+
+    const pickupLocation = await resolvePickupLocation(order.items || []);
+    sendPickupOrderReceivedEmail({
+        reference: order.reference,
+        buyerName: order.buyerName,
+        buyerEmail: order.buyerEmail,
+        buyerPhone: order.buyerPhone,
+        items: order.items as any,
+        productAmount: order.productAmount,
+        amount: order.amount,
+        pickupLocation,
+        pickupCode: order.pickupCode || ''
+    }).catch(err => console.error('Pickup received email dispatch failed:', err));
+};
 
 const generateReference = () =>
     `UAC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
@@ -303,6 +330,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             await restoreOrderStock(updated.items as any[]);
         }
 
+        if (updated.status === 'paid' && String(updated.fulfillmentType || '').toLowerCase() === 'pickup') {
+            await maybeSendPickupReceivedEmail(updated);
+        }
+
         res.json({ success: true, data: updated });
     } catch (err: any) {
         console.error('Error in updateOrderStatus:', err);
@@ -325,6 +356,39 @@ export const customerSelectDeliveryMethod = async (req: Request, res: Response) 
     } catch (err: any) {
         console.error('Error in customerSelectDeliveryMethod:', err);
         res.status(400).json({ success: false, message: err.message || 'Error selecting delivery' });
+    }
+};
+
+export const sendPickupReminder = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findById(id);
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+        if (String(order.fulfillmentType || '').toLowerCase() !== 'pickup') {
+            return res.status(400).json({ success: false, message: 'Reminder emails are only available for pickup orders' });
+        }
+        if (!['paid', 'confirmed'].includes(String(order.status || ''))) {
+            return res.status(400).json({ success: false, message: 'Reminder emails are only available for paid or confirmed pickup orders' });
+        }
+
+        const pickupLocation = await resolvePickupLocation(order.items as any[]);
+        const sent = await sendPickupReminderEmail({
+            reference: order.reference,
+            buyerName: order.buyerName,
+            buyerEmail: order.buyerEmail,
+            buyerPhone: order.buyerPhone,
+            items: order.items as any,
+            productAmount: order.productAmount,
+            amount: order.amount,
+            pickupLocation,
+            pickupCode: order.pickupCode || ''
+        });
+
+        res.json({ success: true, sent, message: sent ? 'Pickup reminder sent' : 'Pickup reminder could not be sent' });
+    } catch (err: any) {
+        console.error('Error in sendPickupReminder:', err);
+        res.status(400).json({ success: false, message: err.message || 'Error sending pickup reminder' });
     }
 };
 

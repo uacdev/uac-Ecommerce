@@ -31,6 +31,18 @@ type OrderEmailPayload = {
     paymentMethod?: string;
 };
 
+type PickupEmailPayload = {
+    reference: string;
+    buyerName: string;
+    buyerEmail: string;
+    buyerPhone: string;
+    items: OrderItem[];
+    productAmount: number;
+    amount: number;
+    pickupLocation: string;
+    pickupCode?: string;
+};
+
 const fmtNgn = (n: number) => `₦${n.toLocaleString('en-NG')}`;
 
 const renderItemsTable = (items: OrderItem[]) => `
@@ -215,6 +227,60 @@ export const sendBackInStockEmails = async (payload: RestockEmailPayload): Promi
     return { sent, failed };
 };
 
+const pickupReceivedHtml = (p: PickupEmailPayload) => `
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
+        <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
+            <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
+            <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Pickup order received</p>
+        </div>
+
+        <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">We’ve received your pickup order and it’s now being prepared. We’ll let you know as soon as it’s ready for collection.</p>
+
+        <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
+            <strong>Order reference:</strong> ${p.reference}
+            ${p.pickupCode ? `<br/><strong>Pickup code:</strong> ${p.pickupCode}` : ''}
+        </div>
+
+        ${renderItemsTable(p.items)}
+
+        <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
+            <strong style="display:block;margin-bottom:6px;">Pickup location</strong>
+            ${p.pickupLocation}
+        </div>
+
+        <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">If you need anything else, reply to this email and we’ll help.</p>
+        <p style="font-size:12px;color:#aaa;margin-top:8px;">UAC Foods Nigeria · ${new Date().getFullYear()}</p>
+    </div>
+`;
+
+const pickupReminderHtml = (p: PickupEmailPayload) => `
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
+        <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
+            <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
+            <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Pickup reminder</p>
+        </div>
+
+        <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">Your pickup order is ready for collection. Please head to the pickup location below with your pickup code.</p>
+
+        <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
+            <strong>Order reference:</strong> ${p.reference}
+            ${p.pickupCode ? `<br/><strong>Pickup code:</strong> ${p.pickupCode}` : ''}
+        </div>
+
+        ${renderItemsTable(p.items)}
+
+        <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
+            <strong style="display:block;margin-bottom:6px;">Pickup location</strong>
+            ${p.pickupLocation}
+        </div>
+
+        <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">If you’re running late, reply to this email and we’ll help you sort it out.</p>
+        <p style="font-size:12px;color:#aaa;margin-top:8px;">UAC Foods Nigeria · ${new Date().getFullYear()}</p>
+    </div>
+`;
+
 export const sendOrderEmails = async (payload: OrderEmailPayload) => {
     const c = getClient();
     if (!c) return { customer: false, admin: false };
@@ -243,4 +309,40 @@ export const sendOrderEmails = async (payload: OrderEmailPayload) => {
     if (results[1].status === 'rejected') console.error('Admin email failed:', results[1].reason);
 
     return { customer: customerOk, admin: adminOk };
+};
+
+export const sendPickupOrderReceivedEmail = async (payload: PickupEmailPayload) => {
+    const c = getClient();
+    if (!c) return false;
+
+    try {
+        await c.emails.send({
+            from: FROM,
+            to: payload.buyerEmail,
+            subject: `Pickup order received — ${payload.reference}`,
+            html: pickupReceivedHtml(payload)
+        });
+        return true;
+    } catch (err) {
+        console.error('Pickup received email failed:', err);
+        return false;
+    }
+};
+
+export const sendPickupReminderEmail = async (payload: PickupEmailPayload) => {
+    const c = getClient();
+    if (!c) return false;
+
+    try {
+        await c.emails.send({
+            from: FROM,
+            to: payload.buyerEmail,
+            subject: `Your pickup order is ready — ${payload.reference}`,
+            html: pickupReminderHtml(payload)
+        });
+        return true;
+    } catch (err) {
+        console.error('Pickup reminder email failed:', err);
+        return false;
+    }
 };

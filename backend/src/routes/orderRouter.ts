@@ -11,6 +11,7 @@ router.patch('/:id/delivery-method', orderController.customerSelectDeliveryMetho
 // Admin only
 router.get('/', requireAdmin, orderController.getOrders);
 router.patch('/:id/status', requireAdmin, orderController.updateOrderStatus);
+router.post('/:id/remind-pickup', requireAdmin, orderController.sendPickupReminder);
 router.patch('/:id/delivery', requireAdmin, orderController.updateOrderDelivery);
 router.delete('/:id', requireAdmin, orderController.deleteOrder);
 

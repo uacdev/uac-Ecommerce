@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { Order } from '../models/Order';
-import { sendOrderEmails } from '../lib/email';
+import { Product } from '../models/Product';
+import { sendOrderEmails, sendPickupOrderReceivedEmail } from '../lib/email';
 
 const OPAY_MERCHANT_ID = process.env.OPAY_MERCHANT_ID || '';
 const OPAY_PUBLIC_KEY = process.env.OPAY_PUBLIC_KEY || '';
@@ -14,6 +15,15 @@ function buildHmacSignature(payload: string): string {
     hmac.update(payload);
     return hmac.digest('hex');
 }
+
+const resolvePickupLocation = async (items: any[] = []) => {
+    const ids = Array.from(new Set((items || []).map((it: any) => String(it.productId || it.id || '')).filter(Boolean)));
+    if (!ids.length) return 'UAC Foods pickup point';
+
+    const products = await Product.find({ _id: { $in: ids } }, { location: 1 });
+    const locations = Array.from(new Set(products.map(p => String(p.location || '')).filter(Boolean)));
+    return locations.length ? locations.join(', ') : 'UAC Foods pickup point';
+};
 
 export const initiatePayment = async (req: Request, res: Response) => {
     try {
@@ -140,6 +150,21 @@ export const handleWebhook = async (req: Request, res: Response) => {
                     amount: order.amount,
                     paymentMethod: 'opay'
                 }).catch(err => console.error('[OPay] Email dispatch failed:', err));
+
+                if (String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
+                    const pickupLocation = await resolvePickupLocation(order.items as any[]);
+                    sendPickupOrderReceivedEmail({
+                        reference: order.reference,
+                        buyerName: order.buyerName,
+                        buyerEmail: order.buyerEmail,
+                        buyerPhone: order.buyerPhone,
+                        items: order.items as any,
+                        productAmount: order.productAmount,
+                        amount: order.amount,
+                        pickupLocation,
+                        pickupCode: order.pickupCode || ''
+                    }).catch(err => console.error('[OPay] Pickup received email failed:', err));
+                }
             }
         } else if (status === 'FAIL' || status === 'CLOSED') {
             await Order.findOneAndUpdate({ reference }, { status: 'cancelled' });
@@ -183,7 +208,21 @@ export const verifyPayment = async (req: Request, res: Response) => {
         const paymentStatus = data.data?.status;
 
         if (paymentStatus === 'SUCCESS') {
-            await Order.findOneAndUpdate({ reference }, { status: 'paid' });
+            const order = await Order.findOneAndUpdate({ reference }, { status: 'paid' }, { returnDocument: 'after' });
+            if (order && String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
+                const pickupLocation = await resolvePickupLocation(order.items as any[]);
+                sendPickupOrderReceivedEmail({
+                    reference: order.reference,
+                    buyerName: order.buyerName,
+                    buyerEmail: order.buyerEmail,
+                    buyerPhone: order.buyerPhone,
+                    items: order.items as any,
+                    productAmount: order.productAmount,
+                    amount: order.amount,
+                    pickupLocation,
+                    pickupCode: order.pickupCode || ''
+                }).catch(err => console.error('[OPay] Pickup received email failed:', err));
+            }
             return res.json({ success: true, status: 'paid', data: data.data });
         }
 

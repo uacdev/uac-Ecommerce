@@ -19,11 +19,13 @@ const normalizePackagingLabel = (value = '', product = {}) => {
 }
 
 const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSelect, categoryFilter, onBack, onExport }) => {
-    const { products } = useStore()
+    const { products, updateProduct } = useStore()
     const [openMenuId, setOpenMenuId] = useState(null)
     const [localSearch, setLocalSearch] = useState('')
     const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'grid')
     const [salesById, setSalesById] = useState({})
+    const [draggedProductId, setDraggedProductId] = useState(null)
+    const [dropTargetId, setDropTargetId] = useState(null)
 
     useEffect(() => { localStorage.setItem(VIEW_KEY, view) }, [view])
 
@@ -41,6 +43,25 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
         const m = p.name.toLowerCase().includes(s) || (p.category || '').toLowerCase().includes(s)
         return m && (!categoryFilter || p.category === categoryFilter)
     }), [products, searchTerm, localSearch, categoryFilter])
+
+    const handleReorderProducts = async (sourceId, targetId) => {
+        if (!sourceId || !targetId || sourceId === targetId) return
+
+        const sourceIndex = filtered.findIndex(p => (p.id || p._id) === sourceId)
+        const targetIndex = filtered.findIndex(p => (p.id || p._id) === targetId)
+        if (sourceIndex < 0 || targetIndex < 0) return
+
+        const reordered = [...filtered]
+        const [moved] = reordered.splice(sourceIndex, 1)
+        reordered.splice(targetIndex, 0, moved)
+
+        await Promise.allSettled(
+            reordered.map((product, index) => updateProduct(product.id || product._id, { displayOrder: index }))
+        )
+
+        setDraggedProductId(null)
+        setDropTargetId(null)
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -100,15 +121,34 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
                     <p className="text-[14px] font-bold text-[var(--text-primary)]">No products match these filters.</p>
                 </div>
             ) : view === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="space-y-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Drag cards to change the storefront order.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {filtered.map(p => {
                         const sales = salesById[p.id] || { soldUnits: 0, revenue: 0 }
                         const isMenuOpen = openMenuId === p.id
                         return (
                             <div
                                 key={p.id}
+                                draggable
+                                onDragStart={(e) => {
+                                    e.dataTransfer.effectAllowed = 'move'
+                                    setDraggedProductId(p.id)
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault()
+                                    setDropTargetId(p.id)
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault()
+                                    handleReorderProducts(draggedProductId, p.id)
+                                }}
+                                onDragEnd={() => {
+                                    setDraggedProductId(null)
+                                    setDropTargetId(null)
+                                }}
                                 onClick={() => onSelect?.(p)}
-                                className="group bg-[var(--bg-tertiary)] border border-[var(--divider)] rounded-2xl shadow-sm hover:shadow-lg transition-all overflow-visible relative cursor-pointer"
+                                className={`group bg-[var(--bg-tertiary)] border rounded-2xl shadow-sm hover:shadow-lg transition-all overflow-visible relative cursor-pointer ${draggedProductId === p.id ? 'opacity-50 ring-2 ring-[#ed0000]' : ''} ${dropTargetId === p.id ? 'ring-2 ring-[#0f2e53]' : 'border-[var(--divider)]'}`}
                             >
                                 {/* Action menu (top-right) — stopPropagation so menu clicks don't trigger card open */}
                                 <div className="absolute top-3 right-3 z-20" onClick={(e) => e.stopPropagation()}>
@@ -155,7 +195,10 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
 
                                     <div className="flex items-baseline justify-between mt-3">
                                         <span className="text-xl font-bold text-[#ed0000] tracking-tight">₦{(p.price || 0).toLocaleString()}</span>
-                                        {p.packaging && <span className="text-[10px] text-[var(--text-muted)] font-medium truncate max-w-[55%]">{normalizePackagingLabel(p.packaging, p)}</span>}
+                                        <div className="text-right min-w-0">
+                                            {p.packaging && <div className="text-[10px] text-[var(--text-muted)] font-medium truncate max-w-[55%] ml-auto">{normalizePackagingLabel(p.packaging, p)}</div>}
+                                            {p.piecesPerPack != null && <div className="text-[10px] text-[var(--text-muted)] font-medium mt-1">{p.piecesPerPack} pieces in a pack</div>}
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-[var(--divider)]">
@@ -176,6 +219,7 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
                             </div>
                         )
                     })}
+                    </div>
                 </div>
             ) : (
                 // LIST VIEW (existing table-style)

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Download, ChevronLeft, ChevronRight, BellRing } from 'lucide-react'
 
 const STATUS_COLOR = {
     pending: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -36,6 +36,8 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
     const [pagination, setPagination] = useState({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 })
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [remindingId, setRemindingId] = useState(null)
+    const [feedback, setFeedback] = useState('')
 
     const search = useDebounced((externalSearchTerm || localSearch).trim(), 350)
 
@@ -65,6 +67,36 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
     const showingTo = Math.min(pagination.page * pagination.limit, pagination.total)
 
     const exportRows = useMemo(() => orders, [orders])
+
+    const handlePickupReminder = async (order, e) => {
+        e.stopPropagation()
+        setError('')
+        setFeedback('')
+
+        const normalizedStatus = String(order.status || '').toLowerCase()
+        if (normalizedStatus !== 'paid' && normalizedStatus !== 'confirmed') {
+            setFeedback('Reminder is only available for paid or confirmed orders')
+            return
+        }
+        if (String(order.fulfillmentType || '').toLowerCase() !== 'pickup') {
+            setFeedback('Reminder is currently available for pickup orders only')
+            return
+        }
+
+        setRemindingId(order.id || order._id)
+        try {
+            const res = await orderApi.remindPickup(order.id || order._id)
+            if (res.data?.success) {
+                setFeedback(res.data?.message || 'Reminder sent')
+            } else {
+                setError(res.data?.message || 'Could not send reminder')
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Could not send reminder')
+        } finally {
+            setRemindingId(null)
+        }
+    }
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -116,6 +148,9 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
             {error && (
                 <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/30 text-[#ed0000] text-[12px] font-bold">{error}</div>
             )}
+            {feedback && (
+                <div className="px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 text-[12px] font-bold">{feedback}</div>
+            )}
 
             <div className="bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--divider)] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
@@ -126,6 +161,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Customer</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Amount</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Date</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reminder</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
                             </tr>
                         </thead>
@@ -137,11 +173,12 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         <td className="px-6 py-5"><div className="h-3 w-32 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-20 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-24 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
+                                        <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-20 bg-[var(--bg-secondary)] rounded-full animate-pulse ml-auto" /></td>
                                     </tr>
                                 ))
                             ) : orders.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
+                                <tr><td colSpan={6} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
                             ) : orders.map(o => (
                                 <tr
                                     key={o.id || o._id}
@@ -152,6 +189,20 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                     <td className="px-6 py-5 text-[13px] font-bold text-[var(--text-primary)]">{o.buyerName}</td>
                                     <td className="px-6 py-5 text-[13px] font-bold text-[#ed0000]">₦{(o.amount || 0).toLocaleString()}</td>
                                     <td className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">{format(new Date(o.date), 'MMM dd, yyyy')}</td>
+                                    <td className="px-6 py-5">
+                                        {['paid', 'confirmed'].includes(String(o.status || '').toLowerCase()) ? (
+                                            <button
+                                                onClick={(e) => handlePickupReminder(o, e)}
+                                                disabled={remindingId === (o.id || o._id)}
+                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--bg-secondary)] text-[11px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all disabled:opacity-50"
+                                            >
+                                                <BellRing size={13} />
+                                                {remindingId === (o.id || o._id) ? 'Sending…' : 'Reminder'}
+                                            </button>
+                                        ) : (
+                                            <span className="text-[11px] text-[var(--text-muted)]">—</span>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-5 text-right">
                                         <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>
                                             {(o.status || 'pending').toUpperCase()}

@@ -6,7 +6,7 @@ import { sendBackInStockEmails } from '../lib/email';
 
 const ALLOWED_FIELDS = [
     'name', 'brand', 'description', 'category', 'image', 'images',
-    'location', 'packaging', 'price', 'status', 'stockCount', 'is_reserved'
+    'location', 'packaging', 'piecesPerPack', 'displayOrder', 'price', 'status', 'stockCount', 'is_reserved'
 ];
 
 const sanitize = (body: any) => {
@@ -17,9 +17,21 @@ const sanitize = (body: any) => {
     return out;
 };
 
+const normalizePiecesPerPack = (value: any) => {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const normalizeDisplayOrder = (value: any) => {
+    if (value === undefined || value === null || value === '') return 0;
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+};
+
 export const getProducts = async (_req: Request, res: Response) => {
     try {
-        const data = await Product.find().sort({ created_at: -1 });
+        const data = await Product.find().sort({ displayOrder: 1, created_at: -1 });
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
         console.error('Error in getProducts:', err);
@@ -72,6 +84,8 @@ export const createProduct = async (req: Request, res: Response) => {
         const stock = Number(payload.stockCount ?? 0);
         payload.stockCount = stock;
         payload.status = stock > 0 ? 'available' : 'out_of_stock';
+        payload.piecesPerPack = normalizePiecesPerPack(payload.piecesPerPack);
+        payload.displayOrder = normalizeDisplayOrder(payload.displayOrder);
 
         const created = await Product.create(payload);
 
@@ -111,6 +125,13 @@ export const updateProduct = async (req: Request, res: Response) => {
 
         // Status is no longer set manually — it is always derived from stockCount.
         // If the admin sent a stockCount, recalc status. Otherwise leave both alone.
+        if (payload.piecesPerPack !== undefined) {
+            payload.piecesPerPack = normalizePiecesPerPack(payload.piecesPerPack);
+        }
+        if (payload.displayOrder !== undefined) {
+            payload.displayOrder = normalizeDisplayOrder(payload.displayOrder);
+        }
+
         if (payload.stockCount !== undefined) {
             const newStock = Math.max(0, Number(payload.stockCount));
             payload.stockCount = newStock;
@@ -369,6 +390,7 @@ export const bulkCreateProducts = async (req: Request, res: Response) => {
             const stock = Number(payload.stockCount ?? 0);
             payload.stockCount = stock;
             payload.status = stock > 0 ? 'available' : 'out_of_stock';
+            payload.piecesPerPack = normalizePiecesPerPack(payload.piecesPerPack);
 
             if (payload.brand) brandsToCreate.add(payload.brand);
 

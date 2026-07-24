@@ -45,6 +45,27 @@ const Checkout = () => {
     const [states, setStates] = useState([])
     const [stateName, setStateName] = useState('Lagos')
 
+    const isSingleItem = !!id
+    const singleProduct = isSingleItem ? products.find(p => p.id === id) : null
+    const [singleQty, setSingleQty] = useState(location.state?.quantity || 1)
+
+    const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: singleQty }] : []) : cart
+    const subtotal = isSingleItem ? (singleProduct?.price || 0) * singleQty : cartTotal
+
+    const allowsDelivery = useMemo(() => {
+        if (checkoutItems.length === 0) return false
+
+        return checkoutItems.every((item) => {
+            const haystack = [item?.brand, item?.category, item?.name]
+                .filter(Boolean)
+                .map((value) => String(value).toLowerCase())
+                .join(' ')
+            return haystack.includes('swan')
+        })
+    }, [checkoutItems])
+
+    const activeFulfillmentType = allowsDelivery ? fulfillmentType : 'pickup'
+
     useEffect(() => {
         Promise.allSettled([deliveryApi.getZones(), deliveryApi.getStates()]).then(([zRes, sRes]) => {
             if (zRes.status === 'fulfilled') setZones(zRes.value.data?.data || [])
@@ -61,6 +82,14 @@ const Checkout = () => {
     }, [])
 
     useEffect(() => {
+        if (!allowsDelivery) {
+            setFulfillmentType('pickup')
+            setStateName('')
+            setZoneName('')
+            setBuyer(b => ({ ...b, address: '' }))
+            return
+        }
+
         if (fulfillmentType === 'pickup') {
             setStateName('')
             setZoneName('')
@@ -68,7 +97,7 @@ const Checkout = () => {
         } else if (fulfillmentType === 'delivery') {
             setStateName('Lagos')
         }
-    }, [fulfillmentType])
+    }, [allowsDelivery, fulfillmentType])
 
     // Open a checkout session as soon as the buyer lands here. Reuse an existing
     // unconverted session id if present so a refresh doesn't inflate abandonment.
@@ -81,13 +110,6 @@ const Checkout = () => {
             })
             .catch(() => { /* analytics best-effort */ })
     }, [customer])
-
-    const isSingleItem = !!id
-    const singleProduct = isSingleItem ? products.find(p => p.id === id) : null
-    const [singleQty, setSingleQty] = useState(location.state?.quantity || 1)
-
-    const checkoutItems = isSingleItem ? (singleProduct ? [{ ...singleProduct, quantity: singleQty }] : []) : cart
-    const subtotal = isSingleItem ? (singleProduct?.price || 0) * singleQty : cartTotal
 
     const selectedZone = useMemo(() => zones.find(z => z.name === zoneName), [zones, zoneName])
     const deliveryFee = selectedZone?.fee || 0
@@ -109,7 +131,7 @@ const Checkout = () => {
             toast.error('ENTER YOUR EMAIL ADDRESS')
             return
         }
-        if (fulfillmentType === 'delivery') {
+        if (activeFulfillmentType === 'delivery') {
             if (!buyer.address?.trim()) {
                 toast.error('ENTER DELIVERY LOCATION')
                 return
@@ -136,11 +158,11 @@ const Checkout = () => {
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
             buyerEmail: buyer.email,
-            buyerAddress: fulfillmentType === 'delivery' ? buyer.address : '',
-            buyerState: fulfillmentType === 'delivery' ? stateName : '',
-            deliveryZone: fulfillmentType === 'delivery' ? zoneName : '',
+            buyerAddress: activeFulfillmentType === 'delivery' ? buyer.address : '',
+            buyerState: activeFulfillmentType === 'delivery' ? stateName : '',
+            deliveryZone: activeFulfillmentType === 'delivery' ? zoneName : '',
             paymentMethod,
-            fulfillmentType,
+            fulfillmentType: activeFulfillmentType,
             checkoutSessionId: getCheckoutSessionId() || undefined
         })
 
@@ -205,10 +227,17 @@ const Checkout = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Fulfillment Type</label>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${fulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Self Pickup</button>
-                                            <button type="button" onClick={() => setFulfillmentType('delivery')} className={`py-4 px-6 rounded-[32px] border-2 ${fulfillmentType === 'delivery' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Delivery</button>
+                                        <div className={`grid gap-4 ${allowsDelivery ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                            <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Self Pickup</button>
+                                            {allowsDelivery && (
+                                                <button type="button" onClick={() => setFulfillmentType('delivery')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'delivery' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Delivery</button>
+                                            )}
                                         </div>
+                                        {!allowsDelivery && (
+                                            <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                                                Delivery is available only for SWAN orders.
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Full Name</label>
@@ -222,7 +251,7 @@ const Checkout = () => {
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Email</label>
                                         <input required type="email" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="EMAIL@EXAMPLE.COM" />
                                     </div>
-                                    {fulfillmentType === 'delivery' && (
+                                    {activeFulfillmentType === 'delivery' && (
                                         <>
                                             <div>
                                                 <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">State</label>
@@ -280,6 +309,11 @@ const Checkout = () => {
                                                     <h4 className="text-sm font-black uppercase tracking-wider text-[var(--text-primary)] leading-tight">{item.name}</h4>
                                                     <span className="text-sm font-black text-[var(--brand-red)] mt-1 block">₦{(item.price * item.quantity).toLocaleString()}</span>
                                                     <span className="text-[10px] font-bold text-[var(--text-muted)]">₦{item.price.toLocaleString()} each</span>
+                                                    {item.piecesPerPack != null && (
+                                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)] mt-2 block">
+                                                            {item.piecesPerPack} pieces in a pack
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {/* Qty controls */}
                                                 <div className="flex items-center gap-3 border border-[var(--divider)] rounded-full px-3 py-1.5 w-fit mt-2">
@@ -318,9 +352,9 @@ const Checkout = () => {
                                         <span className="text-[var(--text-primary)]">₦{subtotal.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">
-                                        <span>{fulfillmentType === 'delivery' ? `Delivery ${selectedZone ? `· ${selectedZone.name}` : ''}` : 'Self Pickup'}</span>
-                                        <span className={fulfillmentType === 'delivery' && selectedZone ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
-                                            {fulfillmentType === 'delivery'
+                                        <span>{activeFulfillmentType === 'delivery' ? `Delivery ${selectedZone ? `· ${selectedZone.name}` : ''}` : 'Self Pickup'}</span>
+                                        <span className={activeFulfillmentType === 'delivery' && selectedZone ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+                                            {activeFulfillmentType === 'delivery'
                                                 ? selectedZone ? `₦${deliveryFee.toLocaleString()}` : 'PICK A ZONE'
                                                 : '₦0'
                                             }

@@ -75,6 +75,11 @@ const ProductCard = ({ product }) => {
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-2">{product.category}</span>
                 <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2 tracking-tight uppercase leading-tight max-w-[80%] mx-auto">{product.name}</h3>
                 <p className="text-sm font-bold text-[var(--text-muted)]">₦{product.price.toLocaleString()}</p>
+                {product.piecesPerPack != null && (
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mt-2">
+                        {product.piecesPerPack} pieces in a pack
+                    </p>
+                )}
                 {!isOutOfStock && (
                     <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 ${isLowStock ? 'text-[var(--brand-red)]' : 'text-emerald-600'}`}>
                         {isLowStock ? `Only ${stock} left` : 'In stock'}

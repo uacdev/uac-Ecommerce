@@ -7,6 +7,18 @@ const StoreContext = createContext()
 
 const FALLBACK_CATEGORY_NAMES = ['SWAN', 'Supreme', 'Gala', 'Funtime', 'Zuri', 'Kingsway Bread']
 
+const sortProductsForDisplay = (items = []) => {
+    return [...items].sort((a, b) => {
+        const aOrder = Number.isFinite(Number(a?.displayOrder)) ? Number(a.displayOrder) : 0
+        const bOrder = Number.isFinite(Number(b?.displayOrder)) ? Number(b.displayOrder) : 0
+        if (aOrder !== bOrder) return aOrder - bOrder
+
+        const aCreated = new Date(a?.created_at || a?.createdAt || 0).getTime()
+        const bCreated = new Date(b?.created_at || b?.createdAt || 0).getTime()
+        return bCreated - aCreated
+    })
+}
+
 const buildFallbackSegments = (products = []) => {
     const names = new Set(FALLBACK_CATEGORY_NAMES)
     products.forEach((product) => {
@@ -66,7 +78,7 @@ export const StoreProvider = ({ children }) => {
             .then(res => {
                 if (cancelled) return
                 const fetched = res.data?.data || []
-                setProducts(fetched)
+                setProducts(sortProductsForDisplay(fetched))
             })
             .catch(() => { if (!cancelled) setProducts([]) })
             .finally(() => { if (!cancelled) setLoading(false) })
@@ -171,6 +183,7 @@ export const StoreProvider = ({ children }) => {
             images: product.images || [],
             location: product.location,
             packaging: product.packaging || '',
+            piecesPerPack: product.piecesPerPack !== '' && product.piecesPerPack != null ? Number(product.piecesPerPack) : null,
             price: Number(product.price),
             stockCount,
             status: stockCount > 0 ? 'available' : 'out_of_stock'
@@ -178,7 +191,7 @@ export const StoreProvider = ({ children }) => {
         try {
             const res = await productApi.create(payload)
             const added = res.data.data
-            setProducts(prev => [added, ...prev])
+            setProducts(prev => sortProductsForDisplay([added, ...prev]))
             return { success: true, data: added }
         } catch (err) {
             console.error('Add product error:', err)
@@ -191,7 +204,7 @@ export const StoreProvider = ({ children }) => {
             const res = await productApi.bulkCreate(productsArray)
             const added = res.data?.data || []
             if (added.length > 0) {
-                setProducts(prev => [...added, ...prev])
+                setProducts(prev => sortProductsForDisplay([...added, ...prev]))
             }
             return { success: true, count: added.length, data: added }
         } catch (err) {
@@ -204,7 +217,7 @@ export const StoreProvider = ({ children }) => {
         try {
             const res = await productApi.update(id, updates)
             const updated = res.data.data
-            setProducts(prev => prev.map(p => (p.id === id || p._id === id) ? { ...p, ...updated } : p))
+            setProducts(prev => sortProductsForDisplay(prev.map(p => (p.id === id || p._id === id) ? { ...p, ...updated } : p)))
             return { success: true, data: updated }
         } catch (err) {
             console.error('Update product error:', err)

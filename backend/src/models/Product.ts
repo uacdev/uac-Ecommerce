@@ -13,6 +13,8 @@ const productSchema = new Schema(
         images: { type: [String], default: [] },
         location: { type: String, enum: PRODUCT_LOCATIONS, required: true },
         packaging: { type: String, default: '' },
+        piecesPerPack: { type: Number, default: null },
+        displayOrder: { type: Number, default: 0, min: 0 },
         price: { type: Number, required: true, min: 0 },
         status: { type: String, enum: PRODUCT_STATUSES, default: 'available' },
         // Numeric inventory. Auto-flips status to out_of_stock when this hits 0;

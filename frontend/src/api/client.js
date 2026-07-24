@@ -115,6 +115,7 @@ export const orderApi = {
     updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
     updateDelivery: (id, data) => api.patch(`/orders/${id}/delivery`, data),
     selectDeliveryMethod: (id, deliveryMethod) => api.patch(`/orders/${id}/delivery-method`, { deliveryMethod }),
+    remindPickup: (id) => api.post(`/orders/${id}/remind-pickup`),
     delete: (id) => api.delete(`/orders/${id}`)
 };
 

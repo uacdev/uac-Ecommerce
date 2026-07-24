@@ -8,14 +8,17 @@ import Papa from 'papaparse';
 const LOCATIONS = ['Ojota', 'Oregun', 'Kerang'];
 
 const normalizeCategoryKey = (category = '') => String(category || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+const normalizeOptionName = (value = '') => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
 
-const PRODUCT_NAMES_BY_CATEGORY = {
-    swan: ['50CL', '75CL', '150CL'],
-    supreme: ['3LITRES', '2LITRES', '900ML', '450ML', '220ML', '120ML', 'ORANGE LOLLY', 'FUNBLAST', '90ML VANILLA POUCH', '130ML VANILLA POUCH', '120ML YOGHURT'],
-    gala: ['GALA CLASSIC 60G', 'GALA ODOGWO 120G', 'COCKTAIL'],
-    funtime: ['FUNTIME COCOUNT CHIPS', 'FUNTIME COCOUNT JAR', 'GALA CHIN CHIN'],
-    zuri: ['ZURI CLASSIC 10G', 'ZURI JOLLOF 10G', 'ZURI CHICKEN 10', 'ZURI CLASSIC 100G', 'ZURI BEEF 100G', 'ZURI JOLLOF 100G', 'ZURI CHICKEN 100G', 'ZURI BEEF 10G'],
-    kingswaybread: ['Jumbo 1300g', 'Family Loaf 800g', 'Midi Loaf 400g']
+const dedupeOptionNames = (values = []) => {
+    const seen = new Set();
+    return values.reduce((acc, value) => {
+        const normalized = normalizeOptionName(value);
+        if (!value || !normalized || seen.has(normalized)) return acc;
+        seen.add(normalized);
+        acc.push(String(value).trim());
+        return acc;
+    }, []);
 };
 
 const PACKAGING_BY_PRODUCT_NAME = {
@@ -117,6 +120,8 @@ const AddProductPage = ({ product, onClose }) => {
         image: '',
         location: '',
         packaging: '',
+        piecesPerPack: '',
+        displayOrder: '',
         price: '',
         stockCount: ''
     });
@@ -131,6 +136,8 @@ const AddProductPage = ({ product, onClose }) => {
                 image: product.image || '',
                 location: product.location || '',
                 packaging: product.packaging || '',
+                piecesPerPack: product.piecesPerPack ?? '',
+                displayOrder: product.displayOrder ?? '',
                 price: product.price ?? '',
                 stockCount: product.stockCount ?? ''
             });
@@ -140,16 +147,43 @@ const AddProductPage = ({ product, onClose }) => {
     const packagingOptions = useMemo(() => {
         const categoryKey = normalizeCategoryKey(formData.category);
         const matchingCategory = businessSegments.find((segment) => normalizeCategoryKey(segment?.name) === categoryKey);
+        const categoryOptions = Array.isArray(matchingCategory?.packagingOptions) ? matchingCategory.packagingOptions : [];
+
+        if (categoryOptions.length > 0) {
+            if (!formData.name) {
+                return categoryOptions.map((option) => ({
+                    label: option?.label || option?.value || '',
+                    value: option?.value || option?.label || '',
+                    price: option?.price ?? 0
+                }));
+            }
+
+            const normalizedName = normalizeOptionName(formData.name);
+            const matchedOptions = categoryOptions.filter((option) => {
+                const candidates = [option?.label, option?.value].filter(Boolean).map(normalizeOptionName);
+                return candidates.includes(normalizedName);
+            });
+
+            return (matchedOptions.length > 0 ? matchedOptions : categoryOptions).map((option) => ({
+                label: option?.label || option?.value || '',
+                value: option?.value || option?.label || '',
+                price: option?.price ?? 0
+            }));
+        }
+
         const productOptions = formData.name ? PACKAGING_BY_PRODUCT_NAME[formData.name] || [] : [];
-        return productOptions.length > 0 ? productOptions : (matchingCategory?.packagingOptions || []);
+        return productOptions.length > 0 ? productOptions : [];
     }, [businessSegments, formData.category, formData.name]);
 
     const productNameOptions = useMemo(() => {
         const categoryKey = normalizeCategoryKey(formData.category);
         if (!categoryKey) return [];
 
-        return PRODUCT_NAMES_BY_CATEGORY[categoryKey] || [];
-    }, [formData.category]);
+        const matchingCategory = businessSegments.find((segment) => normalizeCategoryKey(segment?.name) === categoryKey);
+        return dedupeOptionNames(
+            (Array.isArray(matchingCategory?.packagingOptions) ? matchingCategory.packagingOptions : []).map((option) => option?.value || option?.label || '')
+        );
+    }, [businessSegments, formData.category]);
 
     const stockUnit = useMemo(() => {
         const categoryKey = normalizeCategoryKey(formData.category);
@@ -159,6 +193,7 @@ const AddProductPage = ({ product, onClose }) => {
         return STOCK_UNIT_BY_CATEGORY[categoryKey] || 'unit';
     }, [formData.category, formData.name]);
 
+    const isSupremeCategory = normalizeCategoryKey(formData.category) === 'supreme';
     const stockUnitLabel = stockUnit === 'carton' ? 'carton' : stockUnit === 'pack' ? 'pack' : stockUnit === 'piece' ? 'piece' : 'unit';
     const packagingFieldLabel = stockUnit === 'carton' ? 'Cartons' : stockUnit === 'pack' ? 'Packs / Pieces' : stockUnit === 'piece' ? 'Pieces' : 'Packs / Pieces';
 
@@ -166,19 +201,24 @@ const AddProductPage = ({ product, onClose }) => {
         const { name, value } = e.target;
         setFormData(prev => {
             if (name === 'category') {
-                return { ...prev, category: value, brand: value, name: '', packaging: '', price: '' };
+                return { ...prev, category: value, brand: value, name: '', packaging: '', piecesPerPack: '', price: '' };
             }
             if (name === 'name') {
                 const nextName = value;
                 const categoryKey = normalizeCategoryKey(prev.category);
                 const matchingCategory = businessSegments.find((segment) => normalizeCategoryKey(segment?.name) === categoryKey);
-                const productOptions = nextName ? PACKAGING_BY_PRODUCT_NAME[nextName] || [] : [];
-                const fallbackOption = productOptions[0] || matchingCategory?.packagingOptions?.[0];
+                const categoryOptions = Array.isArray(matchingCategory?.packagingOptions) ? matchingCategory.packagingOptions : [];
+                const normalizedName = normalizeOptionName(nextName);
+                const matchedOption = categoryOptions.find((option) => {
+                    const candidates = [option?.label, option?.value].filter(Boolean).map(normalizeOptionName);
+                    return candidates.includes(normalizedName);
+                });
+                const fallbackOption = matchedOption || categoryOptions[0] || null;
 
                 return {
                     ...prev,
                     name: nextName,
-                    packaging: fallbackOption?.value || '',
+                    packaging: fallbackOption?.value || fallbackOption?.label || '',
                     price: fallbackOption?.price != null ? Number(fallbackOption.price).toFixed(2) : ''
                 };
             }
@@ -231,6 +271,8 @@ const AddProductPage = ({ product, onClose }) => {
             image: formData.image,
             location: formData.location,
             packaging: formData.packaging.trim(),
+            piecesPerPack: isSupremeCategory && formData.piecesPerPack !== '' ? Number(formData.piecesPerPack) : null,
+            displayOrder: formData.displayOrder === '' ? 0 : Number(formData.displayOrder),
             price: Number(formData.price),
             stockCount: Math.max(0, Math.floor(Number(formData.stockCount) || 0))
         };
@@ -515,6 +557,32 @@ const AddProductPage = ({ product, onClose }) => {
                                     className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
                                 />
                                 <p className="text-[10px] text-[var(--text-muted)] font-medium">Enter the number of {stockUnitLabel}s in stock. This is the main inventory unit for the selected product.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {isSupremeCategory && (
+                                <div className="space-y-2">
+                                    <label className="text-[12px] font-bold text-[var(--text-primary)]">Piece per pack *</label>
+                                    <input
+                                        name="piecesPerPack" type="number" min="1" step="1"
+                                        value={formData.piecesPerPack} onChange={handleChange}
+                                        placeholder="e.g. 12"
+                                        className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
+                                        required={isSupremeCategory}
+                                    />
+                                    <p className="text-[10px] text-[var(--text-muted)] font-medium">Enter the number of pieces inside each Supreme pack.</p>
+                                </div>
+                            )}
+                            <div className="space-y-2">
+                                <label className="text-[12px] font-bold text-[var(--text-primary)]">Display order</label>
+                                <input
+                                    name="displayOrder" type="number" min="0" step="1"
+                                    value={formData.displayOrder} onChange={handleChange}
+                                    placeholder="e.g. 1"
+                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
+                                />
+                                <p className="text-[10px] text-[var(--text-muted)] font-medium">Lower numbers appear first on the products page.</p>
                             </div>
                         </div>
 
