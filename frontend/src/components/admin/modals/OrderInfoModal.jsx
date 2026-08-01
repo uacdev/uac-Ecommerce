@@ -35,6 +35,8 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [error, setError] = useState('')
     const [toast, setToast] = useState('')
+    const [showConfirmEmailModal, setShowConfirmEmailModal] = useState(false)
+    const [pendingStatus, setPendingStatus] = useState('')
 
     const [statusDraft, setStatusDraft] = useState(incomingOrder.status || 'pending')
     const [methodDraft, setMethodDraft] = useState(incomingOrder.deliveryMethod || 'pending')
@@ -56,17 +58,31 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
 
     const flash = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2200) }
 
-    const handleSaveStatus = async () => {
-        if (statusDraft === order.status) return
+    const persistStatusChange = async (nextStatus, sendConfirmationEmail = false) => {
+        if (nextStatus === order.status) return
         setSavingStatus(true); setError('')
-        const res = await updateOrderStatus(order.id || order._id, statusDraft)
+        const res = await updateOrderStatus(order.id || order._id, nextStatus, { sendConfirmationEmail })
         setSavingStatus(false)
         if (res?.success) {
             if (res.data) setOrder(res.data)
-            flash('Status updated')
+            if (sendConfirmationEmail && res?.emailSent) {
+                flash('Status updated and confirmation email sent')
+            } else {
+                flash('Status updated')
+            }
         } else {
             setError(res?.message || 'Could not update status')
         }
+    }
+
+    const handleSaveStatus = async () => {
+        if (statusDraft === order.status) return
+        if (String(statusDraft).toLowerCase() === 'confirmed') {
+            setPendingStatus(statusDraft)
+            setShowConfirmEmailModal(true)
+            return
+        }
+        await persistStatusChange(statusDraft, false)
     }
 
     const handleSaveDelivery = async () => {
@@ -317,6 +333,44 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                     </section>
                 </div>
             </motion.div>
+
+            {showConfirmEmailModal && (
+                <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                    onClick={() => setShowConfirmEmailModal(false)}
+                >
+                    <motion.div
+                        initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-md rounded-3xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-6 shadow-2xl"
+                    >
+                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Send customer email?</p>
+                        <h4 className="mt-2 text-xl font-bold text-[var(--text-primary)]">Would you like a payment confirmation email sent to the customer?</h4>
+                        <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-muted)]">This will send a confirmation email to the customer using the same style as the pickup-ready notice.</p>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowConfirmEmailModal(false)
+                                    persistStatusChange(pendingStatus, false)
+                                }}
+                                className="rounded-xl border border-[var(--divider)] px-4 py-2.5 text-[12px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
+                            >
+                                No
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowConfirmEmailModal(false)
+                                    persistStatusChange(pendingStatus, true)
+                                }}
+                                className="rounded-xl bg-[#ed0000] px-4 py-2.5 text-[12px] font-bold text-white hover:bg-[#c90000]"
+                            >
+                                Yes
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
         </motion.div>
     )
 }

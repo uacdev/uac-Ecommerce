@@ -266,14 +266,14 @@ export const StoreProvider = ({ children }) => {
         }
     }
 
-    const updateOrderStatus = async (id, status) => {
+    const updateOrderStatus = async (id, status, options = {}) => {
         try {
-            const res = await orderApi.updateStatus(id, status)
+            const res = await orderApi.updateStatus(id, status, options)
             const updated = res.data?.data
             setOrders(prev => prev.map(o => (o.id === id || o._id === id) ? updated : o))
             bumpOrdersTick()
             refreshStats()
-            return { success: true, data: updated }
+            return { success: true, data: updated, emailSent: Boolean(res.data?.emailSent) }
         } catch (err) {
             console.error('Update status error:', err)
             return { success: false, message: err.response?.data?.message || err.message }

@@ -3,7 +3,7 @@ import { Order, ORDER_STATUSES, DELIVERY_METHODS } from '../models/Order';
 import { Product } from '../models/Product';
 import { DeliveryZone } from '../models/DeliveryZone';
 import { isNigerianState } from '../data/nigerianStates';
-import { sendOrderEmails, sendBackInStockEmails, sendPickupOrderReceivedEmail, sendPickupReminderEmail } from '../lib/email';
+import { sendOrderEmails, sendBackInStockEmails, sendPickupOrderReceivedEmail, sendPickupReminderEmail, sendPaymentConfirmationEmail } from '../lib/email';
 import { notify } from '../lib/notify';
 import { StockSubscription } from '../models/StockSubscription';
 import { CheckoutSession } from '../models/CheckoutSession';
@@ -41,6 +41,35 @@ const maybeSendPickupReceivedEmail = async (order: any) => {
         pickupLocation,
         pickupCode: order.pickupCode || ''
     }).catch(err => console.error('Pickup received email dispatch failed:', err));
+};
+
+const maybeSendPaymentConfirmationEmail = async (order: any) => {
+    if (!order) return false;
+    if (!order.buyerEmail) return false;
+
+    const pickupLocation = String(order.fulfillmentType || '').toLowerCase() === 'pickup'
+        ? await resolvePickupLocation(order.items || [])
+        : '';
+
+    try {
+        return await sendPaymentConfirmationEmail({
+            reference: order.reference,
+            buyerName: order.buyerName,
+            buyerEmail: order.buyerEmail,
+            buyerPhone: order.buyerPhone,
+            items: order.items as any,
+            productAmount: order.productAmount,
+            amount: order.amount,
+            pickupLocation,
+            pickupCode: order.pickupCode || '',
+            buyerAddress: order.buyerAddress || '',
+            deliveryZone: order.deliveryZone || '',
+            fulfillmentType: order.fulfillmentType || 'delivery'
+        });
+    } catch (err) {
+        console.error('Payment confirmation email dispatch failed:', err);
+        return false;
+    }
 };
 
 const generateReference = () =>
@@ -313,7 +342,7 @@ export const createOrder = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, sendConfirmationEmail } = req.body;
         if (!ORDER_STATUSES.includes(status)) {
             return res.status(400).json({ success: false, message: `status must be one of ${ORDER_STATUSES.join(', ')}` });
         }
@@ -334,7 +363,12 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             await maybeSendPickupReceivedEmail(updated);
         }
 
-        res.json({ success: true, data: updated });
+        let emailSent = false;
+        if (before.status !== 'confirmed' && updated.status === 'confirmed' && sendConfirmationEmail) {
+            emailSent = await maybeSendPaymentConfirmationEmail(updated);
+        }
+
+        res.json({ success: true, data: updated, emailSent });
     } catch (err: any) {
         console.error('Error in updateOrderStatus:', err);
         res.status(400).json({ success: false, message: err.message || 'Error updating order status' });

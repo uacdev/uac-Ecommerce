@@ -154,11 +154,7 @@ const ProductDetails = () => {
                                         <p className="text-[10px] font-bold text-[var(--brand-red)] mt-2">Max stock reached</p>
                                     )}
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-6">Delivery</h3>
-                                    <p className="text-sm font-black uppercase tracking-widest text-[var(--text-primary)]">24-48 HOURS TRACKING</p>
-                                    <p className="text-[10px] font-medium text-[var(--text-muted)] mt-2">Standard regional logistics applies.</p>
-                                </div>
+                                
                             </div>
                         </div>
 

@@ -112,7 +112,7 @@ export const customerApi = {
 export const orderApi = {
     getAll: (params = {}) => api.get('/orders', { params }),
     create: (data) => api.post('/orders', data),
-    updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
+    updateStatus: (id, status, options = {}) => api.patch(`/orders/${id}/status`, { status, ...options }),
     updateDelivery: (id, data) => api.patch(`/orders/${id}/delivery`, data),
     selectDeliveryMethod: (id, deliveryMethod) => api.patch(`/orders/${id}/delivery-method`, { deliveryMethod }),
     remindPickup: (id) => api.post(`/orders/${id}/remind-pickup`),
