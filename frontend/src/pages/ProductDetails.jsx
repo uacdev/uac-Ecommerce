@@ -50,21 +50,21 @@ const ProductDetails = () => {
     }
 
     return (
-        <div className="pt-40 pb-40 bg-[var(--bg-primary)] transition-colors duration-700 font-['Sen',sans-serif]">
-            <div className="container px-6">
+        <div className="pt-32 pb-32 bg-[var(--bg-primary)] transition-colors duration-700 font-['Sen',sans-serif]">
+            <div className="container px-4 md:px-6">
                 <Link 
                     to="/products" 
-                    className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-[var(--text-muted)] hover:text-[var(--brand-red)] transition-all mb-12 group"
+                    className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.4em] text-[var(--text-muted)] hover:text-[var(--brand-red)] transition-all mb-6 group"
                 >
                     <ArrowLeft size={16} className="group-hover:-translate-x-2 transition-transform" />
                     Back to shop
                 </Link>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-12 lg:gap-20 items-start">
                     
                     {/* Editorial Gallery */}
-                    <div className="space-y-8">
-                        <div className="aspect-[3/4] rounded-[60px] overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] relative">
+                    <div className="space-y-8 max-w-md mx-auto lg:mx-0 w-full">
+                        <div className="aspect-[3/4] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] relative">
                             <motion.img
                                 key={activeImage}
                                 initial={{ opacity: 0, scale: 1.05 }}
@@ -90,13 +90,13 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Product Specs */}
-                    <div className="lg:sticky lg:top-40">
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)] mb-4 block">{product.category}</span>
-                        <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.9] text-[var(--text-primary)] mb-8">{product.name}</h1>
+                    <div className="lg:sticky lg:top-36 w-full">
+                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)] mb-3 block">{product.category}</span>
+                        <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight text-[var(--text-primary)] mb-6">{product.name}</h1>
                         
-                        <div className="flex items-baseline gap-4 mb-6">
-                            <span className="text-4xl font-black text-[var(--text-primary)]">₦{product.price.toLocaleString()}</span>
-                            <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Retail Price</span>
+                        <div className="flex items-baseline gap-3 mb-4">
+                            <span className="text-2xl md:text-3xl font-black text-[var(--text-primary)]">₦{product.price.toLocaleString()}</span>
+                            <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Retail Price</span>
                         </div>
 
                         {/* Stock indicator */}
@@ -105,32 +105,32 @@ const ProductDetails = () => {
                             const out = product.status === 'out_of_stock' || stock === 0
                             const low = !out && stock <= 5
                             return (
-                                <div className="mb-12 flex items-center gap-2">
-                                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${
+                                <div className="mb-8 flex items-center gap-2">
+                                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] border ${
                                         out ? 'bg-red-50 text-[var(--brand-red)] border-red-200'
                                             : low ? 'bg-amber-50 text-amber-700 border-amber-200'
                                             : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                     }`}>
-                                        <span className={`w-2 h-2 rounded-full ${out ? 'bg-[var(--brand-red)]' : low ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                        <span className={`w-1.5 h-1.5 rounded-full ${out ? 'bg-[var(--brand-red)]' : low ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                                         {out ? 'Out of stock' : low ? `Only ${stock} left` : `${stock} in stock`}
                                     </span>
                                 </div>
                             )
                         })()}
 
-                        <div className="space-y-12 mb-16">
+                        <div className="space-y-8 mb-10">
                             {product.description ? (
                                 <div>
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Description</h3>
-                                    <p className="text-lg text-[var(--text-primary)] font-medium leading-relaxed max-w-lg">{product.description}</p>
+                                    <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">Description</h3>
+                                    <p className="text-sm md:text-base text-[var(--text-primary)] font-semibold leading-relaxed max-w-lg">{product.description}</p>
                                 </div>
                             ) : null}
 
-                            <div className="flex items-start gap-12 pt-8 border-t border-[var(--divider)]">
-                                <div className="w-32">
-                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-6">Quantity</h3>
-                                    <div className="flex items-center justify-between border-b-2 border-[var(--divider)] pb-2 group focus-within:border-[var(--brand-red)] transition-colors">
-                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} disabled={(product.stockCount ?? 0) === 0} className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">-</button>
+                            <div className="flex items-start gap-12 pt-6 border-t border-[var(--divider)]">
+                                <div className="w-28">
+                                    <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Quantity</h3>
+                                    <div className="flex items-center justify-between border-b-2 border-[var(--divider)] pb-1.5 group focus-within:border-[var(--brand-red)] transition-colors">
+                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} disabled={(product.stockCount ?? 0) === 0} className="text-lg font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">-</button>
                                         <input
                                             type="number"
                                             min="1"
@@ -142,35 +142,35 @@ const ProductDetails = () => {
                                                 setQuantity(Math.max(1, Math.min(stock, n)))
                                             }}
                                             disabled={(product.stockCount ?? 0) === 0}
-                                            className="w-12 text-center bg-transparent text-xl font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-30"
+                                            className="w-10 text-center bg-transparent text-lg font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-30"
                                         />
                                         <button
                                             onClick={() => setQuantity(q => Math.min(product.stockCount ?? q, q + 1))}
                                             disabled={(product.stockCount ?? 0) === 0 || quantity >= (product.stockCount ?? 0)}
-                                            className="text-xl font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                            className="text-lg font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                                         >+</button>
                                     </div>
                                     {quantity >= (product.stockCount ?? 0) && (product.stockCount ?? 0) > 0 && (
-                                        <p className="text-[10px] font-bold text-[var(--brand-red)] mt-2">Max stock reached</p>
+                                        <p className="text-[9px] font-bold text-[var(--brand-red)] mt-1.5">Max stock reached</p>
                                     )}
                                 </div>
                                 
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3">
                             {product.status === 'out_of_stock' ? (
                                 <NotifyWhenInStock productId={product.id || product._id} productName={product.name} />
                             ) : (
                                 <button
                                     onClick={handleAddToCart}
-                                    className="w-full bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl"
+                                    className="w-full bg-black text-white py-5 md:py-6 rounded-2xl md:rounded-[24px] text-[11px] font-black uppercase tracking-[0.2em] hover:bg-[var(--brand-red)] transition-all shadow-2xl"
                                 >
                                     Add to Cart
                                 </button>
                             )}
                             
-                            <div className="grid grid-cols-1 gap-4 mt-8">
+                            <div className="grid grid-cols-1 gap-4 mt-4">
                                 {(() => {
                                     const { whatsappNumber } = useStore() || {}
                                     const digits = String(whatsappNumber || '').replace(/\D/g, '')
@@ -178,8 +178,8 @@ const ProductDetails = () => {
                                         ? (digits.startsWith('0') ? `https://wa.me/234${digits.replace(/^0+/, '')}` : (digits.startsWith('234') ? `https://wa.me/${digits}` : `https://wa.me/${digits}`))
                                         : 'https://wa.me/2349098050402'
                                     return (
-                                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-3 py-6 border border-[var(--divider)] rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
-                                            <MessageCircle size={18} />
+                                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[var(--divider)] rounded-xl md:rounded-[18px] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
+                                            <MessageCircle size={16} />
                                             WhatsApp
                                         </a>
                                     )

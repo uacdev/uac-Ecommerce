@@ -34,6 +34,7 @@ import TermsAndConditions from './pages/TermsAndConditions'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
+import FloatingButtons from './components/FloatingButtons'
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
@@ -103,6 +104,7 @@ function Layout() {
         </AnimatePresence>
       </main>
       {!isAdmin && <Footer />}
+      {!isAdmin && <FloatingButtons />}
     </div>
   )
 }
