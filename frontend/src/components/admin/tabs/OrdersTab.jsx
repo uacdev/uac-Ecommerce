@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Download, ChevronLeft, ChevronRight, BellRing } from 'lucide-react'
+import { Search, Download, ChevronLeft, ChevronRight, BellRing, Trash2 } from 'lucide-react'
 
 const STATUS_COLOR = {
     pending: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -38,6 +38,9 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
     const [error, setError] = useState('')
     const [remindingId, setRemindingId] = useState(null)
     const [feedback, setFeedback] = useState('')
+    const [deletingId, setDeletingId] = useState(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [orderToDelete, setOrderToDelete] = useState(null)
 
     const search = useDebounced((externalSearchTerm || localSearch).trim(), 350)
 
@@ -95,6 +98,40 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
             setError(err.response?.data?.message || err.message || 'Could not send reminder')
         } finally {
             setRemindingId(null)
+        }
+    }
+
+    const handleDeleteOrder = async (order, e) => {
+        e.stopPropagation()
+        setOrderToDelete(order)
+        setShowDeleteConfirm(true)
+    }
+
+    const confirmDeleteOrder = async () => {
+        if (!orderToDelete) return
+        
+        setError('')
+        setFeedback('')
+        setShowDeleteConfirm(false)
+        setDeletingId(orderToDelete.id || orderToDelete._id)
+        try {
+            const res = await orderApi.delete(orderToDelete.id || orderToDelete._id)
+            if (res.data?.success) {
+                setFeedback('Order deleted successfully')
+                // Silently refetch the page after deletion
+                const refetchRes = await orderApi.getAll({ page, limit: PAGE_SIZE, status: statusFilter, q: search })
+                if (refetchRes.data?.success) {
+                    setOrders(refetchRes.data.data || [])
+                    setPagination(refetchRes.data.pagination || { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 })
+                }
+            } else {
+                setError(res.data?.message || 'Could not delete order')
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Could not delete order')
+        } finally {
+            setDeletingId(null)
+            setOrderToDelete(null)
         }
     }
 
@@ -163,6 +200,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Date</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reminder</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Delete</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--divider)]">
@@ -175,10 +213,11 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         <td className="px-6 py-5"><div className="h-3 w-24 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-20 bg-[var(--bg-secondary)] rounded-full animate-pulse ml-auto" /></td>
+                                        <td className="px-6 py-5"><div className="h-5 w-8 bg-[var(--bg-secondary)] rounded animate-pulse ml-auto" /></td>
                                     </tr>
                                 ))
                             ) : orders.length === 0 ? (
-                                <tr><td colSpan={6} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
+                                <tr><td colSpan={7} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
                             ) : orders.map(o => (
                                 <tr
                                     key={o.id || o._id}
@@ -207,6 +246,16 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>
                                             {(o.status || 'pending').toUpperCase()}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-5 text-right">
+                                        <button
+                                            onClick={(e) => handleDeleteOrder(o, e)}
+                                            disabled={deletingId === (o.id || o._id)}
+                                            className="p-2 text-[var(--text-muted)] hover:text-red-500 transition-colors disabled:opacity-50 rounded-lg hover:bg-red-50/20"
+                                            title="Delete order"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
@@ -237,6 +286,39 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && orderToDelete && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
+                    <div className="bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--divider)] shadow-xl max-w-sm w-full mx-4 animate-in zoom-in-95 duration-300">
+                        <div className="p-8">
+                            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-3">Delete Order</h3>
+                            <p className="text-[13px] text-[var(--text-muted)] mb-8">
+                                Are you sure you want to delete order <span className="font-bold text-[var(--text-primary)]">{orderToDelete.reference || `#${(orderToDelete.id || orderToDelete._id || '').slice(-8)}`}</span>?
+                            </p>
+                            <p className="text-[12px] text-red-500 mb-8">This action cannot be undone.</p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowDeleteConfirm(false)
+                                        setOrderToDelete(null)
+                                    }}
+                                    className="flex-1 px-4 py-3 rounded-lg border border-[var(--divider)] bg-[var(--bg-secondary)] text-[var(--text-primary)] font-bold text-[12px] hover:bg-[var(--bg-tertiary)] transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDeleteOrder}
+                                    disabled={deletingId === (orderToDelete.id || orderToDelete._id)}
+                                    className="flex-1 px-4 py-3 rounded-lg bg-red-500 text-white font-bold text-[12px] hover:bg-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {deletingId === (orderToDelete.id || orderToDelete._id) ? 'Deleting…' : 'Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

@@ -259,18 +259,6 @@ const Home = () => {
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
-
-                            {/* Stats row */}
-                            <div className="flex gap-8 pt-4 border-t border-white/20 mt-6">
-                                {[['60', 'Years'], ['4', 'Brands'], ['01', 'M+ Consumers']].map(([val, label]) => (
-                                    <div key={label}>
-                                        <p className="text-2xl font-bold text-white">
-                                            <CountUp end={val} />{label === 'M+ Consumers' ? 'M+' : '+'}
-                                        </p>
-                                        <p className="text-white/50 text-[10px] font-bold tracking-tight">{label}</p>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
 
                         {/* Centre: Big product hero image */}
@@ -465,21 +453,6 @@ const Home = () => {
                             <p className="text-gray-600 text-[15px] leading-relaxed">
                                 We are committed to nourishing Nigerians with products that meet the highest international standards, while staying rooted in our communities.
                             </p>
-                            <div className="grid grid-cols-2 gap-6 pt-4">
-                                {[
-                                    { val: '60+', label: 'Years of excellence' },
-                                    { val: '4', label: 'Iconic brands' },
-                                    { val: 'ISO', label: 'Certified quality' },
-                                    { val: 'M+', label: 'Happy consumers' },
-                                ].map(({ val, label }) => (
-                                    <div key={label} className="bg-[#FDF8F5] rounded-2xl p-5">
-                                        <p className="text-3xl font-bold text-[#ED0000]">
-                                            <CountUp end={val} />
-                                        </p>
-                                        <p className="text-[12px] text-gray-500 font-medium mt-1">{label}</p>
-                                    </div>
-                                ))}
-                            </div>
                             <Link to="/about" className="inline-flex items-center gap-2 text-gray-900 font-bold text-[13px] border-b border-gray-300 pb-1 hover:border-gray-900 transition-colors">
                                 Learn more about us <ArrowRight size={14} />
                             </Link>

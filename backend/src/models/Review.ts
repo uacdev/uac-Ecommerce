@@ -6,6 +6,7 @@ const reviewSchema = new Schema(
         productName: { type: String, default: '' },
         customerName: { type: String, required: true, trim: true },
         customerEmail: { type: String, default: '', trim: true, lowercase: true },
+        orderReference: { type: String, default: '', index: true },
         rating: { type: Number, required: true, min: 1, max: 5 },
         comment: { type: String, default: '', trim: true },
         approved: { type: Boolean, default: true }

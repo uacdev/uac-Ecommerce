@@ -47,6 +47,7 @@ const ReviewsTab = ({ onExport }) => {
             productName: r.productName || '',
             rating: r.rating || 0,
             comment: r.comment || '',
+            orderReference: r.orderReference || '',
             approved: r.approved !== false
         }))
         onExport(rows, 'reviews_export')
@@ -132,9 +133,12 @@ const ReviewsTab = ({ onExport }) => {
                                     <span className="text-[12px] font-bold text-[var(--text-primary)] truncate">{r.customerName}</span>
                                 </div>
                                 {r.productName && (
-                                    <span className="text-[10px] font-bold text-[#ed0000] bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded-full tracking-tight ml-2 truncate max-w-[40%]">
-                                        {r.productName}
-                                    </span>
+                                    <div className="flex flex-col items-end gap-1 ml-2 max-w-[45%]">
+                                        <span className="text-[10px] font-bold text-[#ed0000] bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded-full tracking-tight truncate max-w-full">
+                                            {r.productName}
+                                        </span>
+                                        {r.orderReference && <span className="text-[9px] font-medium text-[var(--text-muted)] truncate max-w-full">Order {r.orderReference}</span>}
+                                    </div>
                                 )}
                             </div>
                         </div>

@@ -4,7 +4,7 @@ import { useStore } from '../context/StoreContext'
 
 const FloatingButtons = () => {
     const location = useLocation()
-    const { whatsappNumber } = useStore() || {}
+    const { whatsappNumber, cartCount = 0 } = useStore() || {}
     const digits = String(whatsappNumber || '').replace(/\D/g, '')
     const waHref = digits
         ? (digits.startsWith('0') ? `https://wa.me/234${digits.replace(/^0+/, '')}` : (digits.startsWith('234') ? `https://wa.me/${digits}` : `https://wa.me/${digits}`))
@@ -25,6 +25,21 @@ const FloatingButtons = () => {
                     <span>View our products to make order</span>
                 </Link>
             )}
+
+            {/* Floating cart shortcut */}
+            <Link
+                to="/cart"
+                className="relative w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 bg-[var(--text-primary)] text-[var(--bg-primary)] hover:bg-[var(--brand-red)] hover:text-white"
+                aria-label={`Added product, ${cartCount} ${cartCount === 1 ? 'item' : 'items'} in cart`}
+                title="Added product"
+            >
+                <ShoppingBag size={20} strokeWidth={2.5} />
+                {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full flex items-center justify-center bg-[var(--brand-red)] text-white text-[9px] font-black">
+                        {cartCount}
+                    </span>
+                )}
+            </Link>
 
             {/* WhatsApp CTA */}
             <a

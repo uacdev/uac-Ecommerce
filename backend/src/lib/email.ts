@@ -13,8 +13,8 @@ const getClient = () => {
     return client;
 };
 
-const FROM = process.env.RESEND_FROM || `UAC Foods <noreply@${process.env.RESEND_DOMAIN || 'app.uacfoodsng.com'}>`;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const getFrom = () => process.env.RESEND_FROM || `UAC Foods <noreply@${process.env.RESEND_DOMAIN || 'app.uacfoodsng.com'}>`;
+const getAdminEmail = () => process.env.ADMIN_EMAIL || '';
 
 type OrderItem = { name: string; quantity: number; price: number; image?: string };
 type OrderEmailPayload = {
@@ -174,7 +174,7 @@ export const sendPasswordResetEmail = async (payload: ResetEmailPayload) => {
     if (!c) return false;
     try {
         await c.emails.send({
-            from: FROM,
+            from: getFrom(),
             to: payload.email,
             subject: 'Reset your UAC Foods admin password',
             html: resetHtml(payload)
@@ -225,7 +225,7 @@ export const sendBackInStockEmails = async (payload: RestockEmailPayload): Promi
     const results = await Promise.allSettled(
         payload.emails.map(to =>
             c.emails.send({
-                from: FROM,
+                from: getFrom(),
                 to,
                 subject: `${payload.productName} is back in stock`,
                 html
@@ -343,15 +343,15 @@ export const sendOrderEmails = async (payload: OrderEmailPayload) => {
 
     const results = await Promise.allSettled([
         c.emails.send({
-            from: FROM,
+            from: getFrom(),
             to: payload.buyerEmail,
             subject: `Order confirmed — ${payload.reference}`,
             html: customerHtml(payload)
         }),
-        ADMIN_EMAIL
+        getAdminEmail()
             ? c.emails.send({
-                from: FROM,
-                to: ADMIN_EMAIL,
+            from: getFrom(),
+            to: getAdminEmail(),
                 subject: `[UAC] New order ${payload.reference} — ${fmtNgn(payload.amount)}`,
                 html: adminHtml(payload)
             })
@@ -373,7 +373,7 @@ export const sendPickupOrderReceivedEmail = async (payload: PickupEmailPayload) 
 
     try {
         await c.emails.send({
-            from: FROM,
+            from: getFrom(),
             to: payload.buyerEmail,
             subject: `Pickup order received — ${payload.reference}`,
             html: pickupReceivedHtml(payload)
@@ -391,7 +391,7 @@ export const sendPickupReminderEmail = async (payload: PickupEmailPayload) => {
 
     try {
         await c.emails.send({
-            from: FROM,
+            from: getFrom(),
             to: payload.buyerEmail,
             subject: `Your pickup order is ready — ${payload.reference}`,
             html: pickupReminderHtml(payload)
@@ -409,7 +409,7 @@ export const sendPaymentConfirmationEmail = async (payload: PaymentConfirmationE
 
     try {
         await c.emails.send({
-            from: FROM,
+            from: getFrom(),
             to: payload.buyerEmail,
             subject: `Payment confirmed — ${payload.reference}`,
             html: paymentConfirmationHtml(payload)

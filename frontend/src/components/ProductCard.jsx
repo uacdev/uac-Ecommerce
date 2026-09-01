@@ -1,21 +1,26 @@
 import { motion } from 'framer-motion'
-import { Plus } from 'lucide-react'
+import { Check, Plus, ShoppingBag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { cdnCard } from '../lib/img'
 import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
-    const { addToCart } = useStore()
+    const { addToCart, cart, removeFromCart } = useStore()
     const stock = Number(product.stockCount ?? 0)
     const isOutOfStock = product.status === 'out_of_stock' || stock === 0
     const isLowStock = !isOutOfStock && stock <= 5
+    const isInCart = cart.some(item => item.id === product.id)
 
     const handleAddToCart = (e) => {
         e.preventDefault()
         e.stopPropagation()
-        addToCart(product)
-        toast.success(`Added ${product.name} to cart`, {
+        if (isInCart) {
+            removeFromCart(product.id)
+        } else {
+            addToCart(product)
+        }
+        toast.success(isInCart ? `${product.name} removed from cart` : `${product.name} added to cart`, {
             style: {
                 background: 'var(--bg-primary)',
                 color: 'var(--text-primary)',
@@ -41,20 +46,23 @@ const ProductCard = ({ product }) => {
                 <img
                     src={cdnCard(product.image)}
                     loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
+                    className="w-full h-full object-contain p-2 md:p-3 group-hover:scale-105 transition-all duration-700"
                     alt={product.name}
                 />
                 
                 {/* Minimal Overlay for Desktop */}
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 
-                {/* Speed Ordering Button (Always visible on mobile, hover on desktop) */}
+                {/* Speed ordering toggle: visible on mobile, revealed on desktop. */}
                 {!isOutOfStock && (
                     <button 
                         onClick={handleAddToCart}
-                        className="absolute bottom-2.5 right-2.5 md:bottom-6 md:right-6 w-8 h-8 md:w-12 md:h-12 rounded-full bg-white text-gray-900 shadow-xl flex items-center justify-center transition-all duration-300 md:translate-y-12 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 hover:bg-[var(--brand-red)] hover:text-white z-10"
+                        aria-label={isInCart ? `Remove ${product.name} from cart` : `Add ${product.name} to cart`}
+                        title={isInCart ? 'Remove from cart' : 'Add to cart'}
+                        className={`absolute bottom-2.5 left-2.5 right-2.5 md:bottom-6 md:left-auto md:right-6 md:w-auto rounded-xl md:rounded-full px-3 md:px-4 h-9 md:h-12 shadow-xl flex items-center justify-center gap-1.5 md:gap-2 transition-all duration-300 md:translate-y-12 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 z-10 text-[8px] md:text-[10px] font-black uppercase tracking-wider ${isInCart ? 'bg-[var(--brand-red)] text-white' : 'bg-white text-gray-900 hover:bg-[var(--brand-red)] hover:text-white'}`}
                     >
-                        <Plus size={16} className="md:w-5 md:h-5" />
+                        {isInCart ? <Check size={16} strokeWidth={3} /> : <ShoppingBag size={16} strokeWidth={2.5} />}
+                        <span>{isInCart ? 'Added' : 'Add to cart'}</span>
                     </button>
                 )}
 

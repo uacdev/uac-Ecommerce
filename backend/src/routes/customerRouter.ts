@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import * as customerAuthController from '../controllers/customerAuthController';
 import { requireCustomer } from '../middlewares/requireCustomer';
+import { createCustomerReview } from '../controllers/reviewController';
 
 const router = Router();
 
@@ -44,5 +45,6 @@ router.get('/auth/me', requireCustomer, customerAuthController.me);
 router.put('/auth/profile', requireCustomer, customerAuthController.updateProfile);
 router.post('/auth/change-password', requireCustomer, customerAuthController.changePassword);
 router.get('/orders', requireCustomer, customerAuthController.myOrders);
+router.post('/reviews', requireCustomer, createCustomerReview);
 
 export default router;

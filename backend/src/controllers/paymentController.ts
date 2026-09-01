@@ -3,15 +3,12 @@ import crypto from 'crypto';
 import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { sendOrderEmails, sendPickupOrderReceivedEmail } from '../lib/email';
+import { notify } from '../lib/notify';
 
-const OPAY_MERCHANT_ID = process.env.OPAY_MERCHANT_ID || '';
-const OPAY_PUBLIC_KEY = process.env.OPAY_PUBLIC_KEY || '';
-const OPAY_SECRET_KEY = process.env.OPAY_SECRET_KEY || '';
-const OPAY_BASE_URL = process.env.OPAY_BASE_URL || 'https://sandboxapi.opaycheckout.com/api/v1/international';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const DEFAULT_OPAY_BASE_URL = 'https://sandboxapi.opaycheckout.com/api/v1/international';
 
 function buildHmacSignature(payload: string): string {
-    const hmac = crypto.createHmac('sha512', OPAY_SECRET_KEY);
+    const hmac = crypto.createHmac('sha512', process.env.OPAY_SECRET_KEY || '');
     hmac.update(payload);
     return hmac.digest('hex');
 }
@@ -23,6 +20,62 @@ const resolvePickupLocation = async (items: any[] = []) => {
     const products = await Product.find({ _id: { $in: ids } }, { location: 1 });
     const locations = Array.from(new Set(products.map(p => String(p.location || '')).filter(Boolean)));
     return locations.length ? locations.join(', ') : 'UAC Foods pickup point';
+};
+
+const markOrderPaidAndNotify = async (reference: string) => {
+    // Only the first successful callback sends confirmation emails. OPay can
+    // deliver both a webhook and a browser verification for the same payment.
+    const order = await Order.findOneAndUpdate(
+        { reference, status: 'pending' },
+        { status: 'paid' },
+        { returnDocument: 'after' }
+    );
+    if (!order) return null;
+
+    const emailPayload = {
+        reference: order.reference,
+        buyerName: order.buyerName,
+        buyerEmail: order.buyerEmail,
+        buyerPhone: order.buyerPhone,
+        buyerAddress: order.buyerAddress,
+        items: order.items as any,
+        productAmount: order.productAmount,
+        deliveryFee: order.deliveryFee,
+        deliveryZone: order.deliveryZone,
+        amount: order.amount,
+        paymentMethod: 'opay'
+    };
+
+    sendOrderEmails(emailPayload)
+        .then(result => {
+            if (!result.admin) console.warn(`[OPay] Admin email not sent for ${reference}`);
+        })
+        .catch(err => console.error('[OPay] Email dispatch failed:', err));
+
+    notify({
+        type: 'order',
+        title: 'Payment received',
+        description: `${reference} · ${order.buyerName} · ₦${order.amount.toLocaleString('en-NG')}`,
+        link: `/admin?order=${reference}`,
+        meta: { orderId: order.id, reference, amount: order.amount, paymentMethod: 'opay' }
+    });
+
+    if (String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
+        const pickupLocation = await resolvePickupLocation(order.items as any[]);
+        sendPickupOrderReceivedEmail({
+            reference: order.reference,
+            buyerName: order.buyerName,
+            buyerEmail: order.buyerEmail,
+            buyerPhone: order.buyerPhone,
+            items: order.items as any,
+            productAmount: order.productAmount,
+            amount: order.amount,
+            pickupLocation,
+            pickupCode: order.pickupCode || ''
+        }).catch(err => console.error('[OPay] Pickup received email failed:', err));
+    }
+
+    return order;
 };
 
 export const initiatePayment = async (req: Request, res: Response) => {
@@ -42,9 +95,9 @@ export const initiatePayment = async (req: Request, res: Response) => {
                 total: amountInKobo,
                 currency: 'NGN'
             },
-            returnUrl: `${FRONTEND_URL}/success?ref=${reference}`,
-            callbackUrl: `${FRONTEND_URL}/success?ref=${reference}`,
-            cancelUrl: `${FRONTEND_URL}/order-failed?ref=${reference}`,
+            returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/success?ref=${reference}`,
+            callbackUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/success?ref=${reference}`,
+            cancelUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/order-failed?ref=${reference}`,
             displayName: 'UFL Foods',
             customerVisitSource: 'BROWSER',
             userClientIP: (() => {
@@ -68,13 +121,13 @@ export const initiatePayment = async (req: Request, res: Response) => {
             }
         };
 
-        const opayUrl = `${OPAY_BASE_URL}/cashier/create`;
+        const opayUrl = `${process.env.OPAY_BASE_URL || DEFAULT_OPAY_BASE_URL}/cashier/create`;
         const payloadString = JSON.stringify(payload);
         const signature = buildHmacSignature(payloadString);
 
         // Resolve env vars at request-time in case they were not available at module load
-        const merchantId = process.env.OPAY_MERCHANT_ID || OPAY_MERCHANT_ID || '';
-        const publicKey = process.env.OPAY_PUBLIC_KEY || OPAY_PUBLIC_KEY || '';
+        const merchantId = process.env.OPAY_MERCHANT_ID || '';
+        const publicKey = process.env.OPAY_PUBLIC_KEY || '';
 
         console.log('[OPay] POST', opayUrl);
         console.log('[OPay] MerchantId:', merchantId);
@@ -134,38 +187,8 @@ export const handleWebhook = async (req: Request, res: Response) => {
         }
 
         if (status === 'SUCCESS') {
-            const order = await Order.findOneAndUpdate({ reference }, { status: 'paid' }, { returnDocument: 'after' });
+            const order = await markOrderPaidAndNotify(reference);
             console.log(`[OPay] Order ${reference} marked as paid via webhook`);
-            if (order) {
-                sendOrderEmails({
-                    reference: order.reference,
-                    buyerName: order.buyerName,
-                    buyerEmail: order.buyerEmail,
-                    buyerPhone: order.buyerPhone,
-                    buyerAddress: order.buyerAddress,
-                    items: order.items as any,
-                    productAmount: order.productAmount,
-                    deliveryFee: order.deliveryFee,
-                    deliveryZone: order.deliveryZone,
-                    amount: order.amount,
-                    paymentMethod: 'opay'
-                }).catch(err => console.error('[OPay] Email dispatch failed:', err));
-
-                if (String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
-                    const pickupLocation = await resolvePickupLocation(order.items as any[]);
-                    sendPickupOrderReceivedEmail({
-                        reference: order.reference,
-                        buyerName: order.buyerName,
-                        buyerEmail: order.buyerEmail,
-                        buyerPhone: order.buyerPhone,
-                        items: order.items as any,
-                        productAmount: order.productAmount,
-                        amount: order.amount,
-                        pickupLocation,
-                        pickupCode: order.pickupCode || ''
-                    }).catch(err => console.error('[OPay] Pickup received email failed:', err));
-                }
-            }
         } else if (status === 'FAIL' || status === 'CLOSED') {
             await Order.findOneAndUpdate({ reference }, { status: 'cancelled' });
             console.log(`[OPay] Order ${reference} cancelled via webhook`);
@@ -186,15 +209,16 @@ export const verifyPayment = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: 'reference is required' });
         }
 
-        const payload = { reference, merchantId: OPAY_MERCHANT_ID };
+        const merchantId = process.env.OPAY_MERCHANT_ID || '';
+        const payload = { reference, merchantId };
         const signature = buildHmacSignature(JSON.stringify(payload));
 
-        const response = await fetch(`${OPAY_BASE_URL}/cashier/status/query`, {
+        const response = await fetch(`${process.env.OPAY_BASE_URL || DEFAULT_OPAY_BASE_URL}/cashier/status/query`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${signature}`,
-                'MerchantId': OPAY_MERCHANT_ID
+                'MerchantId': merchantId
             },
             body: JSON.stringify(payload)
         });
@@ -208,21 +232,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
         const paymentStatus = data.data?.status;
 
         if (paymentStatus === 'SUCCESS') {
-            const order = await Order.findOneAndUpdate({ reference }, { status: 'paid' }, { returnDocument: 'after' });
-            if (order && String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
-                const pickupLocation = await resolvePickupLocation(order.items as any[]);
-                sendPickupOrderReceivedEmail({
-                    reference: order.reference,
-                    buyerName: order.buyerName,
-                    buyerEmail: order.buyerEmail,
-                    buyerPhone: order.buyerPhone,
-                    items: order.items as any,
-                    productAmount: order.productAmount,
-                    amount: order.amount,
-                    pickupLocation,
-                    pickupCode: order.pickupCode || ''
-                }).catch(err => console.error('[OPay] Pickup received email failed:', err));
-            }
+            await markOrderPaidAndNotify(reference);
             return res.json({ success: true, status: 'paid', data: data.data });
         }
 

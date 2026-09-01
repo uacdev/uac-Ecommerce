@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Instagram, MessageCircle, Menu, X, Sun, Moon, ShoppingBag, Search, ChevronRight, ChevronDown, ShoppingBasket, Heart, Building2, UtensilsCrossed, Waves, IceCream, Cookie, User, ArrowRight } from 'lucide-react'
-import { useState, useMemo, useEffect } from 'react'
+import { Menu, X, Sun, Moon, ShoppingBag, Search, ChevronRight, User } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useStore } from '../context/StoreContext'
@@ -10,23 +10,12 @@ const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
-    const [catOpen, setCatOpen] = useState(false)
-    const [showMegaMenu, setShowMegaMenu] = useState(false)
     const { isDark, toggleTheme } = useTheme()
     const store = useStore() || {}
     const { cartCount = 0, favorites = [] } = store
     const navigate = useNavigate()
     const { customer } = useCustomerAuth() || {}
     const accountHref = customer ? '/account' : '/account/login'
-
-    const brandCategories = [
-        { name: 'Gala', icon: UtensilsCrossed, desc: 'The King of Snacks since 1962', filter: 'Gala', img: '/images/gala.jpg' },
-        { name: 'Gala Chinchin', icon: Cookie, desc: 'Memories in Every Crunch', filter: 'Gala Chinchin', img: '/images/gala-chinchin.png' },
-        { name: 'Supreme', icon: IceCream, desc: 'Rich and Creamy Indulgence', filter: 'Supreme', img: '/images/supreme_ice_cream.jpg' },
-        { name: 'Swan', icon: Waves, desc: 'Natural Spring Water', filter: 'Swan', img: '/images/swan_water.png' },
-        { name: 'Funtime', icon: Cookie, desc: 'Tasty Coconut Chips & More', filter: 'Funtime', img: '/images/funtime_chips.png' },
-        { name: 'Zuri', icon: UtensilsCrossed, desc: 'Seasoning, Reimagined', filter: 'Zuri', img: '/images/zuri.png' }
-    ]
 
     const handleSearch = (e) => {
         e.preventDefault()
@@ -35,12 +24,6 @@ const Navbar = () => {
             setSearchOpen(false)
             setSearchQuery('')
         }
-    }
-
-    const handleCategoryClick = (filter) => {
-        navigate(`/products?brand=${encodeURIComponent(filter)}`)
-        setCatOpen(false)
-        setIsOpen(false)
     }
 
     return (
@@ -57,23 +40,17 @@ const Navbar = () => {
 
                     {/* Desktop Menu - Centered */}
                     <div className="hidden lg:flex items-center gap-10 flex-initial">
-                        <Link to="/" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
+                        <Link to="/" className="text-[13px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
                             Home
                             <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
                         </Link>
 
-                        <div 
-                            className="relative group"
-                            onMouseEnter={() => setShowMegaMenu(true)}
-                            onMouseLeave={() => setShowMegaMenu(false)}
-                        >
-                            <Link to="/products" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors flex items-center gap-1 text-[var(--text-primary)]">
-                                Products <ChevronDown size={14} className={`transition-transform duration-300 ${showMegaMenu ? 'rotate-180' : ''}`} />
-                            </Link>
+                        <Link to="/products" className="text-[13px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
+                            Products
                             <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
-                        </div>
+                        </Link>
                         
-                        <Link to="/about" className="text-[11px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
+                        <Link to="/about" className="text-[13px] font-bold tracking-[0.05em] hover:text-[var(--brand-red)] transition-colors relative group text-[var(--text-primary)]">
                             Story
                             <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-[var(--brand-red)] transition-all group-hover:w-full" />
                         </Link>
@@ -111,6 +88,16 @@ const Navbar = () => {
                     <div className="md:hidden flex items-center gap-4">
                         <Link to="/cart" className="p-2 relative text-[var(--text-primary)]">
                             <ShoppingBag size={18} strokeWidth={3} />
+                            {cartCount > 0 && (
+                                <motion.span 
+                                    key={cartCount}
+                                    initial={{ scale: 0.5, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--brand-red)] text-white text-[8px] font-bold rounded-full flex items-center justify-center"
+                                >
+                                    {cartCount}
+                                </motion.span>
+                            )}
                         </Link>
                         <button 
                             className="p-2 text-[var(--text-primary)]" 
@@ -121,53 +108,6 @@ const Navbar = () => {
                     </div>
                 </div>
 
-                {/* MEGA MENU */}
-                <AnimatePresence>
-                    {showMegaMenu && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            onMouseEnter={() => setShowMegaMenu(true)}
-                            onMouseLeave={() => setShowMegaMenu(false)}
-                            className="absolute top-full left-0 w-full bg-white border-b border-[var(--divider)] shadow-2xl py-12 z-[100]"
-                        >
-                            <div className="max-w-[1440px] mx-auto px-12">
-                                <div className="grid grid-cols-6 gap-6">
-                                    {brandCategories.map((brand) => (
-                                        <button
-                                            key={brand.name}
-                                            onClick={() => handleCategoryClick(brand.filter)}
-                                            className="group relative flex flex-col items-start gap-4 p-6 rounded-3xl hover:bg-slate-50 transition-all text-left"
-                                        >
-                                            <div className="w-full aspect-[16/10] rounded-2xl overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] mb-2">
-                                                <img 
-                                                    src={brand.img} 
-                                                    alt={brand.name} 
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                                                />
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-[var(--brand-red)]">
-                                                    <brand.icon size={16} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-[14px] font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
-                                                        {brand.name}
-                                                        <ArrowRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--brand-red)]" />
-                                                    </h4>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                                                        {brand.desc}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
             </nav>
             
             {/* Search Overlay/Bar */}
@@ -240,21 +180,6 @@ const Navbar = () => {
                                     {customer ? `Hi, ${customer.fullName?.split(' ')[0] || 'you'}` : 'Sign in / Create account'}
                                 </Link>
                                 
-                                <div className="mt-4 pt-4 border-t border-[var(--divider)]">
-                                    <p className="px-4 text-[11px] font-bold text-[var(--text-muted)] mb-2">Brands</p>
-                                    <div className="grid gap-2">
-                                        {brandCategories.map((cat) => (
-                                            <button
-                                                key={cat.name}
-                                                onClick={() => handleCategoryClick(cat.filter)}
-                                                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-[var(--brand-red)]/5 text-left"
-                                            >
-                                                <cat.icon size={18} className="text-[var(--brand-red)]" />
-                                                <span className="text-sm font-bold text-[var(--text-primary)]">{cat.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
 
                             <div className="mt-auto space-y-6">

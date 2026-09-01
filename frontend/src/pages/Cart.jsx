@@ -66,7 +66,7 @@ const Cart = () => {
                                         <img
                                             src={cdnHero(item.image)}
                                             alt={item.name}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain p-2 md:p-3"
                                         />
                                     </div>
 

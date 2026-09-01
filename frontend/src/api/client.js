@@ -106,7 +106,8 @@ export const customerApi = {
         api.post('/customer/auth/change-password', { currentPassword, newPassword }),
     requestPasswordReset: (email) => api.post('/customer/auth/forgot-password', { email }),
     resetPassword: (token, newPassword) => api.post('/customer/auth/reset-password', { token, newPassword }),
-    myOrders: () => api.get('/customer/orders')
+    myOrders: () => api.get('/customer/orders'),
+    createReview: (data) => api.post('/customer/reviews', data)
 };
 
 export const orderApi = {

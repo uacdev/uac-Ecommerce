@@ -4,9 +4,8 @@ import { requireAdmin } from '../middlewares/requireAdmin';
 
 const router = Router();
 
-// Public — storefront read + customer-submitted reviews
+// Public — storefront read
 router.get('/', reviewController.getReviews);
-router.post('/', reviewController.createReview);
 
 // Admin only
 router.patch('/:id', requireAdmin, reviewController.updateReview);
