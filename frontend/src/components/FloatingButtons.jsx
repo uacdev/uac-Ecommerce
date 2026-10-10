@@ -18,11 +18,11 @@ const FloatingButtons = () => {
             {isHomePage && (
                 <Link
                     to="/products"
-                    className="flex items-center gap-2.5 px-5 py-3.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 bg-[#ED0000] text-white animate-flashing-btn text-[10px] md:text-[11px] font-black uppercase tracking-widest whitespace-nowrap"
+                    className="flex items-center gap-2.5 px-5 py-3.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 bg-[#ED0000] text-white animate-flashing-btn text-[10px] md:text-[11px] font-bold tracking-normal whitespace-nowrap"
                     aria-label="Shop Products"
                 >
                     <ShoppingBag size={15} className="animate-pulse" />
-                    <span>View our products to make order</span>
+                    <span>Click me to view our products</span>
                 </Link>
             )}
 

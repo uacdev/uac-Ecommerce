@@ -419,7 +419,14 @@ export const sendPickupReminder = async (req: Request, res: Response) => {
             pickupCode: order.pickupCode || ''
         });
 
-        res.json({ success: true, sent, message: sent ? 'Pickup reminder sent' : 'Pickup reminder could not be sent' });
+        let pickupReminderSentAt = order.pickupReminderSentAt || null;
+        if (sent) {
+            pickupReminderSentAt = new Date();
+            order.pickupReminderSentAt = pickupReminderSentAt;
+            await order.save();
+        }
+
+        res.json({ success: true, sent, pickupReminderSentAt, message: sent ? 'Pickup reminder sent' : 'Pickup reminder could not be sent' });
     } catch (err: any) {
         console.error('Error in sendPickupReminder:', err);
         res.status(400).json({ success: false, message: err.message || 'Error sending pickup reminder' });

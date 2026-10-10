@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { Fragment, useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -69,6 +69,7 @@ const AdminDashboard = () => {
     // Mobile drawer toggle. On lg+ the sidebar is always visible (static),
     // this state only matters below the lg breakpoint.
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+    const [activeTabRefreshKey, setActiveTabRefreshKey] = useState(0)
 
     const { isDark, toggleTheme } = useTheme()
     const { loading, removeProduct, orders, products, adminProfile, stats, businessSegments } = useStore()
@@ -216,6 +217,7 @@ const AdminDashboard = () => {
                     : activeTab
                 }
                 setActiveTab={(tab) => {
+                    if (tab === activeTab) setActiveTabRefreshKey(key => key + 1)
                     setActiveTab(tab);
                     setSelectedOrder(null);
                     setViewCategoryProducts(null);
@@ -398,38 +400,40 @@ const AdminDashboard = () => {
                 </header>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 lg:p-10 space-y-10">
-                    {showAddProduct ? (
-                        <AddProductPage product={editingProduct} onClose={() => { setShowAddProduct(false); setEditingProduct(null); }} />
-                    ) : viewProductId ? (
-                        <ProductDetailPage
-                            productId={viewProductId}
-                            onBack={() => setViewProductId(null)}
-                            onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); setViewProductId(null); }}
-                            onDelete={(p) => setProductToDelete(p)}
-                        />
-                    ) : viewCategoryId ? (
-                        <CategoryDetailPage
-                            categoryId={viewCategoryId}
-                            onBack={() => setViewCategoryId(null)}
-                            onEdit={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }}
-                            onDelete={() => { /* delete category lives in CategoriesTab; admin can also use the modal */ }}
-                            onViewProducts={(name) => { setViewCategoryId(null); setViewCategoryProducts(name); setActiveTab('products'); }}
-                            onSelectProduct={(pid) => { setViewCategoryId(null); setViewProductId(pid); setActiveTab('products'); }}
-                        />
-                    ) : (
-                        <>
-                            {activeTab === 'overview' && !viewCategoryProducts && !viewCustomerStats && <OverviewTab orders={orders} products={products} onAddProduct={() => setShowAddProduct(true)} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows, filename) => exportToCSV(rows, filename)} onSeeAllCustomers={() => setActiveTab('customers')} />}
-                            {activeTab === 'orders' && !viewCategoryProducts && !viewCustomerStats && <OrdersTab onSelect={setSelectedOrder} selectedId={selectedOrder?.id} externalSearchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows) => exportToCSV(rows || orders, 'orders_export')} />}
-                            {(activeTab === 'products' || viewCategoryProducts) && !viewCustomerStats && <ProductsTab searchTerm={searchTerm} onAdd={() => setShowAddProduct(true)} onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); }} onDelete={(p) => setProductToDelete(p)} onSelect={(p) => setViewProductId(p.id)} onExport={() => exportToCSV(products, 'products_export')} dateRange={dateRange} setDateRange={setDateRange} categoryFilter={viewCategoryProducts} onBack={() => setViewCategoryProducts(null)} />}
-                            {activeTab === 'categories' && !viewCategoryProducts && !viewCustomerStats && <CategoriesTab onViewCategory={(cat) => setViewCategoryId(cat._id || cat.id)} onViewProductsInCategory={setViewCategoryProducts} onAddCategory={() => setShowAddCategory(true)} onEditCategory={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }} />}
-                            {activeTab === 'customers' && !viewCustomerStats && <CustomersTab searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onViewStats={setViewCustomerStats} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
-                            {activeTab === 'reviews' && <ReviewsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
-                            {viewCustomerStats && <CustomerStatsPage customer={viewCustomerStats} onBack={() => setViewCustomerStats(null)} />}
-                            {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={products} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
-                            {activeTab === 'web-analytics' && <WebAnalyticsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
-                            {activeTab === 'settings' && <SettingsTab />}
-                        </>
-                    )}
+                    <Fragment key={activeTabRefreshKey}>
+                        {showAddProduct ? (
+                            <AddProductPage product={editingProduct} onClose={() => { setShowAddProduct(false); setEditingProduct(null); }} />
+                        ) : viewProductId ? (
+                            <ProductDetailPage
+                                productId={viewProductId}
+                                onBack={() => setViewProductId(null)}
+                                onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); setViewProductId(null); }}
+                                onDelete={(p) => setProductToDelete(p)}
+                            />
+                        ) : viewCategoryId ? (
+                            <CategoryDetailPage
+                                categoryId={viewCategoryId}
+                                onBack={() => setViewCategoryId(null)}
+                                onEdit={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }}
+                                onDelete={() => { /* delete category lives in CategoriesTab; admin can also use the modal */ }}
+                                onViewProducts={(name) => { setViewCategoryId(null); setViewCategoryProducts(name); setActiveTab('products'); }}
+                                onSelectProduct={(pid) => { setViewCategoryId(null); setViewProductId(pid); setActiveTab('products'); }}
+                            />
+                        ) : (
+                            <>
+                                {activeTab === 'overview' && !viewCategoryProducts && !viewCustomerStats && <OverviewTab orders={orders} products={products} onAddProduct={() => setShowAddProduct(true)} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows, filename) => exportToCSV(rows, filename)} onSeeAllCustomers={() => setActiveTab('customers')} />}
+                                {activeTab === 'orders' && !viewCategoryProducts && !viewCustomerStats && <OrdersTab onSelect={setSelectedOrder} selectedId={selectedOrder?.id} externalSearchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows) => exportToCSV(rows || orders, 'orders_export')} />}
+                                {(activeTab === 'products' || viewCategoryProducts) && !viewCustomerStats && <ProductsTab searchTerm={searchTerm} onAdd={() => setShowAddProduct(true)} onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); }} onDelete={(p) => setProductToDelete(p)} onSelect={(p) => setViewProductId(p.id)} onExport={() => exportToCSV(products, 'products_export')} dateRange={dateRange} setDateRange={setDateRange} categoryFilter={viewCategoryProducts} onBack={() => setViewCategoryProducts(null)} />}
+                                {activeTab === 'categories' && !viewCategoryProducts && !viewCustomerStats && <CategoriesTab onViewCategory={(cat) => setViewCategoryId(cat._id || cat.id)} onViewProductsInCategory={setViewCategoryProducts} onAddCategory={() => setShowAddCategory(true)} onEditCategory={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }} />}
+                                {activeTab === 'customers' && !viewCustomerStats && <CustomersTab searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onViewStats={setViewCustomerStats} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
+                                {activeTab === 'reviews' && <ReviewsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
+                                {viewCustomerStats && <CustomerStatsPage customer={viewCustomerStats} onBack={() => setViewCustomerStats(null)} />}
+                                {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={products} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
+                                {activeTab === 'web-analytics' && <WebAnalyticsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
+                                {activeTab === 'settings' && <SettingsTab />}
+                            </>
+                        )}
+                    </Fragment>
                 </div>
             </main>
 

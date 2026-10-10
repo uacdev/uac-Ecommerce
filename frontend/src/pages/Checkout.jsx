@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 import { deliveryApi, trackingApi, paymentApi } from '../api/client'
-import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId } from '../lib/visitor'
+import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId, setPendingCartPurchase } from '../lib/visitor'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
 
@@ -185,6 +185,7 @@ const Checkout = () => {
                 productName: isSingleItem ? checkoutItems[0].name : `Cart (${checkoutItems.length} items)`,
             })
             if (data?.cashierUrl) {
+                setPendingCartPurchase(result.data.reference, checkoutItems)
                 window.location.href = data.cashierUrl
             } else {
                 throw new Error('No cashier URL returned')
@@ -241,15 +242,15 @@ const Checkout = () => {
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Full Name</label>
-                                        <input required type="text" value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="Your Name" />
+                                        <input required type="text" name="name" autoComplete="name" autoCapitalize="words" autoCorrect="off" spellCheck={false} value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold normal-case transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="Your Name" />
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Phone</label>
-                                        <input required type="tel" value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="+234" />
+                                        <input required type="tel" name="tel" autoComplete="tel" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold normal-case transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="+234" />
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Email</label>
-                                        <input required type="email" value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="email@example.com" />
+                                        <input required type="email" name="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold normal-case transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="email@example.com" />
                                     </div>
                                     {activeFulfillmentType === 'delivery' && (
                                         <>
@@ -277,18 +278,6 @@ const Checkout = () => {
                                 </div>
                             </section>
 
-                                <section>
-                                <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-12 border-b border-[var(--divider)] pb-4 w-fit">02 Payment Gateway</h2>
-                                <div className="space-y-4">
-                                    <div className="w-full flex justify-between items-center p-8 rounded-[32px] border-2 border-[var(--brand-red)] bg-[var(--brand-red)]/5">
-                                        <div className="flex items-center gap-6">
-                                            <div className="w-4 h-4 rounded-full border-2 border-[var(--brand-red)] bg-[var(--brand-red)]" />
-                                            <span className="text-xl font-black uppercase tracking-tighter text-[var(--text-primary)]">Pay with OPay</span>
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]">INSTANT</span>
-                                    </div>
-                                </div>
-                            </section>
                         </form>
                     </div>
 

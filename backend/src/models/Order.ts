@@ -37,6 +37,7 @@ const orderSchema = new Schema(
         deliveryMethod: { type: String, enum: DELIVERY_METHODS, default: 'pending' },
         fulfillmentType: { type: String, enum: FULFILLMENT_TYPES, default: 'delivery' },
         pickupCode: { type: String, default: '' },
+        pickupReminderSentAt: { type: Date, default: null },
         logisticsPartner: { type: String, default: '' },
 
         paymentMethod: { type: String, default: '' },

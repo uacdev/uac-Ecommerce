@@ -89,7 +89,13 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
         setRemindingId(order.id || order._id)
         try {
             const res = await orderApi.remindPickup(order.id || order._id)
-            if (res.data?.success) {
+            if (res.data?.success && res.data?.sent) {
+                const reminderSentAt = res.data.pickupReminderSentAt || new Date().toISOString()
+                setOrders(prev => prev.map(item =>
+                    (item.id || item._id) === (order.id || order._id)
+                        ? { ...item, pickupReminderSentAt: reminderSentAt }
+                        : item
+                ))
                 setFeedback(res.data?.message || 'Reminder sent')
             } else {
                 setError(res.data?.message || 'Could not send reminder')
@@ -199,6 +205,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Amount</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Date</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reminder</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reminder sent</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Delete</th>
                             </tr>
@@ -212,12 +219,13 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         <td className="px-6 py-5"><div className="h-3 w-20 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-24 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
+                                        <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-20 bg-[var(--bg-secondary)] rounded-full animate-pulse ml-auto" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-8 bg-[var(--bg-secondary)] rounded animate-pulse ml-auto" /></td>
                                     </tr>
                                 ))
                             ) : orders.length === 0 ? (
-                                <tr><td colSpan={7} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
+                                <tr><td colSpan={8} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
                             ) : orders.map(o => (
                                 <tr
                                     key={o.id || o._id}
@@ -241,6 +249,13 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         ) : (
                                             <span className="text-[11px] text-[var(--text-muted)]">—</span>
                                         )}
+                                    </td>
+                                    <td className="px-6 py-5 text-[11px] font-medium text-[var(--text-muted)]">
+                                        {String(o.fulfillmentType || '').toLowerCase() !== 'pickup'
+                                            ? '—'
+                                            : o.pickupReminderSentAt
+                                                ? `Sent ${format(new Date(o.pickupReminderSentAt), 'MMM dd, yyyy HH:mm')}`
+                                                : 'Not sent'}
                                     </td>
                                     <td className="px-6 py-5 text-right">
                                         <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>

@@ -13,10 +13,14 @@ const ProductDetails = () => {
     const navigate = useNavigate()
     const [activeImage, setActiveImage] = useState(0)
     const [quantity, setQuantity] = useState(1)
-    const { products, loading, addToCart } = useStore()
+    const { products, loading, addToCart, whatsappNumber } = useStore()
 
     const product = products.find(p => p.id === id)
     const productImages = product ? (product.images?.length > 0 ? product.images : [product.image]) : []
+    const whatsappDigits = String(whatsappNumber || '').replace(/\D/g, '')
+    const whatsappHref = whatsappDigits
+        ? (whatsappDigits.startsWith('0') ? `https://wa.me/234${whatsappDigits.replace(/^0+/, '')}` : `https://wa.me/${whatsappDigits}`)
+        : 'https://wa.me/2349098050402'
 
     useEffect(() => {
         if (product) document.title = `${product.name} | UAC Foods`
@@ -61,18 +65,17 @@ const ProductDetails = () => {
                 </Link>
 
                 <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-12 lg:gap-20 items-start">
-                    
                     {/* Editorial Gallery */}
                     <div className="space-y-8 max-w-md mx-auto lg:mx-0 w-full">
                         <div className="aspect-[3/4] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-secondary)] border border-[var(--divider)] relative">
                             <motion.img
                                 key={activeImage}
-                                initial={{ opacity: 0, scale: 1.05 }}
-                                animate={{ opacity: 1, scale: 1 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
                                 transition={{ duration: 1 }}
                                 src={cdnHero(productImages[activeImage])}
                                 alt={product.name}
-                                className="w-full h-full object-cover grayscale-0"
+                                className="w-full h-full object-contain p-6 md:p-10 grayscale-0"
                             />
                             
                             {productImages.length > 1 && (
@@ -118,43 +121,33 @@ const ProductDetails = () => {
                             )
                         })()}
 
-                        <div className="space-y-8 mb-10">
-                            {product.description ? (
-                                <div>
-                                    <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-3">Description</h3>
-                                    <p className="text-sm md:text-base text-[var(--text-primary)] font-semibold leading-relaxed max-w-lg">{product.description}</p>
+                        <div className="flex items-start gap-12 pt-6 border-t border-[var(--divider)]">
+                            <div className="w-28">
+                                <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Quantity</h3>
+                                <div className="flex items-center justify-between border-b-2 border-[var(--divider)] pb-1.5 group focus-within:border-[var(--brand-red)] transition-colors">
+                                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={(product.stockCount ?? 0) === 0} className="text-lg font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">-</button>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={Math.max(1, product.stockCount ?? 1)}
+                                        value={quantity}
+                                        onChange={(e) => {
+                                            const n = parseInt(e.target.value) || 1
+                                            const stock = Math.max(1, product.stockCount ?? 1)
+                                            setQuantity(Math.max(1, Math.min(stock, n)))
+                                        }}
+                                        disabled={(product.stockCount ?? 0) === 0}
+                                        className="w-10 text-center bg-transparent text-lg font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-30"
+                                    />
+                                    <button
+                                        onClick={() => setQuantity(q => Math.min(product.stockCount ?? q, q + 1))}
+                                        disabled={(product.stockCount ?? 0) === 0 || quantity >= (product.stockCount ?? 0)}
+                                        className="text-lg font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >+</button>
                                 </div>
-                            ) : null}
-
-                            <div className="flex items-start gap-12 pt-6 border-t border-[var(--divider)]">
-                                <div className="w-28">
-                                    <h3 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Quantity</h3>
-                                    <div className="flex items-center justify-between border-b-2 border-[var(--divider)] pb-1.5 group focus-within:border-[var(--brand-red)] transition-colors">
-                                        <button onClick={() => setQuantity(q => Math.max(1, q-1))} disabled={(product.stockCount ?? 0) === 0} className="text-lg font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed">-</button>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max={Math.max(1, product.stockCount ?? 1)}
-                                            value={quantity}
-                                            onChange={(e) => {
-                                                const n = parseInt(e.target.value) || 1
-                                                const stock = Math.max(1, product.stockCount ?? 1)
-                                                setQuantity(Math.max(1, Math.min(stock, n)))
-                                            }}
-                                            disabled={(product.stockCount ?? 0) === 0}
-                                            className="w-10 text-center bg-transparent text-lg font-black outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-30"
-                                        />
-                                        <button
-                                            onClick={() => setQuantity(q => Math.min(product.stockCount ?? q, q + 1))}
-                                            disabled={(product.stockCount ?? 0) === 0 || quantity >= (product.stockCount ?? 0)}
-                                            className="text-lg font-bold hover:text-[var(--brand-red)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                        >+</button>
-                                    </div>
-                                    {quantity >= (product.stockCount ?? 0) && (product.stockCount ?? 0) > 0 && (
-                                        <p className="text-[9px] font-bold text-[var(--brand-red)] mt-1.5">Max stock reached</p>
-                                    )}
-                                </div>
-                                
+                                {quantity >= (product.stockCount ?? 0) && (product.stockCount ?? 0) > 0 && (
+                                    <p className="text-[9px] font-bold text-[var(--brand-red)] mt-1.5">Max stock reached</p>
+                                )}
                             </div>
                         </div>
 
@@ -171,19 +164,10 @@ const ProductDetails = () => {
                             )}
                             
                             <div className="grid grid-cols-1 gap-4 mt-4">
-                                {(() => {
-                                    const { whatsappNumber } = useStore() || {}
-                                    const digits = String(whatsappNumber || '').replace(/\D/g, '')
-                                    const href = digits
-                                        ? (digits.startsWith('0') ? `https://wa.me/234${digits.replace(/^0+/, '')}` : (digits.startsWith('234') ? `https://wa.me/${digits}` : `https://wa.me/${digits}`))
-                                        : 'https://wa.me/2349098050402'
-                                    return (
-                                        <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[var(--divider)] rounded-xl md:rounded-[18px] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
-                                            <MessageCircle size={16} />
-                                            WhatsApp
-                                        </a>
-                                    )
-                                })()}
+                                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[var(--divider)] rounded-xl md:rounded-[18px] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
+                                    <MessageCircle size={16} />
+                                    WhatsApp
+                                </a>
                             </div>
                         </div>
                     </div>

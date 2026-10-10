@@ -240,8 +240,13 @@ export const verifyPayment = async (req: Request, res: Response) => {
         const paymentStatus = data.data?.status;
 
         if (paymentStatus === 'SUCCESS') {
-            await markOrderPaidAndNotify(reference);
-            return res.json({ success: true, status: 'paid', data: data.data });
+            const paidOrder = await markOrderPaidAndNotify(reference)
+                || await Order.findOne({ reference }, { items: 1 });
+            const purchasedItems = (paidOrder?.items || []).map((item: any) => ({
+                productId: String(item.productId || item.id || ''),
+                quantity: Number(item.quantity) || 0
+            })).filter((item: any) => item.productId && item.quantity > 0);
+            return res.json({ success: true, status: 'paid', data: data.data, purchasedItems });
         }
 
         res.json({ success: false, status: (paymentStatus || 'pending').toLowerCase(), data: data.data });

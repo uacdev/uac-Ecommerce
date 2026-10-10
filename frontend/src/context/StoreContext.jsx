@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import { PRODUCTS as INITIAL_PRODUCTS } from '../data/products'
 import { productApi, orderApi, statsApi, categoryApi, adminApi, settingsApi } from '../api/client'
 import { useAuth } from './AuthContext'
@@ -156,6 +156,24 @@ export const StoreProvider = ({ children }) => {
             item.id === productId ? { ...item, quantity } : item
         ))
     }
+
+    const removePurchasedCartItems = useCallback((purchasedItems = []) => {
+        const purchasedQuantities = new Map()
+        purchasedItems.forEach(({ productId, quantity }) => {
+            const id = String(productId || '')
+            if (id) purchasedQuantities.set(id, (purchasedQuantities.get(id) || 0) + (Number(quantity) || 0))
+        })
+
+        setCart(prev => prev.flatMap(item => {
+            const id = String(item.id || item._id || '')
+            const purchasedQuantity = purchasedQuantities.get(id) || 0
+            if (!purchasedQuantity) return [item]
+
+            const remainingQuantity = Number(item.quantity) - purchasedQuantity
+            purchasedQuantities.delete(id)
+            return remainingQuantity > 0 ? [{ ...item, quantity: remainingQuantity }] : []
+        }))
+    }, [])
 
     const clearCart = () => setCart([])
 
@@ -481,6 +499,7 @@ export const StoreProvider = ({ children }) => {
             addToCart,
             removeFromCart,
             updateCartQuantity,
+            removePurchasedCartItems,
             clearCart,
             markProductReserved,
             markProductSold,

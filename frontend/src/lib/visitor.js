@@ -33,3 +33,28 @@ export const setCheckoutSessionId = (id) => {
 }
 
 export const clearCheckoutSessionId = () => setCheckoutSessionId('')
+
+const PENDING_CART_PURCHASE_PREFIX = 'uac_pending_cart_purchase:'
+
+export const setPendingCartPurchase = (reference, items) => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem(`${PENDING_CART_PURCHASE_PREFIX}${reference}`, JSON.stringify(
+        items.map(item => ({
+            productId: String(item.id || item._id),
+            quantity: Number(item.quantity) || 1
+        }))
+    ))
+}
+
+export const consumePendingCartPurchase = (reference) => {
+    if (typeof window === 'undefined') return []
+    const key = `${PENDING_CART_PURCHASE_PREFIX}${reference}`
+    const saved = localStorage.getItem(key)
+    if (!saved) return []
+    localStorage.removeItem(key)
+    try {
+        return JSON.parse(saved)
+    } catch {
+        return []
+    }
+}
