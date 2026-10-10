@@ -13,6 +13,12 @@ function buildHmacSignature(payload: string): string {
     return hmac.digest('hex');
 }
 
+function buildWebhookSignature(payload: string): string {
+    const hmac = crypto.createHmac('sha3-512', process.env.OPAY_SECRET_KEY || '');
+    hmac.update(payload);
+    return hmac.digest('hex');
+}
+
 const resolvePickupLocation = async (items: any[] = []) => {
     const ids = Array.from(new Set((items || []).map((it: any) => String(it.productId || it.id || '')).filter(Boolean)));
     if (!ids.length) return 'UAC Foods pickup point';
@@ -167,11 +173,15 @@ export const initiatePayment = async (req: Request, res: Response) => {
 
 export const handleWebhook = async (req: Request, res: Response) => {
     try {
-        const payloadObj = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-        
+        const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : req.body;
+        const payloadObj = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+        if (!payloadObj?.payload || typeof payloadObj.sha512 !== 'string') {
+            return res.status(400).json({ code: '00002', message: 'Invalid callback payload' });
+        }
+
         const receivedSig = payloadObj.sha512;
         const payloadToSign = JSON.stringify(payloadObj.payload);
-        const expectedSig = buildHmacSignature(payloadToSign);
+        const expectedSig = buildWebhookSignature(payloadToSign);
 
         if (receivedSig !== expectedSig) {
             console.warn('[OPay] Webhook signature mismatch');
