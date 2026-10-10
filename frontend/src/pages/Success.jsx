@@ -102,7 +102,7 @@ const Success = () => {
                 {isLoading
                     ? 'Checking your payment status with OPay…'
                     : isPaid
-                        ? 'Your payment was confirmed. Contact us with your Order ID to arrange delivery.'
+                        ? 'Your order confirmation will be sent by email. If you are picking up your order, we will email you when it is ready for collection.'
                         : isPending
                             ? 'Your payment is being processed. You will receive a confirmation shortly.'
                             : 'Your order has been reserved. Please complete your bank transfer to confirm.'}
