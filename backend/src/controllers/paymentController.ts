@@ -96,7 +96,6 @@ export const initiatePayment = async (req: Request, res: Response) => {
                 currency: 'NGN'
             },
             returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/success?ref=${reference}`,
-            callbackUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/success?ref=${reference}`,
             cancelUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/order-failed?ref=${reference}`,
             displayName: 'UFL Foods',
             customerVisitSource: 'BROWSER',
@@ -123,7 +122,6 @@ export const initiatePayment = async (req: Request, res: Response) => {
 
         const opayUrl = `${process.env.OPAY_BASE_URL || DEFAULT_OPAY_BASE_URL}/cashier/create`;
         const payloadString = JSON.stringify(payload);
-        const signature = buildHmacSignature(payloadString);
 
         // Resolve env vars at request-time in case they were not available at module load
         const merchantId = process.env.OPAY_MERCHANT_ID || '';
@@ -210,10 +208,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
         }
 
         const merchantId = process.env.OPAY_MERCHANT_ID || '';
-        const payload = { reference, merchantId };
+        const payload = { reference, country: 'NG' };
         const signature = buildHmacSignature(JSON.stringify(payload));
 
-        const response = await fetch(`${process.env.OPAY_BASE_URL || DEFAULT_OPAY_BASE_URL}/cashier/status/query`, {
+        const response = await fetch(`${process.env.OPAY_BASE_URL || DEFAULT_OPAY_BASE_URL}/cashier/status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
