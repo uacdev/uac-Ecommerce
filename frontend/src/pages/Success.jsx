@@ -23,14 +23,37 @@ const Success = () => {
     useEffect(() => {
         if (!opayRef) return
 
-        paymentApi.verify(opayRef)
-            .then(({ data }) => {
-                setVerifyStatus(data.status === 'paid' ? 'paid' : 'pending')
-            })
-            .catch(() => {
-                // Webhook may have already updated the order; treat as pending
+        let active = true
+        let attempts = 0
+        let retryTimer
+
+        const verifyPayment = async () => {
+            try {
+                const { data } = await paymentApi.verify(opayRef)
+                if (!active) return
+                if (data.status === 'paid') {
+                    setVerifyStatus('paid')
+                    return
+                }
+            } catch {
+                // Retry briefly while OPay updates the transaction status.
+            }
+
+            if (!active) return
+            attempts += 1
+            if (attempts >= 8) {
                 setVerifyStatus('pending')
-            })
+                return
+            }
+
+            retryTimer = setTimeout(verifyPayment, 5000)
+        }
+
+        verifyPayment()
+        return () => {
+            active = false
+            clearTimeout(retryTimer)
+        }
     }, [opayRef])
 
     const copyToClipboard = () => {

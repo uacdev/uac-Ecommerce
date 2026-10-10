@@ -13,9 +13,10 @@ function buildHmacSignature(payload: string): string {
     return hmac.digest('hex');
 }
 
-function buildWebhookSignature(payload: string): string {
+function buildWebhookSignature(payload: any): string {
+    const authPayload = `{Amount:"${payload.amount}",Currency:"${payload.currency}",Reference:"${payload.reference}",Refunded:${payload.refunded ? 't' : 'f'},Status:"${payload.status}",Timestamp:"${payload.timestamp}",Token:"${payload.token}",TransactionID:"${payload.transactionId}"}`;
     const hmac = crypto.createHmac('sha3-512', process.env.OPAY_SECRET_KEY || '');
-    hmac.update(payload);
+    hmac.update(authPayload);
     return hmac.digest('hex');
 }
 
@@ -180,10 +181,9 @@ export const handleWebhook = async (req: Request, res: Response) => {
         }
 
         const receivedSig = payloadObj.sha512;
-        const payloadToSign = JSON.stringify(payloadObj.payload);
-        const expectedSig = buildWebhookSignature(payloadToSign);
+        const expectedSig = buildWebhookSignature(payloadObj.payload);
 
-        if (receivedSig !== expectedSig) {
+        if (receivedSig.toLowerCase() !== expectedSig.toLowerCase()) {
             console.warn('[OPay] Webhook signature mismatch');
             return res.status(401).json({ code: '02003', message: 'Signature mismatch' });
         }
@@ -218,7 +218,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
         }
 
         const merchantId = process.env.OPAY_MERCHANT_ID || '';
-        const payload = { reference, country: 'NG' };
+        const payload = { country: 'NG', reference };
         const signature = buildHmacSignature(JSON.stringify(payload));
 
         const response = await fetch(`${process.env.OPAY_BASE_URL || DEFAULT_OPAY_BASE_URL}/cashier/status`, {
