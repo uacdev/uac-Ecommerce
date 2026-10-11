@@ -38,12 +38,12 @@ const Navbar = () => {
     return (
         <>
             <nav className="fixed top-0 left-0 w-full z-50 bg-[var(--bg-primary)]/80 backdrop-blur-3xl border-b border-[var(--divider)] transition-all duration-500">
-                <div className="max-w-[1440px] mx-auto flex justify-between items-center px-6 py-6 lg:px-12">
+                <div className="max-w-[1440px] mx-auto flex justify-between items-center px-4 py-3 md:px-6 md:py-6 lg:px-12">
                     
                     {/* Logo Section */}
                     <div className="flex-1">
                         <Link to="/" className="inline-block group shrink-0">
-                            <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-10 w-auto object-contain transition-transform hover:scale-105" />
+                            <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-8 w-auto object-contain transition-transform hover:scale-105 md:h-10" />
                         </Link>
                     </div>
 
@@ -94,7 +94,7 @@ const Navbar = () => {
                         </Link>
                     </div>
 
-                    <div className="md:hidden flex items-center gap-4">
+                    <div className="md:hidden flex items-center gap-2">
                         <button 
                             className="p-2 text-[var(--text-primary)]" 
                             onClick={() => setIsOpen(!isOpen)} 
