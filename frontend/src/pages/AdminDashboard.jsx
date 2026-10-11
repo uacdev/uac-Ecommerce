@@ -72,7 +72,7 @@ const AdminDashboard = () => {
     const [activeTabRefreshKey, setActiveTabRefreshKey] = useState(0)
 
     const { isDark, toggleTheme } = useTheme()
-    const { loading, removeProduct, orders, products, adminProfile, stats, businessSegments } = useStore()
+    const { loading, removeProduct, orders, adminProducts, adminProfile, stats, adminSegments } = useStore()
     const [reviewsCount, setReviewsCount] = useState(0)
     const [pendingOrdersCount, setPendingOrdersCount] = useState(null)
 
@@ -92,8 +92,8 @@ const AdminDashboard = () => {
 
     const sidebarCounts = {
         orders: pendingOrdersCount ?? stats?.pendingOrders ?? 0,
-        products: products.length,
-        categories: businessSegments?.length ?? 0,
+        products: adminProducts.length,
+        categories: adminSegments?.length ?? 0,
         customers: stats?.totalCustomers ?? 0,
         reviews: reviewsCount
     }
@@ -421,14 +421,14 @@ const AdminDashboard = () => {
                             />
                         ) : (
                             <>
-                                {activeTab === 'overview' && !viewCategoryProducts && !viewCustomerStats && <OverviewTab orders={orders} products={products} onAddProduct={() => setShowAddProduct(true)} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows, filename) => exportToCSV(rows, filename)} onSeeAllCustomers={() => setActiveTab('customers')} />}
+                                {activeTab === 'overview' && !viewCategoryProducts && !viewCustomerStats && <OverviewTab orders={orders} products={adminProducts} onAddProduct={() => setShowAddProduct(true)} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows, filename) => exportToCSV(rows, filename)} onSeeAllCustomers={() => setActiveTab('customers')} />}
                                 {activeTab === 'orders' && !viewCategoryProducts && !viewCustomerStats && <OrdersTab onSelect={setSelectedOrder} selectedId={selectedOrder?.id} externalSearchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onExport={(rows) => exportToCSV(rows || orders, 'orders_export')} />}
-                                {(activeTab === 'products' || viewCategoryProducts) && !viewCustomerStats && <ProductsTab searchTerm={searchTerm} onAdd={() => setShowAddProduct(true)} onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); }} onDelete={(p) => setProductToDelete(p)} onSelect={(p) => setViewProductId(p.id)} onExport={() => exportToCSV(products, 'products_export')} dateRange={dateRange} setDateRange={setDateRange} categoryFilter={viewCategoryProducts} onBack={() => setViewCategoryProducts(null)} />}
+                                {(activeTab === 'products' || viewCategoryProducts) && !viewCustomerStats && <ProductsTab searchTerm={searchTerm} onAdd={() => setShowAddProduct(true)} onEdit={(p) => { setEditingProduct(p); setShowAddProduct(true); }} onDelete={(p) => setProductToDelete(p)} onSelect={(p) => setViewProductId(p.id)} onExport={() => exportToCSV(adminProducts, 'products_export')} dateRange={dateRange} setDateRange={setDateRange} categoryFilter={viewCategoryProducts} onBack={() => setViewCategoryProducts(null)} />}
                                 {activeTab === 'categories' && !viewCategoryProducts && !viewCustomerStats && <CategoriesTab onViewCategory={(cat) => setViewCategoryId(cat._id || cat.id)} onViewProductsInCategory={setViewCategoryProducts} onAddCategory={() => setShowAddCategory(true)} onEditCategory={(cat) => { setEditingCategory(cat); setShowAddCategory(true); }} />}
                                 {activeTab === 'customers' && !viewCustomerStats && <CustomersTab searchTerm={searchTerm} dateRange={dateRange} setDateRange={setDateRange} onViewStats={setViewCustomerStats} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
                                 {activeTab === 'reviews' && <ReviewsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
                                 {viewCustomerStats && <CustomerStatsPage customer={viewCustomerStats} onBack={() => setViewCustomerStats(null)} />}
-                                {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={products} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
+                                {activeTab === 'stats' && <ActivityStatsTab orders={orders} products={adminProducts} onExport={(rows, filename) => exportToCSV(rows, filename)} />}
                                 {activeTab === 'web-analytics' && <WebAnalyticsTab onExport={(rows, filename) => exportToCSV(rows, filename)} />}
                                 {activeTab === 'settings' && <SettingsTab />}
                             </>

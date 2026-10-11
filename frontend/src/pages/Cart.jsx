@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ChevronRight } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
@@ -7,6 +8,7 @@ import { cdnHero } from '../lib/img'
 const Cart = () => {
     const navigate = useNavigate()
     const { cart, cartTotal, updateCartQuantity, removeFromCart, clearCart } = useStore()
+    const [confirmClear, setConfirmClear] = useState(false)
 
     if (cart.length === 0) {
         return (
@@ -175,12 +177,29 @@ const Cart = () => {
                                 </div>
                             </div>
 
-                            <button
-                                onClick={clearCart}
-                                className="w-full mt-4 py-4 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-red-500 transition-colors"
-                            >
-                                Clear Cart
-                            </button>
+                            {confirmClear ? (
+                                <div className="mt-4 grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => { clearCart(); setConfirmClear(false) }}
+                                        className="min-h-11 rounded-xl bg-red-600 px-3 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-red-700"
+                                    >
+                                        Confirm clear
+                                    </button>
+                                    <button
+                                        onClick={() => setConfirmClear(false)}
+                                        className="min-h-11 rounded-xl border border-[var(--divider)] px-3 text-xs font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-primary)]"
+                                    >
+                                        Keep items
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setConfirmClear(true)}
+                                    className="mt-4 min-h-11 w-full rounded-xl bg-red-600 px-4 text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-red-700"
+                                >
+                                    Clear cart
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

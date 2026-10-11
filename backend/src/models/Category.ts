@@ -12,6 +12,7 @@ const packagingOptionSchema = new Schema(
 const categorySchema = new Schema(
     {
         name: { type: String, required: true, unique: true, trim: true },
+        isActive: { type: Boolean, default: true },
         abstract: { type: String, default: '' },
         parent: { type: String, default: '' },
         color: { type: String, default: 'bg-indigo-50 text-indigo-600' },

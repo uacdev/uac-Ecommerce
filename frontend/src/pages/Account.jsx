@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { LogOut, Package, ShoppingBag, CheckCircle2, Clock, Settings, Repeat2, Star, Send, CreditCard, Loader2, ArrowUpRight, UserRound } from 'lucide-react'
+import { LogOut, Package, ShoppingBag, CheckCircle2, Clock, Settings, Repeat2, Star, Send, CreditCard, Loader2, ArrowUpRight, UserRound, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 import { customerApi, paymentApi } from '../api/client'
@@ -76,11 +76,14 @@ const Account = () => {
     const [ordersLoading, setOrdersLoading] = useState(true)
     const [error, setError] = useState('')
     const [editOpen, setEditOpen] = useState(false)
+    const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
     const [reviewOpen, setReviewOpen] = useState(null)
     const [reviewDrafts, setReviewDrafts] = useState({})
     const [submittedReviews, setSubmittedReviews] = useState({})
     const [reviewSubmitting, setReviewSubmitting] = useState(null)
     const [paymentRetrying, setPaymentRetrying] = useState(null)
+    const [deleteOrderTarget, setDeleteOrderTarget] = useState(null)
+    const [deletingOrderId, setDeletingOrderId] = useState(null)
 
     useEffect(() => {
         if (!customer) return
@@ -134,6 +137,30 @@ const Account = () => {
         }
     }
 
+    const handleDeleteUnpaidOrder = async () => {
+        if (!deleteOrderTarget) return
+        const orderId = deleteOrderTarget.id || deleteOrderTarget._id
+        setDeletingOrderId(orderId)
+        try {
+            await customerApi.deleteUnpaidOrder(orderId)
+            setData(current => ({
+                ...current,
+                orders: current.orders.filter(order => (order.id || order._id) !== orderId),
+                summary: current.summary ? {
+                    ...current.summary,
+                    totalOrders: Math.max(0, current.summary.totalOrders - 1),
+                    ongoingOrders: Math.max(0, current.summary.ongoingOrders - 1)
+                } : current.summary
+            }))
+            setDeleteOrderTarget(null)
+            toast.success('Unpaid order deleted')
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not delete this unpaid order')
+        } finally {
+            setDeletingOrderId(null)
+        }
+    }
+
     const reviewKey = (order, item) => `${order.reference}:${item.productId}`
     const handleSubmitReview = async (order, item) => {
         const key = reviewKey(order, item)
@@ -178,7 +205,7 @@ const Account = () => {
                         <button onClick={() => setEditOpen(true)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--divider)] px-3 text-xs font-bold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-red)] hover:text-[var(--brand-red)] sm:px-4">
                             <Settings size={15} /> Edit profile
                         </button>
-                        <button onClick={handleSignOut} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] sm:px-4">
+                        <button onClick={() => setShowSignOutConfirm(true)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] sm:px-4">
                             <LogOut size={15} /> Sign out
                         </button>
                     </div>
@@ -265,10 +292,23 @@ const Account = () => {
                                                     <p className="mt-0.5 text-lg font-black text-[var(--text-primary)] sm:text-xl">{fmt(order.amount)}</p>
                                                 </div>
                                                 {order.status === 'pending' ? (
-                                                    <button onClick={() => handleContinuePayment(order)} disabled={paymentRetrying === order.reference} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand-red)] px-3 text-[10px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-4 sm:text-[11px] lg:mt-3">
-                                                        {paymentRetrying === order.reference ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
-                                                        {paymentRetrying === order.reference ? 'Opening…' : 'Continue payment'}
-                                                    </button>
+                                                    <div className="flex shrink-0 items-center gap-2 lg:mt-3 lg:w-full">
+                                                        <button onClick={() => handleContinuePayment(order)} disabled={paymentRetrying === order.reference} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand-red)] px-3 text-[10px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-4 sm:text-[11px] lg:flex-1">
+                                                            {paymentRetrying === order.reference ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                                                            {paymentRetrying === order.reference ? 'Opening…' : 'Continue payment'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDeleteOrderTarget(order)}
+                                                            disabled={deletingOrderId === (order.id || order._id)}
+                                                            aria-label={`Delete unpaid order ${order.reference}`}
+                                                            title="Delete unpaid order"
+                                                            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--divider)] text-[var(--text-muted)] transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950/20 lg:w-auto lg:px-3"
+                                                        >
+                                                            <Trash2 size={15} />
+                                                            <span className="sr-only">Delete unpaid order</span>
+                                                        </button>
+                                                    </div>
                                                 ) : (
                                                     <button onClick={() => handleRepeatOrder(order)} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--divider)] px-3 text-[10px] font-bold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-red)] hover:text-[var(--brand-red)] sm:px-4 sm:text-[11px] lg:mt-3">
                                                         <Repeat2 size={14} /> Repeat order
@@ -283,6 +323,56 @@ const Account = () => {
                     )}
                 </section>
             </motion.div>
+
+            {deleteOrderTarget && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+                    <button
+                        type="button"
+                        aria-label="Close delete confirmation"
+                        onClick={() => deletingOrderId || setDeleteOrderTarget(null)}
+                        className="absolute inset-0 h-full w-full cursor-default"
+                    />
+                    <section role="alertdialog" aria-modal="true" aria-labelledby="delete-order-title" className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--divider)] bg-[var(--bg-primary)] p-5 shadow-2xl sm:p-6">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/30">
+                            <Trash2 size={20} />
+                        </div>
+                        <h2 id="delete-order-title" className="mt-4 text-lg font-black text-[var(--text-primary)]">Delete unpaid order?</h2>
+                        <p className="mt-2 text-sm leading-relaxed text-[var(--text-muted)]">
+                            Order <span className="font-bold text-[var(--text-primary)]">{deleteOrderTarget.reference}</span> will be removed and its reserved items returned to stock. This cannot be undone.
+                        </p>
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => setDeleteOrderTarget(null)} disabled={!!deletingOrderId} className="min-h-11 rounded-xl border border-[var(--divider)] px-4 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)] disabled:opacity-50">
+                                Keep order
+                            </button>
+                            <button type="button" onClick={handleDeleteUnpaidOrder} disabled={!!deletingOrderId} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60">
+                                {deletingOrderId ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                                {deletingOrderId ? 'Deleting…' : 'Delete order'}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
+
+            {showSignOutConfirm && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+                    <button type="button" aria-label="Close sign-out confirmation" onClick={() => setShowSignOutConfirm(false)} className="absolute inset-0 h-full w-full cursor-default" />
+                    <section role="alertdialog" aria-modal="true" aria-labelledby="signout-confirm-title" className="relative z-10 w-full max-w-sm rounded-2xl border border-[var(--divider)] bg-[var(--bg-primary)] p-6 shadow-2xl">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--bg-secondary)] text-[var(--text-muted)]">
+                            <LogOut size={19} />
+                        </div>
+                        <h2 id="signout-confirm-title" className="mt-4 text-lg font-black text-[var(--text-primary)]">Sign out of your account?</h2>
+                        <p className="mt-2 text-sm leading-relaxed text-[var(--text-muted)]">You will need to sign in again to view your profile and orders.</p>
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => setShowSignOutConfirm(false)} className="min-h-11 rounded-xl border border-[var(--divider)] px-4 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]">
+                                Stay signed in
+                            </button>
+                            <button type="button" onClick={handleSignOut} className="min-h-11 rounded-xl bg-[var(--brand-red)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90">
+                                Sign out
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
 
             <EditProfilePanel open={editOpen} onClose={() => setEditOpen(false)} />
         </div>

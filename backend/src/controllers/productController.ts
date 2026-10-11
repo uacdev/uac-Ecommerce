@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 import { Product, PRODUCT_LOCATIONS } from '../models/Product';
+import { Category } from '../models/Category';
 import { StockSubscription } from '../models/StockSubscription';
 import { notify } from '../lib/notify';
 import { sendBackInStockEmails } from '../lib/email';
 
 const ALLOWED_FIELDS = [
     'name', 'brand', 'description', 'category', 'image', 'images',
-    'location', 'packaging', 'piecesPerPack', 'displayOrder', 'price', 'status', 'stockCount', 'is_reserved'
+    'location', 'packaging', 'piecesPerPack', 'displayOrder', 'price', 'status', 'stockCount', 'is_reserved', 'isActive'
 ];
 
 const sanitize = (body: any) => {
@@ -31,10 +32,22 @@ const normalizeDisplayOrder = (value: any) => {
 
 export const getProducts = async (_req: Request, res: Response) => {
     try {
-        const data = await Product.find().sort({ displayOrder: 1, created_at: -1 });
+        const inactiveCategories = await Category.find({ isActive: false }).distinct('name');
+        const data = await Product.find({ isActive: { $ne: false }, brand: { $nin: inactiveCategories } })
+            .sort({ displayOrder: 1, created_at: -1 });
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
         console.error('Error in getProducts:', err);
+        res.status(500).json({ success: false, message: err.message || 'Error fetching products' });
+    }
+};
+
+export const getAdminProducts = async (_req: Request, res: Response) => {
+    try {
+        const data = await Product.find().sort({ displayOrder: 1, created_at: -1 });
+        res.json({ success: true, count: data.length, data });
+    } catch (err: any) {
+        console.error('Error in getAdminProducts:', err);
         res.status(500).json({ success: false, message: err.message || 'Error fetching products' });
     }
 };

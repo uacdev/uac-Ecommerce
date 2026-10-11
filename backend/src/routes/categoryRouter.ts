@@ -8,6 +8,7 @@ const router = Router();
 router.get('/', categoryController.getCategories);
 
 // Admin only
+router.get('/admin/all', requireAdmin, categoryController.getAdminCategories);
 router.get('/:id/stats', requireAdmin, categoryController.getCategoryStats);
 router.post('/', requireAdmin, categoryController.createCategory);
 router.put('/:id', requireAdmin, categoryController.updateCategory);

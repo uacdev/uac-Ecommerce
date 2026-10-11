@@ -9,6 +9,7 @@ router.get('/', productController.getProducts);
 router.post('/:id/notify-when-restocked', productController.subscribeRestock);
 
 // Admin only
+router.get('/admin/all', requireAdmin, productController.getAdminProducts);
 router.get('/sales-summary', requireAdmin, productController.getProductsSalesSummary);
 router.get('/:id/stats', requireAdmin, productController.getProductStats);
 

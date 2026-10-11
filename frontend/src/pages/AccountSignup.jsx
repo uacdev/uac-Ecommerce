@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { User, Mail, Lock, Phone, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
+import CheckoutAuthSuccessModal from '../components/CheckoutAuthSuccessModal'
 
 const AccountSignup = () => {
     const navigate = useNavigate()
@@ -12,8 +13,11 @@ const AccountSignup = () => {
     const [show, setShow] = useState(false)
     const [error, setError] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [checkoutReady, setCheckoutReady] = useState(false)
 
     const after = location.state?.after || '/account'
+    const isCheckoutFlow = after.startsWith('/checkout')
+    const returnToCheckout = () => navigate(after, { replace: true, state: location.state?.afterState })
 
     const update = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -22,12 +26,16 @@ const AccountSignup = () => {
         if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return }
         setLoading(true); setError(null)
         const res = await signUp({ ...form, email: form.email.trim() })
-        if (res.success) navigate(after, { replace: true, state: location.state?.afterState })
+        if (res.success && isCheckoutFlow) {
+            setCheckoutReady(true)
+            setLoading(false)
+        } else if (res.success) navigate(after, { replace: true, state: location.state?.afterState })
         else { setError(res.message || 'Could not create account.'); setLoading(false) }
     }
 
     return (
         <div className="pt-40 pb-32 container max-w-md font-['Sen',sans-serif]">
+            {checkoutReady && <CheckoutAuthSuccessModal onReturn={returnToCheckout} />}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">Create your account</h1>
                 <p className="text-[14px] text-[var(--text-muted)] mb-10">Track your orders, save your details, and reorder in one click.</p>

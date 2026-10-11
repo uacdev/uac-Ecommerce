@@ -36,10 +36,21 @@ const ensureCategoriesFromProducts = async () => {
 export const getCategories = async (_req: Request, res: Response) => {
     try {
         await ensureCategoriesFromProducts();
-        const data = await Category.find().sort({ parent: 1, name: 1 }).lean();
+        const data = await Category.find({ isActive: { $ne: false } }).sort({ parent: 1, name: 1 }).lean();
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
         console.error('Error in getCategories:', err);
+        res.status(500).json({ success: false, message: err.message || 'Error fetching categories' });
+    }
+};
+
+export const getAdminCategories = async (_req: Request, res: Response) => {
+    try {
+        await ensureCategoriesFromProducts();
+        const data = await Category.find().sort({ parent: 1, name: 1 }).lean();
+        res.json({ success: true, count: data.length, data });
+    } catch (err: any) {
+        console.error('Error in getAdminCategories:', err);
         res.status(500).json({ success: false, message: err.message || 'Error fetching categories' });
     }
 };

@@ -87,6 +87,7 @@ export const uploadApi = {
 
 export const productApi = {
     getAll: () => api.get('/products'),
+    getAdminAll: () => api.get('/products/admin/all'),
     create: (data) => api.post('/products', data),
     bulkCreate: (data) => api.post('/products/bulk', { products: data }),
     update: (id, data) => api.put(`/products/${id}`, data),
@@ -107,6 +108,7 @@ export const customerApi = {
     requestPasswordReset: (email) => api.post('/customer/auth/forgot-password', { email }),
     resetPassword: (token, newPassword) => api.post('/customer/auth/reset-password', { token, newPassword }),
     myOrders: () => api.get('/customer/orders'),
+    deleteUnpaidOrder: (orderId) => api.delete(`/customer/orders/${orderId}/unpaid`),
     createReview: (data) => api.post('/customer/reviews', data)
 };
 
@@ -135,6 +137,7 @@ export const statsApi = {
 
 export const categoryApi = {
     getAll: () => api.get('/categories'),
+    getAdminAll: () => api.get('/categories/admin/all'),
     create: (data) => api.post('/categories', data),
     update: (id, data) => api.put(`/categories/${id}`, data),
     delete: (id) => api.delete(`/categories/${id}`),

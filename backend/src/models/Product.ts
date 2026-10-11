@@ -17,6 +17,7 @@ const productSchema = new Schema(
         displayOrder: { type: Number, default: 0, min: 0 },
         price: { type: Number, required: true, min: 0 },
         status: { type: String, enum: PRODUCT_STATUSES, default: 'available' },
+        isActive: { type: Boolean, default: true },
         // Numeric inventory. Auto-flips status to out_of_stock when this hits 0;
         // back to available when it goes positive again.
         stockCount: { type: Number, default: 0, min: 0 },

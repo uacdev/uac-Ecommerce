@@ -187,27 +187,57 @@ const Checkout = () => {
     }
 
     if (!customer) {
+        const returnHref = isSingleItem ? `/product/${id}` : '/cart'
         return (
-            <div className="checkout-mobile checkout-mobile--gate pt-40 pb-40 bg-[var(--bg-primary)] font-['Sen',sans-serif]">
-                <div className="container max-w-7xl px-6">
-                    <div className="mb-16 border-b border-[var(--divider)] pb-10">
-                        <span className="mb-4 block text-[10px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)]">Final Step</span>
-                        <h1 className="text-5xl font-black uppercase leading-none text-[var(--text-primary)] md:text-7xl">Checkout</h1>
+            <div className="checkout-mobile checkout-account-gate pt-24 pb-28 md:pt-32 md:pb-16 bg-[var(--bg-primary)] font-['Sen',sans-serif]">
+                <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+                    <Link to={returnHref} className="mb-6 inline-flex items-center gap-2 text-xs font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--brand-red)]">
+                        <ArrowLeft size={15} /> Back to {isSingleItem ? 'product' : 'cart'}
+                    </Link>
+
+                    <div className="mb-5 flex items-center gap-2 text-[10px] font-bold text-[var(--text-muted)] sm:mb-7 sm:text-xs">
+                        <span className="rounded-full bg-[var(--brand-red)] px-3 py-1.5 text-white">1. Account</span>
+                        <ChevronRight size={14} />
+                        <span>2. Payment</span>
                     </div>
-                    <section className="max-w-xl border-y border-[var(--divider)] py-10">
-                        <h2 className="text-2xl font-black text-[var(--text-primary)]">Sign in to continue</h2>
-                        <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
-                            Create an account to save your details and manage your orders, or sign in to use your existing profile.
-                        </p>
-                        <div className="mt-8 flex flex-wrap gap-4">
-                            <Link to="/account/signup" state={{ after: location.pathname, afterState: location.state }} className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-red)] px-6 py-4 text-sm font-black uppercase tracking-wider text-white">
-                                Create account <ChevronRight size={16} />
-                            </Link>
-                            <Link to="/account/login" state={{ after: location.pathname, afterState: location.state }} className="inline-flex items-center gap-2 rounded-lg border border-[var(--divider)] px-6 py-4 text-sm font-black uppercase tracking-wider text-[var(--text-primary)]">
-                                Sign in <ChevronRight size={16} />
-                            </Link>
-                        </div>
-                    </section>
+
+                    <div className="mx-auto max-w-3xl">
+                        <section className="rounded-2xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-5 shadow-sm sm:p-8">
+                            <div className="flex items-start gap-3 sm:gap-4">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-red)]/10 text-[var(--brand-red)] sm:h-12 sm:w-12">
+                                    <ShieldCheck size={22} />
+                                </div>
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--brand-red)] sm:text-[10px]">Secure checkout</p>
+                                    <h1 className="mt-1 text-2xl font-black leading-tight tracking-tight text-[var(--text-primary)] sm:text-3xl">Sign in or create an account</h1>
+                                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--text-muted)]">
+                                        Your account saves your contact details and gives you one place to track and manage your orders. After signing in, you will return here to review your order and complete payment.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 divide-y divide-[var(--divider)] border-t border-[var(--divider)] sm:mt-8">
+                                <div className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-6">
+                                    <div>
+                                        <h2 className="text-sm font-bold text-[var(--text-primary)]">New to the platform?</h2>
+                                        <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">Create your profile to continue and manage future orders.</p>
+                                    </div>
+                                    <Link to="/account/signup" state={{ after: location.pathname, afterState: location.state }} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[var(--brand-red)] px-5 text-xs font-bold text-white transition-opacity hover:opacity-90">
+                                        Create account <ChevronRight size={16} />
+                                    </Link>
+                                </div>
+                                <div className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-6">
+                                    <div>
+                                        <h2 className="text-sm font-bold text-[var(--text-primary)]">Already have an account?</h2>
+                                        <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">Sign in to use your saved details and continue to payment.</p>
+                                    </div>
+                                    <Link to="/account/login" state={{ after: location.pathname, afterState: location.state }} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-[var(--divider)] bg-[var(--bg-primary)] px-5 text-xs font-bold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-red)] hover:text-[var(--brand-red)]">
+                                        Sign in <ChevronRight size={16} />
+                                    </Link>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
         )

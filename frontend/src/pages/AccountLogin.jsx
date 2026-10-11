@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, CheckCircle2, ChevronLeft } from 'lucide-react'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 import { customerApi } from '../api/client'
+import CheckoutAuthSuccessModal from '../components/CheckoutAuthSuccessModal'
 
 const AccountLogin = () => {
     const navigate = useNavigate()
@@ -16,14 +17,20 @@ const AccountLogin = () => {
     const [error, setError] = useState(null)
     const [info, setInfo] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [checkoutReady, setCheckoutReady] = useState(false)
 
     const after = location.state?.after || '/account'
+    const isCheckoutFlow = after.startsWith('/checkout')
+    const returnToCheckout = () => navigate(after, { replace: true, state: location.state?.afterState })
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setLoading(true); setError(null); setInfo(null)
         const res = await signIn(email.trim(), password)
-        if (res.success) navigate(after, { replace: true, state: location.state?.afterState })
+        if (res.success && isCheckoutFlow) {
+            setCheckoutReady(true)
+            setLoading(false)
+        } else if (res.success) navigate(after, { replace: true, state: location.state?.afterState })
         else { setError(res.message || 'Sign-in failed.'); setLoading(false) }
     }
 
@@ -44,6 +51,7 @@ const AccountLogin = () => {
 
     return (
         <div className="pt-40 pb-32 container max-w-md font-['Sen',sans-serif]">
+            {checkoutReady && <CheckoutAuthSuccessModal onReturn={returnToCheckout} />}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
                 <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
                     {mode === 'forgot' ? 'Reset your password' : 'Welcome back'}

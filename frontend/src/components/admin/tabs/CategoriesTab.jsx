@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Search, Plus, Edit3, Trash2, Package, ShoppingBag, ChevronRight } from 'lucide-react'
+import { Search, Plus, Edit3, Trash2, Package, ShoppingBag, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { useStore } from '../../../context/StoreContext'
 import { productApi } from '../../../api/client'
 
 const fmtNgn = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`
 
 const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
-    const { businessSegments, categoriesLoading, removeCategory, products } = useStore()
+    const { adminSegments, categoriesLoading, removeCategory, updateCategoryById, adminProducts } = useStore()
     const [catSearch, setCatSearch] = useState('')
-    const [confirmDelete, setConfirmDelete] = useState(null)
+    const [pendingAction, setPendingAction] = useState(null)
     const [salesById, setSalesById] = useState({})
 
     useEffect(() => {
@@ -24,7 +24,7 @@ const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
     // type field, so the lookup must match.
     const statsByCategory = useMemo(() => {
         const map = new Map()
-        products.forEach(p => {
+        adminProducts.forEach(p => {
             const key = (p.brand || '').trim()
             if (!key) return
             const sales = salesById[p.id] || { soldUnits: 0, revenue: 0 }
@@ -35,19 +35,17 @@ const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
             map.set(key, cur)
         })
         return map
-    }, [products, salesById])
+    }, [adminProducts, salesById])
 
-    const filtered = businessSegments.filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase()))
+    const filtered = adminSegments.filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase()))
 
-    const handleDelete = async (e, cat) => {
-        e.stopPropagation()
-        if (confirmDelete?._id === cat._id) {
-            await removeCategory(cat._id)
-            setConfirmDelete(null)
-        } else {
-            setConfirmDelete(cat)
-            setTimeout(() => setConfirmDelete(c => (c?._id === cat._id ? null : c)), 3000)
-        }
+    const confirmAction = async () => {
+        if (!pendingAction) return
+        const { type, category } = pendingAction
+        const result = type === 'delete'
+            ? await removeCategory(category._id)
+            : await updateCategoryById(category._id, { isActive: category.isActive === false })
+        if (result?.success) setPendingAction(null)
     }
     
     return (
@@ -111,6 +109,7 @@ const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
                                             </div>
                                             <div className="min-w-0">
                                                 <span className="text-[14px] font-bold text-[var(--text-primary)] block">{cat.name}</span>
+                                                {cat.isActive === false && <span className="text-[10px] font-bold uppercase text-gray-500">Deactivated</span>}
                                                 {cat.abstract && <span className="text-[11px] text-[var(--text-muted)] font-medium line-clamp-1">{cat.abstract}</span>}
                                             </div>
                                         </div>
@@ -127,10 +126,13 @@ const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
                                     <td className="px-6 py-5 text-right text-[13px] font-bold text-[#ed0000]">{fmtNgn(s.revenue)}</td>
                                     <td className="px-6 py-5 text-right">
                                         <div className="inline-flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => setPendingAction({ type: 'toggle', category: cat })} className={`p-2 rounded-lg transition-all ${cat.isActive === false ? 'hover:bg-emerald-50 text-emerald-600' : 'hover:bg-amber-50 text-amber-600'}`} title={cat.isActive === false ? 'Activate category' : 'Deactivate category'}>
+                                                {cat.isActive === false ? <Eye size={15} /> : <EyeOff size={15} />}
+                                            </button>
                                             <button onClick={() => onEditCategory(cat)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-blue-500 transition-all" title="Edit">
                                                 <Edit3 size={15} />
                                             </button>
-                                            <button onClick={(e) => handleDelete(e, cat)} className={`p-2 rounded-lg transition-all ${confirmDelete?._id === cat._id ? 'bg-[#ed0000] text-white' : 'hover:bg-red-50 text-[#ed0000]'}`} title={confirmDelete?._id === cat._id ? 'Click again to confirm' : 'Delete'}>
+                                            <button onClick={() => setPendingAction({ type: 'delete', category: cat })} className="p-2 rounded-lg transition-all hover:bg-red-50 text-[#ed0000]" title="Delete">
                                                 <Trash2 size={15} />
                                             </button>
                                             <ChevronRight size={15} className="text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity ml-1" />
@@ -142,6 +144,47 @@ const CategoriesTab = ({ onViewCategory, onAddCategory, onEditCategory }) => {
                     </tbody>
                 </table>
             </div>
+
+            {pendingAction && (
+                <div
+                    className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setPendingAction(null)}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="category-action-title"
+                        className="w-full max-w-md rounded-2xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-6 shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 id="category-action-title" className="text-lg font-bold text-[var(--text-primary)]">
+                            {pendingAction.type === 'delete'
+                                ? 'Delete category?'
+                                : pendingAction.category.isActive === false
+                                    ? 'Activate category?'
+                                    : 'Deactivate category?'}
+                        </h3>
+                        <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-muted)]">
+                            {pendingAction.type === 'delete'
+                                ? `Delete ${pendingAction.category.name}? This cannot be undone.`
+                                : pendingAction.category.isActive === false
+                                    ? `${pendingAction.category.name} and its active products will appear in the storefront again.`
+                                    : `${pendingAction.category.name} and its products will no longer appear in the storefront.`}
+                        </p>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button onClick={() => setPendingAction(null)} className="rounded-xl border border-[var(--divider)] px-4 py-2.5 text-[12px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmAction}
+                                className={`rounded-xl px-4 py-2.5 text-[12px] font-bold text-white ${pendingAction.type === 'delete' || pendingAction.category.isActive !== false ? 'bg-[#ed0000] hover:bg-[#c90000]' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                            >
+                                {pendingAction.type === 'delete' ? 'Delete category' : pendingAction.category.isActive === false ? 'Activate category' : 'Deactivate category'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

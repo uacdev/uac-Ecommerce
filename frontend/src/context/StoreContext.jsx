@@ -33,7 +33,8 @@ const buildFallbackSegments = (products = []) => {
             _id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
             name,
             parent: 'Brand',
-            color: 'bg-indigo-50 text-indigo-600'
+            color: 'bg-indigo-50 text-indigo-600',
+            isActive: true
         }))
 }
 
@@ -42,6 +43,7 @@ export const useStore = () => useContext(StoreContext)
 export const StoreProvider = ({ children }) => {
     const { user } = useAuth()
     const [products, setProducts] = useState([])
+    const [adminProducts, setAdminProducts] = useState([])
     const [orders, setOrders] = useState([])
     const [cart, setCart] = useState(() => {
         try {
@@ -84,6 +86,20 @@ export const StoreProvider = ({ children }) => {
             .finally(() => { if (!cancelled) setLoading(false) })
         return () => { cancelled = true }
     }, [])
+
+    useEffect(() => {
+        if (!user) {
+            setAdminProducts([])
+            return
+        }
+        let cancelled = false
+        productApi.getAdminAll()
+            .then(res => {
+                if (!cancelled) setAdminProducts(sortProductsForDisplay(res.data?.data || []))
+            })
+            .catch(err => console.error('Fetch admin products error:', err))
+        return () => { cancelled = true }
+    }, [user])
 
     useEffect(() => {
         let cancelled = false
@@ -210,6 +226,7 @@ export const StoreProvider = ({ children }) => {
             const res = await productApi.create(payload)
             const added = res.data.data
             setProducts(prev => sortProductsForDisplay([added, ...prev]))
+            setAdminProducts(prev => sortProductsForDisplay([added, ...prev.filter(p => p.id !== added.id && p._id !== added._id)]))
             return { success: true, data: added }
         } catch (err) {
             console.error('Add product error:', err)
@@ -223,6 +240,7 @@ export const StoreProvider = ({ children }) => {
             const added = res.data?.data || []
             if (added.length > 0) {
                 setProducts(prev => sortProductsForDisplay([...added, ...prev]))
+                setAdminProducts(prev => sortProductsForDisplay([...added, ...prev]))
             }
             return { success: true, count: added.length, data: added }
         } catch (err) {
@@ -235,7 +253,21 @@ export const StoreProvider = ({ children }) => {
         try {
             const res = await productApi.update(id, updates)
             const updated = res.data.data
-            setProducts(prev => sortProductsForDisplay(prev.map(p => (p.id === id || p._id === id) ? { ...p, ...updated } : p)))
+            setAdminProducts(prev => {
+                const exists = prev.some(p => p.id === id || p._id === id)
+                return sortProductsForDisplay(exists
+                    ? prev.map(p => (p.id === id || p._id === id) ? { ...p, ...updated } : p)
+                    : [updated, ...prev])
+            })
+            setProducts(prev => {
+                const categoryIsActive = !updated.brand || businessSegments.some(c => c.name === updated.brand && c.isActive !== false)
+                const isVisible = updated.isActive !== false && categoryIsActive
+                const exists = prev.some(p => p.id === id || p._id === id)
+                if (!isVisible) return prev.filter(p => p.id !== id && p._id !== id)
+                return sortProductsForDisplay(exists
+                    ? prev.map(p => (p.id === id || p._id === id) ? { ...p, ...updated } : p)
+                    : [updated, ...prev])
+            })
             return { success: true, data: updated }
         } catch (err) {
             console.error('Update product error:', err)
@@ -247,6 +279,7 @@ export const StoreProvider = ({ children }) => {
         try {
             await productApi.delete(id)
             setProducts(prev => prev.filter(p => p.id !== id && p._id !== id))
+            setAdminProducts(prev => prev.filter(p => p.id !== id && p._id !== id))
             return { success: true }
         } catch (err) {
             console.error('Remove product error:', err)
@@ -326,28 +359,34 @@ export const StoreProvider = ({ children }) => {
     }
 
     const [businessSegments, setBusinessSegments] = useState([])
+    const [adminSegments, setAdminSegments] = useState([])
     const [categoriesLoading, setCategoriesLoading] = useState(true)
 
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const res = await categoryApi.getAll()
+                const res = user ? await categoryApi.getAdminAll() : await categoryApi.getAll()
                 const fetched = Array.isArray(res.data?.data) ? res.data.data : []
                 if (fetched.length > 0) {
-                    setBusinessSegments(fetched)
+                    setAdminSegments(user ? fetched : [])
+                    setBusinessSegments(fetched.filter(c => c.isActive !== false))
                     return
                 }
 
-                setBusinessSegments(buildFallbackSegments(products))
+                const fallback = buildFallbackSegments(products)
+                setAdminSegments(user ? fallback : [])
+                setBusinessSegments(fallback)
             } catch (err) {
                 console.error('Fetch categories error:', err)
-                setBusinessSegments(buildFallbackSegments(products))
+                const fallback = buildFallbackSegments(products)
+                setAdminSegments(user ? fallback : [])
+                setBusinessSegments(fallback)
             } finally {
                 setCategoriesLoading(false)
             }
         }
         fetchCategories()
-    }, [products])
+    }, [products, user])
 
     useEffect(() => {
         if (!user) { setAdminProfileState(null); return }
@@ -416,6 +455,7 @@ export const StoreProvider = ({ children }) => {
             })
             if (res.data?.success) {
                 setBusinessSegments(prev => [...prev, res.data.data])
+                setAdminSegments(prev => [...prev, res.data.data])
                 return { success: true }
             }
         } catch (err) {
@@ -428,7 +468,19 @@ export const StoreProvider = ({ children }) => {
         try {
             const res = await categoryApi.update(id, updates)
             if (res.data?.success) {
-                setBusinessSegments(prev => prev.map(c => c._id === id ? res.data.data : c))
+                const updated = res.data.data
+                setAdminSegments(prev => prev.map(c => c._id === id ? updated : c))
+                setBusinessSegments(prev => updated.isActive === false
+                    ? prev.filter(c => c._id !== id)
+                    : prev.some(c => c._id === id)
+                        ? prev.map(c => c._id === id ? updated : c)
+                        : [...prev, updated])
+                setProducts(prev => {
+                    if (updated.isActive === false) return prev.filter(p => p.brand !== updated.name)
+                    const restored = adminProducts.filter(p => p.brand === updated.name && p.isActive !== false)
+                    const currentIds = new Set(prev.map(p => String(p.id || p._id)))
+                    return sortProductsForDisplay([...prev, ...restored.filter(p => !currentIds.has(String(p.id || p._id)))])
+                })
                 return { success: true }
             }
         } catch (err) {
@@ -441,6 +493,7 @@ export const StoreProvider = ({ children }) => {
         try {
             await categoryApi.delete(id)
             setBusinessSegments(prev => prev.filter(c => c._id !== id))
+            setAdminSegments(prev => prev.filter(c => c._id !== id))
             return { success: true }
         } catch (err) {
             console.error('Remove category error:', err)
@@ -475,6 +528,7 @@ export const StoreProvider = ({ children }) => {
     return (
         <StoreContext.Provider value={{
             products,
+            adminProducts,
             orders,
             cart,
             favorites,
@@ -488,6 +542,7 @@ export const StoreProvider = ({ children }) => {
             deleteWhatsAppNumber,
             categories,
             businessSegments,
+            adminSegments,
             categoriesLoading,
             addCategory,
             updateCategoryById,

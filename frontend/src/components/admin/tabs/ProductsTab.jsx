@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Download, ArrowLeft, MoreVertical, Edit3, Trash2, LayoutGrid, List as ListIcon } from 'lucide-react'
+import { Search, Plus, Download, ArrowLeft, MoreVertical, Edit3, Trash2, LayoutGrid, List as ListIcon, Eye, EyeOff } from 'lucide-react'
 import { useStore } from '../../../context/StoreContext'
 import { productApi } from '../../../api/client'
 
@@ -18,14 +18,15 @@ const normalizePackagingLabel = (value = '', product = {}) => {
     return stripped || text
 }
 
-const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSelect, categoryFilter, onBack, onExport }) => {
-    const { products, updateProduct } = useStore()
+const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onSelect, categoryFilter, onBack, onExport }) => {
+    const { adminProducts, updateProduct } = useStore()
     const [openMenuId, setOpenMenuId] = useState(null)
     const [localSearch, setLocalSearch] = useState('')
     const [view, setView] = useState(() => localStorage.getItem(VIEW_KEY) || 'grid')
     const [salesById, setSalesById] = useState({})
     const [draggedProductId, setDraggedProductId] = useState(null)
     const [dropTargetId, setDropTargetId] = useState(null)
+    const [pendingProductAction, setPendingProductAction] = useState(null)
 
     useEffect(() => { localStorage.setItem(VIEW_KEY, view) }, [view])
 
@@ -38,11 +39,11 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
         return () => { cancelled = true }
     }, [])
 
-    const filtered = useMemo(() => products.filter(p => {
+    const filtered = useMemo(() => adminProducts.filter(p => {
         const s = (searchTerm || localSearch).toLowerCase()
         const m = p.name.toLowerCase().includes(s) || (p.category || '').toLowerCase().includes(s)
         return m && (!categoryFilter || p.category === categoryFilter)
-    }), [products, searchTerm, localSearch, categoryFilter])
+    }), [adminProducts, searchTerm, localSearch, categoryFilter])
 
     const handleReorderProducts = async (sourceId, targetId) => {
         if (!sourceId || !targetId || sourceId === targetId) return
@@ -61,6 +62,13 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
 
         setDraggedProductId(null)
         setDropTargetId(null)
+    }
+
+    const confirmProductVisibility = async () => {
+        if (!pendingProductAction) return
+        const product = pendingProductAction
+        const result = await updateProduct(product.id || product._id, { isActive: product.isActive === false })
+        if (result?.success) setPendingProductAction(null)
     }
 
     return (
@@ -164,12 +172,14 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
                                         product={p}
                                         onEdit={onEdit}
                                         onDelete={onDelete}
-                                        onToggleStock={onToggleStock}
+                                        onToggleActive={setPendingProductAction}
                                     />
                                 </div>
 
                                 {/* Status badge — auto from stockCount */}
-                                {p.status === 'out_of_stock' ? (
+                                {p.isActive === false ? (
+                                    <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full bg-gray-700 text-white text-[9px] font-bold uppercase tracking-widest">Deactivated</div>
+                                ) : p.status === 'out_of_stock' ? (
                                     <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full bg-[#ed0000] text-white text-[9px] font-bold uppercase tracking-widest">
                                         Out of stock
                                     </div>
@@ -250,6 +260,7 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
                                                         <p className="text-[14px] font-bold text-[var(--text-primary)] leading-tight">{p.name}</p>
                                                         <p className="text-[11px] text-[var(--text-muted)] font-bold mt-1 tracking-tighter">
                                                             {p.brand || p.category}
+                                                            {p.isActive === false && <span className="ml-2 text-gray-500">· Deactivated</span>}
                                                             {p.status === 'out_of_stock' && <span className="ml-2 text-[#ed0000]">· Out of stock</span>}
                                                         </p>
                                                     </div>
@@ -272,7 +283,7 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
                                                         product={p}
                                                         onEdit={onEdit}
                                                         onDelete={onDelete}
-                                                        onToggleStock={onToggleStock}
+                                                        onToggleActive={setPendingProductAction}
                                                     />
                                                 </div>
                                             </td>
@@ -284,11 +295,51 @@ const ProductsTab = ({ searchTerm, onAdd, onEdit, onDelete, onToggleStock, onSel
                     </div>
                 </div>
             )}
+            {pendingProductAction && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setPendingProductAction(null)}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="product-visibility-title"
+                        className="w-full max-w-md rounded-2xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-6 shadow-2xl"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 id="product-visibility-title" className="text-lg font-bold text-[var(--text-primary)]">
+                            {pendingProductAction.isActive === false ? 'Activate product?' : 'Deactivate product?'}
+                        </h3>
+                        <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-muted)]">
+                            {pendingProductAction.isActive === false
+                                ? `${pendingProductAction.name} will appear in the storefront again.`
+                                : `${pendingProductAction.name} will no longer appear in the storefront.`}
+                        </p>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button onClick={() => setPendingProductAction(null)} className="rounded-xl border border-[var(--divider)] px-4 py-2.5 text-[12px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmProductVisibility}
+                                className={`rounded-xl px-4 py-2.5 text-[12px] font-bold text-white ${pendingProductAction.isActive === false ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#ed0000] hover:bg-[#c90000]'}`}
+                            >
+                                {pendingProductAction.isActive === false ? 'Activate product' : 'Deactivate product'}
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
         </div>
     )
 }
 
-const ProductMenu = ({ open, onClose, product, onEdit, onDelete }) => (
+const ProductMenu = ({ open, onClose, product, onEdit, onDelete, onToggleActive }) => (
     <AnimatePresence>
         {open && (
             <>
@@ -301,6 +352,10 @@ const ProductMenu = ({ open, onClose, product, onEdit, onDelete }) => (
                 >
                     <button onClick={() => { onEdit(product); onClose() }} className="w-full flex items-center gap-3 px-4 py-3 text-[12px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-all border-b border-[var(--divider)]">
                         <Edit3 size={14} className="text-blue-500" /> Edit product
+                    </button>
+                    <button onClick={() => { onToggleActive(product); onClose() }} className="w-full flex items-center gap-3 px-4 py-3 text-[12px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-all border-b border-[var(--divider)]">
+                        {product.isActive === false ? <Eye size={14} className="text-emerald-600" /> : <EyeOff size={14} className="text-amber-600" />}
+                        {product.isActive === false ? 'Activate product' : 'Deactivate product'}
                     </button>
                     <button onClick={() => { onDelete(product); onClose() }} className="w-full flex items-center gap-3 px-4 py-3 text-[12px] font-bold text-[#ed0000] hover:bg-red-50 dark:hover:bg-red-950/20 transition-all">
                         <Trash2 size={14} /> Delete entry

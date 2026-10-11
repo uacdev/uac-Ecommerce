@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Order, ORDER_STATUSES, DELIVERY_METHODS } from '../models/Order';
+import { Notification } from '../models/Notification';
 import { Product } from '../models/Product';
 import { DeliveryZone } from '../models/DeliveryZone';
 import { isNigerianState } from '../data/nigerianStates';
@@ -463,6 +464,35 @@ export const deleteOrder = async (req: Request, res: Response) => {
     } catch (err: any) {
         console.error('Error in deleteOrder:', err);
         res.status(400).json({ success: false, message: err.message || 'Error deleting order' });
+    }
+};
+
+export const deleteUnpaidCustomerOrder = async (req: Request, res: Response) => {
+    try {
+        const email = String(req.customer?.email || '').trim().toLowerCase();
+        if (!email) return res.status(401).json({ success: false, message: 'Sign-in required' });
+
+        const deleted = await Order.findOneAndDelete({
+            _id: req.params.id,
+            buyerEmail: email,
+            status: 'pending'
+        });
+        if (!deleted) {
+            return res.status(404).json({ success: false, message: 'Unpaid order not found or it can no longer be deleted' });
+        }
+
+        await restoreOrderStock(deleted.items as any[]);
+        await Notification.deleteMany({
+            title: { $in: ['New order received', 'New customer'] },
+            $or: [
+                { 'meta.reference': deleted.reference },
+                { 'meta.firstOrderRef': deleted.reference }
+            ]
+        }).catch(err => console.error('Unpaid-order notification cleanup failed:', err));
+        res.json({ success: true, message: 'Unpaid order deleted' });
+    } catch (err: any) {
+        console.error('Error in deleteUnpaidCustomerOrder:', err);
+        res.status(400).json({ success: false, message: err.message || 'Error deleting unpaid order' });
     }
 };
 
