@@ -16,12 +16,9 @@ const Checkout = () => {
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState('opay')
     const { products, addOrder, cart, cartTotal, updateCartQuantity } = useStore()
-    const { customer } = useCustomerAuth() || {}
+    const { customer, loading: authLoading } = useCustomerAuth() || {}
 
     const [buyer, setBuyer] = useState({
-        name: '',
-        phone: '',
-        email: '',
         address: '',
     })
 
@@ -115,20 +112,12 @@ const Checkout = () => {
     const deliveryFee = selectedZone?.fee || 0
     const totalAmount = subtotal + deliveryFee
 
-    if (isSingleItem && !singleProduct) return <Preloader />
+    if (authLoading || (isSingleItem && !singleProduct)) return <Preloader />
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!buyer.name?.trim()) {
-            toast.error('ENTER YOUR NAME')
-            return
-        }
-        if (!buyer.phone?.trim()) {
-            toast.error('ENTER YOUR PHONE NUMBER')
-            return
-        }
-        if (!buyer.email?.trim()) {
-            toast.error('ENTER YOUR EMAIL ADDRESS')
+        if (!customer?.fullName?.trim() || !customer?.email?.trim() || !customer?.phone?.trim()) {
+            toast.error('COMPLETE YOUR CONTACT DETAILS IN YOUR PROFILE')
             return
         }
         if (activeFulfillmentType === 'delivery') {
@@ -155,9 +144,9 @@ const Checkout = () => {
                 price: it.price,
                 quantity: it.quantity || 1
             })),
-            buyerName: buyer.name,
-            buyerPhone: buyer.phone,
-            buyerEmail: buyer.email,
+            buyerName: customer.fullName,
+            buyerPhone: customer.phone,
+            buyerEmail: customer.email,
             buyerAddress: activeFulfillmentType === 'delivery' ? buyer.address : '',
             buyerState: activeFulfillmentType === 'delivery' ? stateName : '',
             deliveryZone: activeFulfillmentType === 'delivery' ? zoneName : '',
@@ -179,9 +168,9 @@ const Checkout = () => {
             const { data } = await paymentApi.initiate({
                 reference: result.data.reference,
                 amount: result.data.amount,
-                buyerName: buyer.name,
-                buyerEmail: buyer.email,
-                buyerPhone: buyer.phone,
+                buyerName: customer.fullName,
+                buyerEmail: customer.email,
+                buyerPhone: customer.phone,
                 productName: isSingleItem ? checkoutItems[0].name : `Cart (${checkoutItems.length} items)`,
             })
             if (data?.cashierUrl) {
@@ -197,8 +186,35 @@ const Checkout = () => {
         }
     }
 
+    if (!customer) {
+        return (
+            <div className="checkout-mobile checkout-mobile--gate pt-40 pb-40 bg-[var(--bg-primary)] font-['Sen',sans-serif]">
+                <div className="container max-w-7xl px-6">
+                    <div className="mb-16 border-b border-[var(--divider)] pb-10">
+                        <span className="mb-4 block text-[10px] font-black uppercase tracking-[0.5em] text-[var(--brand-red)]">Final Step</span>
+                        <h1 className="text-5xl font-black uppercase leading-none text-[var(--text-primary)] md:text-7xl">Checkout</h1>
+                    </div>
+                    <section className="max-w-xl border-y border-[var(--divider)] py-10">
+                        <h2 className="text-2xl font-black text-[var(--text-primary)]">Sign in to continue</h2>
+                        <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+                            Create an account to save your details and manage your orders, or sign in to use your existing profile.
+                        </p>
+                        <div className="mt-8 flex flex-wrap gap-4">
+                            <Link to="/account/signup" state={{ after: location.pathname, afterState: location.state }} className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-red)] px-6 py-4 text-sm font-black uppercase tracking-wider text-white">
+                                Create account <ChevronRight size={16} />
+                            </Link>
+                            <Link to="/account/login" state={{ after: location.pathname, afterState: location.state }} className="inline-flex items-center gap-2 rounded-lg border border-[var(--divider)] px-6 py-4 text-sm font-black uppercase tracking-wider text-[var(--text-primary)]">
+                                Sign in <ChevronRight size={16} />
+                            </Link>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="pt-40 pb-40 bg-[var(--bg-primary)] transition-colors duration-700 font-['Sen',sans-serif]">
+        <div className="checkout-mobile pt-40 pb-40 bg-[var(--bg-primary)] transition-colors duration-700 font-['Sen',sans-serif]">
             <div className="container px-6 max-w-7xl">
                 
                 <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-24 border-b border-[var(--divider)] pb-12">
@@ -240,23 +256,19 @@ const Checkout = () => {
                                             </p>
                                         )}
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Full Name</label>
-                                        <input required type="text" name="name" autoComplete="name" autoCapitalize="words" autoCorrect="off" spellCheck={false} value={buyer.name} onChange={e => setBuyer({...buyer, name: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold normal-case transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="Your Name" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Phone</label>
-                                        <input required type="tel" name="tel" autoComplete="tel" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={buyer.phone} onChange={e => setBuyer({...buyer, phone: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold normal-case transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="+234" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Email</label>
-                                        <input required type="email" name="email" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={buyer.email} onChange={e => setBuyer({...buyer, email: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold normal-case transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="email@example.com" />
+                                    <div className="md:col-span-2 grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)_minmax(0,1fr)] sm:grid-cols-3 gap-2 sm:gap-6 rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] p-3 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
+                                        <div className="min-w-0"><span className="block text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-[var(--text-muted)] mb-1 sm:mb-2">Name</span><span title={customer.fullName || 'Not provided'} className="block truncate text-[10px] sm:text-base font-bold text-[var(--text-primary)]">{customer.fullName || 'Not provided'}</span></div>
+                                        <div className="min-w-0"><span className="block text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-[var(--text-muted)] mb-1 sm:mb-2">Email</span><span title={customer.email} className="block truncate text-[10px] sm:text-base font-bold text-[var(--text-primary)]">{customer.email}</span></div>
+                                        <div className="min-w-0"><span className="block text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-[var(--text-muted)] mb-1 sm:mb-2">Phone</span><span title={customer.phone || 'Not provided'} className="block truncate text-[10px] sm:text-base font-bold text-[var(--text-primary)]">{customer.phone || 'Not provided'}</span></div>
+                                        {(!customer.fullName || !customer.email || !customer.phone) && (
+                                            <Link to="/account" className="col-span-3 text-xs sm:text-sm font-bold text-[var(--brand-red)] underline underline-offset-4">Complete your contact details in your profile</Link>
+                                        )}
                                     </div>
                                     {activeFulfillmentType === 'delivery' && (
                                         <>
                                             <div>
                                                 <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">State</label>
-                                                <div className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase text-[var(--text-primary)] flex items-center h-14">LAGOS</div>
+                                                <div className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase text-[var(--text-primary)] flex items-center h-14">Lagos</div>
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Delivery Zone</label>
@@ -264,7 +276,7 @@ const Checkout = () => {
                                                     <option value="">{zonesLoading ? 'LOADING ZONES…' : 'SELECT YOUR ZONE'}</option>
                                                     {zones.map(z => (
                                                         <option key={z.name} value={z.name}>
-                                                            {z.name.toUpperCase()} — ₦{z.fee.toLocaleString()}
+                                                            {z.name} — ₦{z.fee.toLocaleString()}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -284,10 +296,10 @@ const Checkout = () => {
                     {/* Order Summary */}
                     <div className="lg:col-span-5">
                         <div className="lg:sticky lg:top-40 space-y-12">
-                            <div className="bg-[var(--bg-secondary)] rounded-[60px] p-12 border border-[var(--divider)]">
+                            <div className="checkout-summary bg-[var(--bg-secondary)] rounded-[60px] p-12 border border-[var(--divider)]">
                                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-12">Your Cart</h2>
                                 
-                                <div className="space-y-8 mb-12 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
+                                <div className="checkout-summary-items space-y-8 mb-12 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
                                     {checkoutItems.map(item => (
                                         <div key={item.id} className="flex gap-6">
                                             <div className="w-24 h-32 rounded-[24px] overflow-hidden bg-[var(--bg-primary)] border border-[var(--divider)] shrink-0">
@@ -358,7 +370,7 @@ const Checkout = () => {
                                 <button 
                                     form="checkout-form"
                                     disabled={loading}
-                                    className="w-full mt-12 bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl flex items-center justify-center gap-4 group"
+                                    className="hidden md:flex w-full mt-12 bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl items-center justify-center gap-4 group"
                                 >
                                     {loading ? 'PROCESSING...' : (
                                         <>
@@ -367,6 +379,22 @@ const Checkout = () => {
                                         </>
                                     )}
                                 </button>
+                                <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t border-[var(--divider)] bg-[var(--bg-primary)]/95 px-4 py-3 backdrop-blur md:hidden">
+                                    <div className="mx-auto flex max-w-7xl items-center gap-3">
+                                        <div className="min-w-0 shrink-0">
+                                            <span className="block text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Total</span>
+                                            <span className="block text-lg font-black text-[var(--brand-red)]">₦{totalAmount.toLocaleString()}</span>
+                                        </div>
+                                        <button
+                                            form="checkout-form"
+                                            disabled={loading || !customer.fullName || !customer.email || !customer.phone}
+                                            className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-black px-4 text-xs font-black uppercase tracking-wider text-white disabled:opacity-50"
+                                        >
+                                            {loading ? 'Processing...' : 'Confirm purchase'}
+                                            {!loading && <ChevronRight size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-6 px-12">

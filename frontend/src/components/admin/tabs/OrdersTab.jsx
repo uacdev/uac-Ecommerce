@@ -51,7 +51,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
     useEffect(() => {
         let cancelled = false
         setLoading(true)
-        orderApi.getAll({ page, limit: PAGE_SIZE, status: statusFilter, q: search })
+        orderApi.getAll({ page, limit: PAGE_SIZE, status: statusFilter, q: search, excludeAwaitingPayment: statusFilter === 'all' })
             .then(res => {
                 if (cancelled) return
                 if (res.data?.success) {
@@ -125,7 +125,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
             if (res.data?.success) {
                 setFeedback('Order deleted successfully')
                 // Silently refetch the page after deletion
-                const refetchRes = await orderApi.getAll({ page, limit: PAGE_SIZE, status: statusFilter, q: search })
+                const refetchRes = await orderApi.getAll({ page, limit: PAGE_SIZE, status: statusFilter, q: search, excludeAwaitingPayment: statusFilter === 'all' })
                 if (refetchRes.data?.success) {
                     setOrders(refetchRes.data.data || [])
                     setPagination(refetchRes.data.pagination || { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 })
@@ -182,11 +182,15 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                             onClick={() => setStatusFilter(s)}
                             className={`px-5 py-2.5 rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${statusFilter === s ? 'bg-black text-white px-7' : 'bg-[var(--bg-tertiary)] border border-[var(--divider)] text-[var(--text-muted)] px-5'}`}
                         >
-                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                            {s === 'pending' ? 'Awaiting payment' : s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                     ))}
                 </div>
             </div>
+
+            {statusFilter === 'all' && (
+                <p className="-mt-2 text-[11px] text-[var(--text-muted)]">Unpaid OPay attempts are available under Awaiting payment.</p>
+            )}
 
             {error && (
                 <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/30 text-[#ed0000] text-[12px] font-bold">{error}</div>
@@ -259,7 +263,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                     </td>
                                     <td className="px-6 py-5 text-right">
                                         <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>
-                                            {(o.status || 'pending').toUpperCase()}
+                                            {(o.status || 'pending').replace(/^./, (firstLetter) => firstLetter.toUpperCase())}
                                         </span>
                                     </td>
                                     <td className="px-6 py-5 text-right">

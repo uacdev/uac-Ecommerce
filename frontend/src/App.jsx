@@ -36,6 +36,20 @@ import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
 import FloatingButtons from './components/FloatingButtons'
 
+const FOOTERLESS_PATHS = [
+  '/product',
+  '/cart',
+  '/favorites',
+  '/checkout',
+  '/success',
+  '/order-failed',
+  '/delivery-selection',
+  '/deliver-selection',
+  '/success-delivery',
+  '/track-order',
+  '/account'
+]
+
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
   
@@ -48,6 +62,9 @@ const ProtectedRoute = ({ children }) => {
 function Layout() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
+  const hideFooter = isAdmin || FOOTERLESS_PATHS.some(path =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`)
+  )
 
   // Ping the visit tracker on every storefront navigation. Backend dedupes by
   // (visitorId, dayKey) so a returning visitor on the same day is a free no-op.
@@ -62,7 +79,7 @@ function Layout() {
 
       <Toaster position="top-center" reverseOrder={false} />
       {!isAdmin && <Navbar />}
-      <main>
+      <main className="portal-main">
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -103,7 +120,7 @@ function Layout() {
           </Routes>
         </AnimatePresence>
       </main>
-      {!isAdmin && <Footer />}
+      {!hideFooter && <Footer />}
       {!isAdmin && <FloatingButtons />}
     </div>
   )

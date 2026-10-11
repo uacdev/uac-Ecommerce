@@ -1,16 +1,17 @@
 import { motion } from 'framer-motion'
-import { Check, Plus, ShoppingBag } from 'lucide-react'
+import { Check, Plus, ShoppingBag, Heart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { cdnCard } from '../lib/img'
 import toast from 'react-hot-toast'
 
 const ProductCard = ({ product }) => {
-    const { addToCart, cart, removeFromCart } = useStore()
+    const { addToCart, cart, removeFromCart, toggleFavorite, isFavorite } = useStore()
     const stock = Number(product.stockCount ?? 0)
     const isOutOfStock = product.status === 'out_of_stock' || stock === 0
     const isLowStock = !isOutOfStock && stock <= 5
     const isInCart = cart.some(item => item.id === product.id)
+    const isSaved = isFavorite(product.id)
 
     const handleAddToCart = (e) => {
         e.preventDefault()
@@ -35,6 +36,13 @@ const ProductCard = ({ product }) => {
         })
     }
 
+    const handleToggleFavorite = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        toggleFavorite(product)
+        toast.success(isSaved ? 'Removed from favourites' : 'Added to favourites')
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -49,6 +57,17 @@ const ProductCard = ({ product }) => {
                     className="w-full h-full object-contain p-2 md:p-3 group-hover:scale-105 transition-all duration-700"
                     alt={product.name}
                 />
+
+                <button
+                    type="button"
+                    onClick={handleToggleFavorite}
+                    aria-label={isSaved ? `Remove ${product.name} from favourites` : `Add ${product.name} to favourites`}
+                    aria-pressed={isSaved}
+                    title={isSaved ? 'Remove from favourites' : 'Add to favourites'}
+                    className={`absolute right-2.5 top-2.5 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[var(--divider)] bg-[var(--bg-primary)] shadow-md transition-colors hover:text-[var(--brand-red)] ${isSaved ? 'text-[var(--brand-red)]' : 'text-[var(--text-primary)]'}`}
+                >
+                    <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+                </button>
                 
                 {/* Minimal Overlay for Desktop */}
                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />

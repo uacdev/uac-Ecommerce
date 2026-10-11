@@ -210,7 +210,9 @@ export const myOrders = async (req: Request, res: Response) => {
             totalOrders: orders.length,
             ongoingOrders: orders.filter(o => ['pending', 'paid', 'confirmed', 'shipped'].includes(o.status as string)).length,
             completedOrders: orders.filter(o => ['delivered', 'completed'].includes(o.status as string)).length,
-            totalSpend: orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (o.amount || 0), 0)
+            totalSpend: orders
+                .filter(o => ['paid', 'confirmed', 'shipped', 'delivered', 'completed'].includes(o.status as string))
+                .reduce((s, o) => s + (o.amount || 0), 0)
         };
 
         res.json({ success: true, summary, orders });

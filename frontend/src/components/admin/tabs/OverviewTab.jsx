@@ -31,6 +31,7 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
     const trends = stats.trends || {}
     const [bestSellers, setBestSellers] = React.useState([])
     const [loadingBestSellers, setLoadingBestSellers] = React.useState(true)
+    const [bestSellersError, setBestSellersError] = React.useState(false)
     const [customers, setCustomers] = React.useState([])
 
     React.useEffect(() => {
@@ -38,7 +39,11 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
         setLoadingBestSellers(true)
         Promise.allSettled([statsApi.getBestSellers(), statsApi.getCustomers()]).then(([bsRes, cuRes]) => {
             if (cancelled) return
-            if (bsRes.status === 'fulfilled' && bsRes.value.data?.success) setBestSellers(bsRes.value.data.data || [])
+            if (bsRes.status === 'fulfilled' && bsRes.value.data?.success) {
+                setBestSellers(bsRes.value.data.data || [])
+            } else {
+                setBestSellersError(true)
+            }
             if (cuRes.status === 'fulfilled' && cuRes.value.data?.success) setCustomers(cuRes.value.data.data || [])
             setLoadingBestSellers(false)
         })
@@ -58,8 +63,7 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
         for (const p of products) if (p.image) m.set((p.name || '').toLowerCase().trim(), p.image)
         return m
     }, [products])
-    const displayProducts = (bestSellers.length > 0 ? bestSellers : products.slice(0, 5))
-        .map(p => ({
+    const displayProducts = bestSellers.map(p => ({
             ...p,
             image: p.image
                 || productImageById.get(String(p.id))
@@ -140,6 +144,10 @@ const OverviewTab = ({ orders, products, onAddProduct, dateRange, setDateRange, 
                                         </div>
                                     ))}
                                 </div>
+                            ) : bestSellersError ? (
+                                <p className="py-6 text-center text-[12px] font-medium text-[var(--text-muted)]">Sales data is unavailable right now.</p>
+                            ) : displayProducts.length === 0 ? (
+                                <p className="py-6 text-center text-[12px] font-medium text-[var(--text-muted)]">Paid sales will appear here after an order is paid.</p>
                             ) : (
                                 displayProducts.map(p => (
                                     <div key={p.id} className="flex items-center justify-between group">

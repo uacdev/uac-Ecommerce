@@ -420,5 +420,163 @@
   animation: float-pulse 2s infinite ease-in-out;
 }
 
+/* Keep legacy uppercase utilities in natural sentence case across the portal. */
+.uppercase {
+  text-transform: none !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  text-transform: none !important;
+}
+
+@media (max-width: 767px) {
+  .checkout-mobile {
+    padding-top: 6rem;
+    padding-bottom: 10rem;
+  }
+
+  .checkout-mobile > .container {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .checkout-mobile--gate > .container > div:first-child {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .checkout-mobile--gate h1,
+  .checkout-mobile:not(.checkout-mobile--gate) > .container > div:first-child h1 {
+    font-size: 2.25rem;
+  }
+
+  .checkout-mobile--gate section {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .checkout-mobile--gate section > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .checkout-mobile:not(.checkout-mobile--gate) > .container > div:first-child {
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .checkout-mobile:not(.checkout-mobile--gate) > .container > div:nth-child(2) {
+    gap: 2rem;
+  }
+
+  .checkout-mobile #checkout-form section > h2 {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .checkout-mobile #checkout-form section > div {
+    gap: 1rem;
+  }
+
+  .checkout-mobile #checkout-form label {
+    margin-bottom: 0.5rem;
+  }
+
+  .checkout-mobile #checkout-form input,
+  .checkout-mobile #checkout-form select {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .checkout-mobile .checkout-summary {
+    padding: 1.25rem;
+    border-radius: 1rem;
+  }
+
+  .checkout-mobile .checkout-summary > h2 {
+    margin-bottom: 1.25rem;
+  }
+
+  .checkout-mobile .checkout-summary-items {
+    gap: 1rem;
+    max-height: 17rem;
+    margin-bottom: 1.5rem;
+    padding-right: 0.25rem;
+  }
+
+  .checkout-mobile .checkout-summary-items img {
+    width: 4rem;
+    height: 5rem;
+    border-radius: 0.75rem;
+  }
+
+  .portal-main > div[class~="pt-40"]:not(.checkout-mobile),
+  .portal-main > div[class~="pt-48"]:not(.checkout-mobile),
+  .portal-main > div[class~="pt-32"]:not(.checkout-mobile),
+  .portal-main > div[class~="pt-28"]:not(.checkout-mobile) {
+    padding-top: 6rem;
+  }
+
+  .portal-main > div[class~="pb-40"]:not(.checkout-mobile),
+  .portal-main > div[class~="pb-32"]:not(.checkout-mobile) {
+    padding-bottom: 3rem;
+  }
+
+  .portal-main > div > div[class~="mb-24"] {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .portal-main h1[class~="text-6xl"],
+  .portal-main h1[class~="text-7xl"],
+  .portal-main h1[class~="text-8xl"] {
+    font-size: 2.5rem;
+    line-height: 1.05;
+  }
+
+  .portal-main .gap-24 {
+    gap: 2rem;
+  }
+
+  .portal-main .gap-16,
+  .portal-main .gap-20 {
+    gap: 1.5rem;
+  }
+
+  .portal-main [class~="p-12"] {
+    padding: 1.25rem;
+  }
+
+  .portal-main [class~="px-12"] {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .portal-main [class~="py-12"] {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .portal-main [class~="space-y-20"] > :not([hidden]) ~ :not([hidden]) {
+    margin-block-start: 2rem;
+  }
+
+  .portal-main h2[class~="text-7xl"],
+  .portal-main h2[class~="text-8xl"] {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .portal-main .mb-24 {
+    margin-bottom: 2rem;
+  }
+}
+
 
 

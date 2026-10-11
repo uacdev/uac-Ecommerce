@@ -1,10 +1,10 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { LogOut, Package, ShoppingBag, CheckCircle2, Clock, Settings, Repeat2, Star, Send } from 'lucide-react'
+import { LogOut, Package, ShoppingBag, CheckCircle2, Clock, Settings, Repeat2, Star, Send, CreditCard, Loader2, ArrowUpRight, UserRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
-import { customerApi } from '../api/client'
+import { customerApi, paymentApi } from '../api/client'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
 import EditProfilePanel from '../components/EditProfilePanel'
@@ -20,8 +20,12 @@ const STATUS_COLOR = {
 }
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`
+const fmtCompact = (n) => `₦${new Intl.NumberFormat('en-NG', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(n || 0))}`
+const formatOrderStatus = (status) => status === 'pending'
+    ? 'Awaiting payment'
+    : (status || 'pending').replace(/^./, firstLetter => firstLetter.toUpperCase())
 
-const MobileReviewControl = ({ order, item, reviewOpen, setReviewOpen, reviewDrafts, setReviewDrafts, submittedReviews, reviewSubmitting, handleSubmitReview }) => {
+const OrderReviewControl = ({ order, item, reviewOpen, setReviewOpen, reviewDrafts, setReviewDrafts, submittedReviews, reviewSubmitting, handleSubmitReview }) => {
     const key = `${order.reference}:${item.productId}`
     const draft = reviewDrafts[key] || { rating: 0, comment: '' }
 
@@ -76,6 +80,7 @@ const Account = () => {
     const [reviewDrafts, setReviewDrafts] = useState({})
     const [submittedReviews, setSubmittedReviews] = useState({})
     const [reviewSubmitting, setReviewSubmitting] = useState(null)
+    const [paymentRetrying, setPaymentRetrying] = useState(null)
 
     useEffect(() => {
         if (!customer) return
@@ -109,6 +114,26 @@ const Account = () => {
         if (unavailable) toast.error(`${unavailable} product${unavailable === 1 ? '' : 's'} no longer available`)
     }
 
+    const handleContinuePayment = async (order) => {
+        setPaymentRetrying(order.reference)
+        try {
+            const items = order.items || []
+            const { data: payment } = await paymentApi.initiate({
+                reference: order.reference,
+                amount: order.amount,
+                buyerName: order.buyerName,
+                buyerEmail: order.buyerEmail,
+                buyerPhone: order.buyerPhone,
+                productName: items.length === 1 ? items[0].name : `Cart (${items.length} items)`
+            })
+            if (!payment?.cashierUrl) throw new Error('No payment link returned')
+            window.location.href = payment.cashierUrl
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not continue payment. Please try again.')
+            setPaymentRetrying(null)
+        }
+    }
+
     const reviewKey = (order, item) => `${order.reference}:${item.productId}`
     const handleSubmitReview = async (order, item) => {
         const key = reviewKey(order, item)
@@ -134,170 +159,129 @@ const Account = () => {
     const summary = data.summary || { totalOrders: 0, ongoingOrders: 0, completedOrders: 0, totalSpend: 0 }
 
     return (
-        <div className="pt-40 pb-24 container max-w-5xl font-['Sen',sans-serif]">
+        <div className="pt-28 pb-28 md:pt-40 md:pb-24 container max-w-5xl font-['Sen',sans-serif]">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12 pb-8 border-b border-[var(--divider)]">
-                    <div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#ed0000]">My Account</span>
-                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mt-3 text-[var(--text-primary)]">Hi, {customer.fullName?.split(' ')[0] || 'there'}</h1>
+                <header className="flex flex-col gap-5 border-b border-[var(--divider)] pb-6 sm:flex-row sm:items-center sm:justify-between md:pb-8">
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--brand-red)] text-white sm:h-14 sm:w-14">
+                            <UserRound size={24} />
+                        </div>
+                        <div className="min-w-0">
+                            <span className="block text-[9px] font-black uppercase tracking-[0.24em] text-[var(--brand-red)] sm:text-[10px] sm:tracking-[0.35em]">Customer dashboard</span>
+                            <h1 className="mt-1 truncate text-2xl font-black tracking-tight text-[var(--text-primary)] sm:text-3xl md:text-4xl">
+                                Welcome, {customer.fullName?.split(' ')[0] || 'there'}
+                            </h1>
+                            <p className="mt-0.5 truncate text-xs text-[var(--text-muted)] sm:text-sm">{customer.email}</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3 self-start md:self-auto">
-                        <button onClick={() => setEditOpen(true)} className="inline-flex items-center gap-2 text-[12px] font-bold text-[var(--text-primary)] border border-[var(--divider)] hover:border-[#ed0000] hover:text-[#ed0000] px-4 py-2 rounded-xl transition-all">
-                            <Settings size={14} /> Edit profile
+                    <div className="flex items-center gap-2 sm:shrink-0">
+                        <button onClick={() => setEditOpen(true)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--divider)] px-3 text-xs font-bold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-red)] hover:text-[var(--brand-red)] sm:px-4">
+                            <Settings size={15} /> Edit profile
                         </button>
-                        <button onClick={handleSignOut} className="inline-flex items-center gap-2 text-[12px] font-bold text-[var(--text-muted)] hover:text-[#ed0000]">
-                            <LogOut size={14} /> Sign out
+                        <button onClick={handleSignOut} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] sm:px-4">
+                            <LogOut size={15} /> Sign out
                         </button>
                     </div>
-                </div>
+                </header>
 
-                {/* Stat cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                    <Stat icon={<ShoppingBag size={18} />} label="Total orders" value={summary.totalOrders} />
-                    <Stat icon={<Clock size={18} />} label="Ongoing" value={summary.ongoingOrders} highlight={summary.ongoingOrders > 0} />
-                    <Stat icon={<CheckCircle2 size={18} />} label="Completed" value={summary.completedOrders} />
-                    <Stat icon={<Package size={18} />} label="Total spent" value={fmt(summary.totalSpend)} />
-                </div>
+                <section aria-label="Account overview" className="mt-5 grid grid-cols-4 gap-2 sm:mt-7 sm:gap-3">
+                    <Stat icon={<ShoppingBag size={18} />} label="Total orders" mobileLabel="Orders" value={summary.totalOrders} />
+                    <Stat icon={<Clock size={18} />} label="Ongoing" mobileLabel="Active" value={summary.ongoingOrders} highlight={summary.ongoingOrders > 0} />
+                    <Stat icon={<CheckCircle2 size={18} />} label="Completed" mobileLabel="Done" value={summary.completedOrders} />
+                    <Stat icon={<Package size={18} />} label="Total spent" mobileLabel="Spent" value={fmt(summary.totalSpend)} mobileValue={fmtCompact(summary.totalSpend)} />
+                </section>
 
-                {/* Orders */}
-                <div className="mb-6 flex items-end justify-between">
-                    <h2 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Your orders</h2>
-                    <Link to="/shop" className="text-[12px] font-bold text-[#ed0000] hover:underline">Continue shopping →</Link>
-                </div>
-
-                {error && <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 text-[#ed0000] text-[13px] font-bold mb-4">{error}</div>}
-
-                {ordersLoading ? (
-                    <div className="space-y-3">
-                        {[1, 2, 3].map(i => <div key={i} className="h-20 bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-2xl animate-pulse" />)}
+                <section className="mt-10 md:mt-14">
+                    <div className="mb-4 flex items-end justify-between gap-3 sm:mb-5">
+                        <div>
+                            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">Your account</span>
+                            <h2 className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)] sm:text-2xl">Order history</h2>
+                        </div>
+                        <Link to="/shop" className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[var(--brand-red)] hover:underline sm:text-xs">
+                            Shop products <ArrowUpRight size={14} />
+                        </Link>
                     </div>
-                ) : data.orders.length === 0 ? (
-                    <div className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-2xl p-12 text-center">
-                        <Package size={32} className="mx-auto mb-4 text-[var(--text-muted)] opacity-50" />
-                        <p className="text-[14px] font-bold text-[var(--text-primary)]">No orders yet</p>
-                        <p className="text-[12px] text-[var(--text-muted)] mt-1 mb-6">When you place your first order it'll show up here.</p>
-                        <Link to="/shop" className="inline-block px-6 py-3 rounded-xl bg-[#ed0000] text-white font-bold text-[12px] hover:bg-[#c80000]">Browse products</Link>
-                    </div>
-                ) : (
-                    <div>
-                        <div className="md:hidden space-y-4">
-                            {data.orders.map(order => (
-                                <article key={order.id || order._id} className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-2xl p-4 shadow-sm">
-                                    <div className="flex items-start justify-between gap-3 pb-4 border-b border-[var(--divider)]">
-                                        <div className="min-w-0">
-                                            <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-primary)] truncate">{order.reference}</p>
-                                            <p className="text-[11px] text-[var(--text-muted)] mt-1">{format(new Date(order.date), 'MMM dd, yyyy')} · {(order.items || []).reduce((n, item) => n + (item.quantity || 1), 0)} units</p>
+
+                    {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-[13px] font-bold text-[#ed0000] dark:border-red-900 dark:bg-red-950/30">{error}</div>}
+
+                    {ordersLoading ? (
+                        <div className="space-y-3" aria-label="Loading orders">
+                            {[1, 2].map(index => <div key={index} className="h-32 animate-pulse rounded-2xl border border-[var(--divider)] bg-[var(--bg-secondary)]" />)}
+                        </div>
+                    ) : data.orders.length === 0 ? (
+                        <div className="flex flex-col items-center rounded-2xl border border-dashed border-[var(--divider)] bg-[var(--bg-secondary)] px-5 py-10 text-center sm:py-14">
+                            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-tertiary)] text-[var(--text-muted)]">
+                                <Package size={22} />
+                            </div>
+                            <h3 className="text-base font-bold text-[var(--text-primary)]">No orders yet</h3>
+                            <p className="mt-1 max-w-xs text-xs leading-relaxed text-[var(--text-muted)] sm:text-sm">Your purchases and payment updates will appear here.</p>
+                            <Link to="/shop" className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--brand-red)] px-5 text-xs font-bold text-white transition-opacity hover:opacity-90">
+                                Browse products <ArrowUpRight size={15} />
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-3 sm:space-y-4">
+                            {data.orders.map(order => {
+                                const itemCount = (order.items || []).reduce((count, item) => count + (item.quantity || 1), 0)
+                                return (
+                                    <article key={order.id || order._id} className="overflow-hidden rounded-2xl border border-[var(--divider)] bg-[var(--bg-secondary)]">
+                                        <div className="flex items-start justify-between gap-3 border-b border-[var(--divider)] p-4 sm:px-5 sm:py-4">
+                                            <div className="min-w-0">
+                                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-[9px]">Order reference</span>
+                                                <h3 className="mt-0.5 truncate text-xs font-black tracking-wide text-[var(--text-primary)] sm:text-sm">{order.reference}</h3>
+                                                <p className="mt-1 text-[10px] text-[var(--text-muted)] sm:text-[11px]">
+                                                    {format(new Date(order.date), 'MMM dd, yyyy')} <span aria-hidden="true">·</span> {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                                                </p>
+                                            </div>
+                                            <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-bold sm:text-[10px] ${STATUS_COLOR[order.status] || STATUS_COLOR.pending}`}>
+                                                {formatOrderStatus(order.status)}
+                                            </span>
                                         </div>
-                                        <span className={`shrink-0 px-2.5 py-1 rounded-full text-[9px] font-bold border ${STATUS_COLOR[order.status] || STATUS_COLOR.pending}`}>
-                                            {(order.status || 'pending').toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-end justify-between gap-3 py-4">
-                                        <div>
-                                            <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--text-muted)]">Order total</p>
-                                            <p className="text-xl font-black text-[var(--text-primary)] mt-1">{fmt(order.amount)}</p>
-                                        </div>
-                                        <button onClick={() => handleRepeatOrder(order)} className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#ed0000] text-white text-[10px] font-bold">
-                                            <Repeat2 size={14} /> Repeat order
-                                        </button>
-                                    </div>
-                                    <div className="space-y-3 pt-3 border-t border-[var(--divider)]">
-                                        {(order.items || []).map(item => (
-                                            <div key={`${order.reference}:${item.productId}`} className="rounded-xl bg-[var(--bg-tertiary)] p-3">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span className="text-[11px] font-bold leading-snug text-[var(--text-primary)]">{item.name}</span>
-                                                    <span className="shrink-0 text-[10px] font-bold text-[var(--text-muted)]">x{item.quantity || 1}</span>
+
+                                        <div className="grid lg:grid-cols-[minmax(0,1fr)_13rem]">
+                                            <div className="divide-y divide-[var(--divider)] px-4 sm:px-5">
+                                                {(order.items || []).map(item => {
+                                                    const key = reviewKey(order, item)
+                                                    return (
+                                                        <div key={key} className="flex items-start justify-between gap-3 py-3 sm:py-4">
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-bold leading-snug text-[var(--text-primary)] sm:text-sm">{item.name}</p>
+                                                                <p className="mt-1 text-[10px] text-[var(--text-muted)] sm:text-[11px]">Qty {item.quantity || 1} <span aria-hidden="true">·</span> {fmt(item.price)} each</p>
+                                                                {['delivered', 'completed'].includes(order.status) && (
+                                                                    <div className="mt-2">
+                                                                        <OrderReviewControl order={order} item={item} reviewOpen={reviewOpen} setReviewOpen={setReviewOpen} reviewDrafts={reviewDrafts} setReviewDrafts={setReviewDrafts} submittedReviews={submittedReviews} reviewSubmitting={reviewSubmitting} handleSubmitReview={handleSubmitReview} />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className="shrink-0 text-xs font-bold text-[var(--text-primary)] sm:text-sm">{fmt(item.price * (item.quantity || 1))}</span>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+
+                                            <div className="flex items-center justify-between gap-3 border-t border-[var(--divider)] bg-[var(--bg-tertiary)]/50 p-4 sm:px-5 lg:flex-col lg:items-stretch lg:justify-center lg:border-l lg:border-t-0">
+                                                <div className="shrink-0">
+                                                    <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Order total</p>
+                                                    <p className="mt-0.5 text-lg font-black text-[var(--text-primary)] sm:text-xl">{fmt(order.amount)}</p>
                                                 </div>
-                                                {['delivered', 'completed'].includes(order.status) && (
-                                                    <div className="mt-2">
-                                                        <MobileReviewControl order={order} item={item} reviewOpen={reviewOpen} setReviewOpen={setReviewOpen} reviewDrafts={reviewDrafts} setReviewDrafts={setReviewDrafts} submittedReviews={submittedReviews} reviewSubmitting={reviewSubmitting} handleSubmitReview={handleSubmitReview} />
-                                                    </div>
+                                                {order.status === 'pending' ? (
+                                                    <button onClick={() => handleContinuePayment(order)} disabled={paymentRetrying === order.reference} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand-red)] px-3 text-[10px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-4 sm:text-[11px] lg:mt-3">
+                                                        {paymentRetrying === order.reference ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+                                                        {paymentRetrying === order.reference ? 'Opening…' : 'Continue payment'}
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => handleRepeatOrder(order)} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-[var(--divider)] px-3 text-[10px] font-bold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-red)] hover:text-[var(--brand-red)] sm:px-4 sm:text-[11px] lg:mt-3">
+                                                        <Repeat2 size={14} /> Repeat order
+                                                    </button>
                                                 )}
                                             </div>
-                                        ))}
-                                    </div>
-                                </article>
-                            ))}
+                                        </div>
+                                    </article>
+                                )
+                            })}
                         </div>
-                        <div className="hidden md:block bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-2xl overflow-x-auto">
-                        <table className="w-full min-w-[760px] text-left">
-                            <thead className="bg-[var(--bg-tertiary)] border-b border-[var(--divider)]">
-                                <tr>
-                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Reference</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Items</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Date</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Amount</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[var(--divider)]">
-                                {data.orders.map(o => (<Fragment key={o.id || o._id}>
-                                    <tr className="hover:bg-[var(--bg-tertiary)]/50 transition-colors">
-                                        <td className="px-6 py-4 text-[12px] font-bold text-[var(--text-primary)]">{o.reference}</td>
-                                        <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">{(o.items || []).reduce((n, it) => n + (it.quantity || 1), 0)} units</td>
-                                        <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">{format(new Date(o.date), 'MMM dd, yyyy')}</td>
-                                        <td className="px-6 py-4 text-[13px] font-bold text-right text-[var(--text-primary)]">{fmt(o.amount)}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>
-                                                {(o.status || 'pending').toUpperCase()}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleRepeatOrder(o)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#ed0000] text-white text-[10px] font-bold hover:bg-[#c80000] transition-colors whitespace-nowrap"
-                                            >
-                                                <Repeat2 size={13} /> Repeat order
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {['delivered', 'completed'].includes(o.status) && (o.items || []).map(item => {
-                                        const key = reviewKey(o, item)
-                                        const draft = reviewDrafts[key] || { rating: 0, comment: '' }
-                                        return (
-                                            <tr key={key} className="bg-[var(--bg-tertiary)]/40">
-                                                <td colSpan="6" className="px-6 py-3">
-                                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                                        <span className="text-[11px] font-bold text-[var(--text-primary)]">{item.name}</span>
-                                                        {submittedReviews[key] ? (
-                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Review submitted</span>
-                                                        ) : reviewOpen === key ? (
-                                                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                                                                <div className="flex items-center gap-0.5" aria-label="Choose a rating">
-                                                                    {[1, 2, 3, 4, 5].map(rating => (
-                                                                        <button key={rating} type="button" onClick={() => setReviewDrafts(prev => ({ ...prev, [key]: { ...draft, rating } }))} aria-label={`${rating} star${rating > 1 ? 's' : ''}`}>
-                                                                            <Star size={18} className={rating <= draft.rating ? 'text-amber-500 fill-amber-500' : 'text-[var(--text-muted)]'} />
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                                <input
-                                                                    value={draft.comment}
-                                                                    onChange={e => setReviewDrafts(prev => ({ ...prev, [key]: { ...draft, comment: e.target.value } }))}
-                                                                    placeholder="Share your experience"
-                                                                    className="flex-1 min-w-[180px] px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--bg-primary)] text-[11px] text-[var(--text-primary)] outline-none focus:border-[#ed0000]"
-                                                                />
-                                                                <button type="button" onClick={() => handleSubmitReview(o, item)} disabled={reviewSubmitting === key} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-primary)] text-[10px] font-bold disabled:opacity-50">
-                                                                    <Send size={13} /> {reviewSubmitting === key ? 'Sending...' : 'Send review'}
-                                                                </button>
-                                                                <button type="button" onClick={() => setReviewOpen(null)} className="text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)]">Cancel</button>
-                                                            </div>
-                                                        ) : (
-                                                            <button type="button" onClick={() => setReviewOpen(key)} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#ed0000] hover:underline">
-                                                                <Star size={13} /> Rate and review
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </Fragment>))}
-                            </tbody>
-                        </table>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </section>
             </motion.div>
 
             <EditProfilePanel open={editOpen} onClose={() => setEditOpen(false)} />
@@ -305,11 +289,16 @@ const Account = () => {
     )
 }
 
-const Stat = ({ icon, label, value, highlight }) => (
-    <div className={`p-5 rounded-2xl border ${highlight ? 'bg-[#ed0000]/5 border-[#ed0000]/20' : 'bg-[var(--bg-secondary)] border-[var(--divider)]'}`}>
-        <div className={`mb-3 ${highlight ? 'text-[#ed0000]' : 'text-[var(--text-muted)]'}`}>{icon}</div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">{label}</p>
-        <p className="text-2xl font-bold tracking-tight mt-1 text-[var(--text-primary)]">{value}</p>
+const Stat = ({ icon, label, mobileLabel, value, mobileValue, highlight }) => (
+    <div className={`min-w-0 p-2 sm:p-5 rounded-xl sm:rounded-2xl border ${highlight ? 'bg-[#ed0000]/5 border-[#ed0000]/20' : 'bg-[var(--bg-secondary)] border-[var(--divider)]'}`}>
+        <div className={`mb-1 sm:mb-3 [&>svg]:h-3.5 [&>svg]:w-3.5 sm:[&>svg]:h-[18px] sm:[&>svg]:w-[18px] ${highlight ? 'text-[#ed0000]' : 'text-[var(--text-muted)]'}`}>{icon}</div>
+        <p className="text-[8px] leading-tight sm:text-[10px] font-bold uppercase tracking-tight sm:tracking-widest text-[var(--text-muted)]">
+            <span className="sm:hidden">{mobileLabel || label}</span>
+            <span className="hidden sm:inline">{label}</span>
+        </p>
+        <p className="text-xs sm:text-2xl font-bold tracking-tight mt-1 text-[var(--text-primary)] truncate">
+            {mobileValue ? <><span className="sm:hidden">{mobileValue}</span><span className="hidden sm:inline">{value}</span></> : value}
+        </p>
     </div>
 )
 

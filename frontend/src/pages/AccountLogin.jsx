@@ -23,7 +23,7 @@ const AccountLogin = () => {
         e.preventDefault()
         setLoading(true); setError(null); setInfo(null)
         const res = await signIn(email.trim(), password)
-        if (res.success) navigate(after, { replace: true })
+        if (res.success) navigate(after, { replace: true, state: location.state?.afterState })
         else { setError(res.message || 'Sign-in failed.'); setLoading(false) }
     }
 
@@ -113,7 +113,7 @@ const AccountLogin = () => {
 
                 <div className="mt-8 text-center text-[13px] text-[var(--text-muted)]">
                     No account yet?{' '}
-                    <Link to="/account/signup" state={{ after }} className="font-bold text-[#ed0000] hover:underline">Create one</Link>
+                    <Link to="/account/signup" state={{ after, afterState: location.state?.afterState }} className="font-bold text-[#ed0000] hover:underline">Create one</Link>
                 </div>
             </motion.div>
         </div>

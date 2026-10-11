@@ -14,7 +14,7 @@ const Footer = () => {
     const waHref = formatWhatsAppHref(whatsappNumber)
 
     return (
-        <footer className="py-6 md:py-20" style={{ background: '#0A0A0A', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <footer className="pt-6 pb-24 md:py-20" style={{ background: '#0A0A0A', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
             <div className="container">
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-5 md:gap-16 mb-5 md:mb-20">
                     <div className="col-span-2 md:col-span-1 lg:col-span-1">

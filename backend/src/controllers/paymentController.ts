@@ -67,6 +67,20 @@ const markOrderPaidAndNotify = async (reference: string) => {
         meta: { orderId: order.id, reference, amount: order.amount, paymentMethod: 'opay' }
     });
 
+    const previousPaidOrder = await Order.exists({
+        _id: { $ne: order._id },
+        buyerEmail: order.buyerEmail,
+        status: { $in: ['paid', 'confirmed', 'shipped', 'delivered', 'completed'] }
+    });
+    if (!previousPaidOrder) {
+        notify({
+            type: 'customer',
+            title: 'New customer',
+            description: `${order.buyerName} · ${order.buyerEmail}`,
+            meta: { email: order.buyerEmail, name: order.buyerName, firstOrderRef: order.reference }
+        });
+    }
+
     if (String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
         const pickupLocation = await resolvePickupLocation(order.items as any[]);
         sendPickupOrderReceivedEmail({

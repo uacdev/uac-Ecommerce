@@ -22,7 +22,7 @@ const AccountSignup = () => {
         if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return }
         setLoading(true); setError(null)
         const res = await signUp({ ...form, email: form.email.trim() })
-        if (res.success) navigate(after, { replace: true })
+        if (res.success) navigate(after, { replace: true, state: location.state?.afterState })
         else { setError(res.message || 'Could not create account.'); setLoading(false) }
     }
 
@@ -60,10 +60,10 @@ const AccountSignup = () => {
                     </div>
 
                     <div>
-                        <label className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Phone <span className="text-[var(--text-muted)] opacity-70 normal-case font-medium">(optional)</span></label>
+                        <label className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Phone</label>
                         <div className="relative mt-2">
                             <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                            <input type="tel" value={form.phone} onChange={update('phone')}
+                            <input required type="tel" value={form.phone} onChange={update('phone')}
                                 className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl pl-12 pr-4 py-4 text-[14px] outline-none text-[var(--text-primary)] focus:border-[#ed0000]"
                                 placeholder="08000000000" />
                         </div>
@@ -90,7 +90,7 @@ const AccountSignup = () => {
 
                 <div className="mt-8 text-center text-[13px] text-[var(--text-muted)]">
                     Already have an account?{' '}
-                    <Link to="/account/login" state={{ after }} className="font-bold text-[#ed0000] hover:underline">Sign in</Link>
+                    <Link to="/account/login" state={{ after, afterState: location.state?.afterState }} className="font-bold text-[#ed0000] hover:underline">Sign in</Link>
                 </div>
             </motion.div>
         </div>

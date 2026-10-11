@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Sun, Moon, ShoppingBag, Search, ChevronRight, User } from 'lucide-react'
+import { Menu, X, Sun, Moon, ShoppingBag, Search, ChevronRight, User, Heart, House, ShoppingCart } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
@@ -14,8 +14,17 @@ const Navbar = () => {
     const store = useStore() || {}
     const { cartCount = 0, favorites = [] } = store
     const navigate = useNavigate()
+    const location = useLocation()
     const { customer } = useCustomerAuth() || {}
     const accountHref = customer ? '/account' : '/account/login'
+    const pathname = location.pathname
+    const mobileLinks = [
+        { to: '/', label: 'Home', icon: House, active: pathname === '/' },
+        { to: '/products', label: 'Shop', icon: ShoppingBag, active: pathname === '/products' || pathname === '/shop' || pathname.startsWith('/product/') },
+        { to: '/favorites', label: 'Saved', icon: Heart, count: favorites.length, active: pathname.startsWith('/favorites') },
+        { to: '/cart', label: 'Cart', icon: ShoppingCart, count: cartCount, active: pathname.startsWith('/cart') || pathname.startsWith('/checkout') },
+        { to: accountHref, label: 'Account', icon: User, active: pathname.startsWith('/account') }
+    ]
 
     const handleSearch = (e) => {
         e.preventDefault()
@@ -86,19 +95,6 @@ const Navbar = () => {
                     </div>
 
                     <div className="md:hidden flex items-center gap-4">
-                        <Link to="/cart" className="p-2 relative text-[var(--text-primary)]">
-                            <ShoppingBag size={18} strokeWidth={3} />
-                            {cartCount > 0 && (
-                                <motion.span 
-                                    key={cartCount}
-                                    initial={{ scale: 0.5, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--brand-red)] text-white text-[8px] font-bold rounded-full flex items-center justify-center"
-                                >
-                                    {cartCount}
-                                </motion.span>
-                            )}
-                        </Link>
                         <button 
                             className="p-2 text-[var(--text-primary)]" 
                             onClick={() => setIsOpen(!isOpen)} 
@@ -195,6 +191,29 @@ const Navbar = () => {
                     </>
                 )}
             </AnimatePresence>
+
+            <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--divider)] bg-[var(--bg-primary)]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+                <div className="mx-auto grid h-14 max-w-lg grid-cols-5">
+                    {mobileLinks.map(({ to, label, icon: Icon, count, active }) => (
+                        <Link
+                            key={label}
+                            to={to}
+                            aria-current={active ? 'page' : undefined}
+                            className={`relative flex min-w-0 flex-col items-center justify-center gap-1 transition-colors ${active ? 'text-[var(--brand-red)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                        >
+                            <span className="relative">
+                                <Icon size={19} strokeWidth={active ? 2.5 : 2} />
+                                {count > 0 && (
+                                    <span className="absolute -right-2 -top-1 min-w-4 h-4 rounded-full bg-[var(--brand-red)] px-1 text-[8px] font-bold leading-4 text-white text-center">
+                                        {count > 99 ? '99+' : count}
+                                    </span>
+                                )}
+                            </span>
+                            <span className="max-w-full truncate px-1 text-[9px] font-bold leading-none">{label}</span>
+                        </Link>
+                    ))}
+                </div>
+            </nav>
         </>
     )
 }

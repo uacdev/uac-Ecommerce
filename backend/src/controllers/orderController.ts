@@ -139,6 +139,9 @@ export const getOrders = async (req: Request, res: Response) => {
         if (status && status !== 'all' && ORDER_STATUSES.includes(status as any)) {
             filter.status = status;
         }
+        if (req.query.excludeAwaitingPayment === 'true') {
+            filter.$nor = [{ status: 'pending', paymentMethod: { $regex: /^opay$/i } }];
+        }
         if (q) {
             const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
             filter.$or = [
@@ -181,6 +184,7 @@ export const createOrder = async (req: Request, res: Response) => {
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'items must contain at least one product' });
         }
+        const isOpay = String(paymentMethod || '').toLowerCase() === 'opay';
         const fulfillment = String(fulfillmentType || 'delivery').trim();
         const isDelivery = fulfillment === 'delivery';
         const address = String(buyerAddress || '').trim();
@@ -268,7 +272,10 @@ export const createOrder = async (req: Request, res: Response) => {
 
         // Detect first-time customer BEFORE creating the order
         const normalizedEmail = String(buyerEmail).trim().toLowerCase();
-        const isNewCustomer = !(await Order.exists({ buyerEmail: normalizedEmail }));
+        const isNewCustomer = !(await Order.exists({
+            buyerEmail: normalizedEmail,
+            status: { $in: ['paid', 'confirmed', 'shipped', 'delivered', 'completed'] }
+        }));
 
         const created = await new Order({
             reference,
@@ -306,21 +313,23 @@ export const createOrder = async (req: Request, res: Response) => {
             }).catch(err => console.error('Email dispatch failed:', err));
         }
 
-        notify({
-            type: 'order',
-            title: 'New order received',
-            description: `${reference} · ${buyerName} · ₦${amount.toLocaleString('en-NG')}`,
-            link: `/admin?order=${reference}`,
-            meta: { orderId: created.id, reference, amount }
-        });
-
-        if (isNewCustomer) {
+        if (!isOpay) {
             notify({
-                type: 'customer',
-                title: 'New customer',
-                description: `${buyerName} · ${normalizedEmail}`,
-                meta: { email: normalizedEmail, name: buyerName, firstOrderRef: reference }
+                type: 'order',
+                title: 'New order received',
+                description: `${reference} · ${buyerName} · ₦${amount.toLocaleString('en-NG')}`,
+                link: `/admin?order=${reference}`,
+                meta: { orderId: created.id, reference, amount }
             });
+
+            if (isNewCustomer) {
+                notify({
+                    type: 'customer',
+                    title: 'New customer',
+                    description: `${buyerName} · ${normalizedEmail}`,
+                    meta: { email: normalizedEmail, name: buyerName, firstOrderRef: reference }
+                });
+            }
         }
 
         // Mark the checkout session as converted so abandonment-rate stats stay accurate.

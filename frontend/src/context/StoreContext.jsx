@@ -457,7 +457,9 @@ export const StoreProvider = ({ children }) => {
         totalProducts: apiStats?.totalProducts ?? products.length,
         availableProducts: products.filter(p => !p.is_reserved && p.status !== 'sold').length,
         totalOrders: apiStats?.totalOrders ?? orders.length,
-        pendingOrders: orders.filter(o => o.status === 'pending').length,
+        pendingOrders: apiStats?.pendingOrders ?? orders.filter(o =>
+            o.status === 'pending' && String(o.paymentMethod || '').toLowerCase() !== 'opay'
+        ).length,
         totalRevenue: apiStats?.totalRevenue ?? orders.reduce((sum, o) => sum + (o.amount || 0), 0),
         avgOrderValue: apiStats?.avgOrderValue ?? 0,
         totalCustomers: apiStats?.totalCustomers ?? 0,

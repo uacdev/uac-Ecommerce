@@ -1,11 +1,10 @@
 import { motion } from 'framer-motion'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Plus, Minus, ShoppingBag, MessageCircle, Instagram, ArrowLeft } from 'lucide-react'
+import { Plus, Minus, ArrowLeft, ChevronRight, Heart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useStore } from '../context/StoreContext'
 import { cdnHero } from '../lib/img'
 import toast from 'react-hot-toast'
-import Preloader from '../components/Preloader'
 import NotifyWhenInStock from '../components/NotifyWhenInStock'
 
 const ProductDetails = () => {
@@ -13,14 +12,12 @@ const ProductDetails = () => {
     const navigate = useNavigate()
     const [activeImage, setActiveImage] = useState(0)
     const [quantity, setQuantity] = useState(1)
-    const { products, loading, addToCart, whatsappNumber } = useStore()
+    const [addedToCart, setAddedToCart] = useState(false)
+    const { products, addToCart, toggleFavorite, isFavorite } = useStore()
 
     const product = products.find(p => p.id === id)
     const productImages = product ? (product.images?.length > 0 ? product.images : [product.image]) : []
-    const whatsappDigits = String(whatsappNumber || '').replace(/\D/g, '')
-    const whatsappHref = whatsappDigits
-        ? (whatsappDigits.startsWith('0') ? `https://wa.me/234${whatsappDigits.replace(/^0+/, '')}` : `https://wa.me/${whatsappDigits}`)
-        : 'https://wa.me/2349098050402'
+    const isSaved = product ? isFavorite(product.id) : false
 
     useEffect(() => {
         if (product) document.title = `${product.name} | UAC Foods`
@@ -39,6 +36,7 @@ const ProductDetails = () => {
 
     const handleAddToCart = () => {
         addToCart(product, quantity)
+        setAddedToCart(true)
         toast.success(`ADDED TO CART`, {
             style: {
                 background: 'var(--bg-primary)',
@@ -77,6 +75,19 @@ const ProductDetails = () => {
                                 alt={product.name}
                                 className="w-full h-full object-contain p-6 md:p-10 grayscale-0"
                             />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    toggleFavorite(product)
+                                    toast.success(isSaved ? 'Removed from favourites' : 'Added to favourites')
+                                }}
+                                aria-label={isSaved ? 'Remove from favourites' : 'Add to favourites'}
+                                aria-pressed={isSaved}
+                                title={isSaved ? 'Remove from favourites' : 'Add to favourites'}
+                                className={`absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--divider)] bg-[var(--bg-primary)] shadow-md transition-colors hover:text-[var(--brand-red)] ${isSaved ? 'text-[var(--brand-red)]' : 'text-[var(--text-primary)]'}`}
+                            >
+                                <Heart size={20} fill={isSaved ? 'currentColor' : 'none'} />
+                            </button>
                             
                             {productImages.length > 1 && (
                                 <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3">
@@ -154,6 +165,21 @@ const ProductDetails = () => {
                         <div className="flex flex-col gap-3">
                             {product.status === 'out_of_stock' ? (
                                 <NotifyWhenInStock productId={product.id || product._id} productName={product.name} />
+                            ) : addedToCart ? (
+                                <>
+                                    <button
+                                        onClick={() => navigate('/checkout')}
+                                        className="w-full bg-black text-white py-5 md:py-6 rounded-2xl md:rounded-[24px] text-[11px] font-black uppercase tracking-[0.2em] hover:bg-[var(--brand-red)] transition-all shadow-2xl flex items-center justify-center gap-3"
+                                    >
+                                        Proceed to Checkout <ChevronRight size={18} />
+                                    </button>
+                                    <Link
+                                        to="/products"
+                                        className="w-full border border-[var(--divider)] py-4 rounded-xl md:rounded-[18px] text-center text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-all"
+                                    >
+                                        Continue Shopping
+                                    </Link>
+                                </>
                             ) : (
                                 <button
                                     onClick={handleAddToCart}
@@ -162,13 +188,6 @@ const ProductDetails = () => {
                                     Add to Cart
                                 </button>
                             )}
-                            
-                            <div className="grid grid-cols-1 gap-4 mt-4">
-                                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-4 border border-[var(--divider)] rounded-xl md:rounded-[18px] text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--bg-secondary)] transition-all">
-                                    <MessageCircle size={16} />
-                                    WhatsApp
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>

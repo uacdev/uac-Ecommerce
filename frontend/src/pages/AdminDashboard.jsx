@@ -84,7 +84,7 @@ const AdminDashboard = () => {
             if (!cancelled && res.data?.success) setReviewsCount(res.data.count ?? (res.data.data || []).length)
         }).catch(() => {})
         // Pending orders count — first page only, total pending in pagination meta
-        orderApi.getAll({ status: 'pending', limit: 1 }).then(res => {
+        orderApi.getAll({ status: 'pending', limit: 1, excludeAwaitingPayment: true }).then(res => {
             if (!cancelled && res.data?.success) setPendingOrdersCount(res.data.pagination?.total ?? 0)
         }).catch(() => {})
         return () => { cancelled = true }

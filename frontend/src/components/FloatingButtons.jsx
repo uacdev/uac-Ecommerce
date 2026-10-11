@@ -4,16 +4,17 @@ import { useStore } from '../context/StoreContext'
 
 const FloatingButtons = () => {
     const location = useLocation()
-    const { whatsappNumber, cartCount = 0 } = useStore() || {}
+    const { whatsappNumber } = useStore() || {}
     const digits = String(whatsappNumber || '').replace(/\D/g, '')
     const waHref = digits
         ? (digits.startsWith('0') ? `https://wa.me/234${digits.replace(/^0+/, '')}` : (digits.startsWith('234') ? `https://wa.me/${digits}` : `https://wa.me/${digits}`))
         : 'https://wa.me/2349098050402'
 
     const isHomePage = location.pathname === '/'
+    if (location.pathname.startsWith('/checkout')) return null
 
     return (
-        <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-3">
+        <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-3 md:bottom-8 md:right-8">
             {/* Products Page Flashing Button (Home page only) */}
             {isHomePage && (
                 <Link
@@ -25,21 +26,6 @@ const FloatingButtons = () => {
                     <span>Click me to view our products</span>
                 </Link>
             )}
-
-            {/* Floating cart shortcut */}
-            <Link
-                to="/cart"
-                className="relative w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 bg-[var(--text-primary)] text-[var(--bg-primary)] hover:bg-[var(--brand-red)] hover:text-white"
-                aria-label={`Added product, ${cartCount} ${cartCount === 1 ? 'item' : 'items'} in cart`}
-                title="Added product"
-            >
-                <ShoppingBag size={20} strokeWidth={2.5} />
-                {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full flex items-center justify-center bg-[var(--brand-red)] text-white text-[9px] font-black">
-                        {cartCount}
-                    </span>
-                )}
-            </Link>
 
             {/* WhatsApp CTA */}
             <a

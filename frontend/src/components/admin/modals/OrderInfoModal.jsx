@@ -129,7 +129,7 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                     </div>
                     <div className="flex items-center gap-3">
                         <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold border ${STATUS_COLOR[order.status] || STATUS_COLOR.pending}`}>
-                            {(order.status || 'pending').toUpperCase()}
+                            {(order.status || 'pending').replace(/^./, (firstLetter) => firstLetter.toUpperCase())}
                         </span>
                         <button onClick={onClose} className="p-2 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] transition-all">
                             <X size={22} />

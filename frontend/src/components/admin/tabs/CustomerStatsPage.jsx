@@ -145,7 +145,7 @@ const CustomerStatsPage = ({ customer, onBack }) => {
                                     <td className="px-6 py-4 text-[13px] font-bold text-right text-[var(--text-primary)]">{fmt(o.amount)}</td>
                                     <td className="px-6 py-4 text-right">
                                         <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>
-                                            {(o.status || 'pending').toUpperCase()}
+                                            {(o.status || 'pending').replace(/^./, (firstLetter) => firstLetter.toUpperCase())}
                                         </span>
                                     </td>
                                 </tr>
