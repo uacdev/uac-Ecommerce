@@ -208,8 +208,8 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Customer</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Amount</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Date</th>
-                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reminder</th>
-                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reminder sent</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Pickup ready email</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Buyer notified</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Delete</th>
                             </tr>
@@ -248,7 +248,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--bg-secondary)] text-[11px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all disabled:opacity-50"
                                             >
                                                 <BellRing size={13} />
-                                                {remindingId === (o.id || o._id) ? 'Sending…' : 'Reminder'}
+                                                {remindingId === (o.id || o._id) ? 'Sending…' : 'Notify buyer'}
                                             </button>
                                         ) : (
                                             <span className="text-[11px] text-[var(--text-muted)]">—</span>

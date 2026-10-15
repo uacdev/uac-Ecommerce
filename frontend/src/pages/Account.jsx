@@ -55,9 +55,10 @@ const OrderReviewControl = ({ order, item, reviewOpen, setReviewOpen, reviewDraf
                 ))}
             </div>
             <textarea
+                required={order.status === 'shipped'}
                 value={draft.comment}
                 onChange={e => setReviewDrafts(prev => ({ ...prev, [key]: { ...draft, comment: e.target.value } }))}
-                placeholder="Share your experience"
+                placeholder={order.status === 'shipped' ? 'Write a review (required to complete this order)' : 'Share your experience'}
                 rows="3"
                 className="w-full resize-none px-3 py-2.5 rounded-xl border border-[var(--divider)] bg-[var(--bg-primary)] text-[12px] text-[var(--text-primary)] outline-none focus:border-[#ed0000]"
             />
@@ -82,6 +83,7 @@ const Account = () => {
     const [submittedReviews, setSubmittedReviews] = useState({})
     const [reviewSubmitting, setReviewSubmitting] = useState(null)
     const [paymentRetrying, setPaymentRetrying] = useState(null)
+    const [completionSubmitting, setCompletionSubmitting] = useState(null)
     const [deleteOrderTarget, setDeleteOrderTarget] = useState(null)
     const [deletingOrderId, setDeletingOrderId] = useState(null)
 
@@ -90,7 +92,14 @@ const Account = () => {
         let cancelled = false
         setOrdersLoading(true)
         customerApi.myOrders()
-            .then(res => { if (!cancelled && res.data?.success) setData({ summary: res.data.summary, orders: res.data.orders }) })
+            .then(res => {
+                if (cancelled || !res.data?.success) return
+                const orders = res.data.orders || []
+                setData({ summary: res.data.summary, orders })
+                setSubmittedReviews(Object.fromEntries(orders.flatMap(order =>
+                    (order.reviewedProductIds || []).map(productId => [`${order.reference}:${productId}`, true])
+                )))
+            })
             .catch(err => { if (!cancelled) setError(err.response?.data?.message || 'Could not load your orders') })
             .finally(() => { if (!cancelled) setOrdersLoading(false) })
         return () => { cancelled = true }
@@ -166,6 +175,7 @@ const Account = () => {
         const key = reviewKey(order, item)
         const draft = reviewDrafts[key] || {}
         if (!draft.rating) return toast.error('Please choose a rating first')
+        if (order.status === 'shipped' && !draft.comment?.trim()) return toast.error('Please write a review before submitting')
         setReviewSubmitting(key)
         try {
             await customerApi.createReview({
@@ -175,12 +185,47 @@ const Account = () => {
                 comment: draft.comment || ''
             })
             setSubmittedReviews(prev => ({ ...prev, [key]: true }))
+            setData(prev => ({
+                ...prev,
+                orders: prev.orders.map(existingOrder => existingOrder.reference !== order.reference
+                    ? existingOrder
+                    : { ...existingOrder, reviewedProductIds: [...new Set([...(existingOrder.reviewedProductIds || []), String(item.productId)])] })
+            }))
             setReviewOpen(null)
             toast.success('Thank you for your review')
         } catch (err) {
             toast.error(err.response?.data?.message || 'Could not submit your review')
         } finally {
             setReviewSubmitting(null)
+        }
+    }
+
+    const handleCompleteOrder = async (order) => {
+        const productIds = [...new Set((order.items || []).map(item => String(item.productId)))]
+        if (productIds.some(productId => !submittedReviews[`${order.reference}:${productId}`])) {
+            toast.error('Please rate and review every item before completing this order')
+            return
+        }
+
+        setCompletionSubmitting(order.reference)
+        try {
+            await customerApi.completeOrder(order.id || order._id)
+            setData(prev => ({
+                ...prev,
+                orders: prev.orders.map(existingOrder => existingOrder.reference === order.reference
+                    ? { ...existingOrder, status: 'completed', completedAt: new Date().toISOString() }
+                    : existingOrder),
+                summary: prev.summary ? {
+                    ...prev.summary,
+                    ongoingOrders: Math.max(0, prev.summary.ongoingOrders - 1),
+                    completedOrders: prev.summary.completedOrders + 1
+                } : prev.summary
+            }))
+            toast.success('Order marked as received and completed')
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not complete this order')
+        } finally {
+            setCompletionSubmitting(null)
         }
     }
     const summary = data.summary || { totalOrders: 0, ongoingOrders: 0, completedOrders: 0, totalSpend: 0 }
@@ -250,6 +295,8 @@ const Account = () => {
                         <div className="space-y-3 sm:space-y-4">
                             {data.orders.map(order => {
                                 const itemCount = (order.items || []).reduce((count, item) => count + (item.quantity || 1), 0)
+                                const productIds = [...new Set((order.items || []).map(item => String(item.productId)))]
+                                const hasReviewedEveryItem = productIds.length > 0 && productIds.every(productId => submittedReviews[`${order.reference}:${productId}`])
                                 return (
                                     <article key={order.id || order._id} className="overflow-hidden rounded-2xl border border-[var(--divider)] bg-[var(--bg-secondary)]">
                                         <div className="flex items-start justify-between gap-3 border-b border-[var(--divider)] p-4 sm:px-5 sm:py-4">
@@ -274,7 +321,7 @@ const Account = () => {
                                                             <div className="min-w-0">
                                                                 <p className="text-xs font-bold leading-snug text-[var(--text-primary)] sm:text-sm">{item.name}</p>
                                                                 <p className="mt-1 text-[10px] text-[var(--text-muted)] sm:text-[11px]">Qty {item.quantity || 1} <span aria-hidden="true">·</span> {fmt(item.price)} each</p>
-                                                                {['delivered', 'completed'].includes(order.status) && (
+                                                                {['shipped', 'delivered', 'completed'].includes(order.status) && (
                                                                     <div className="mt-2">
                                                                         <OrderReviewControl order={order} item={item} reviewOpen={reviewOpen} setReviewOpen={setReviewOpen} reviewDrafts={reviewDrafts} setReviewDrafts={setReviewDrafts} submittedReviews={submittedReviews} reviewSubmitting={reviewSubmitting} handleSubmitReview={handleSubmitReview} />
                                                                     </div>
@@ -307,6 +354,22 @@ const Account = () => {
                                                         >
                                                             <Trash2 size={15} />
                                                             <span className="sr-only">Delete unpaid order</span>
+                                                        </button>
+                                                    </div>
+                                                ) : order.status === 'shipped' ? (
+                                                    <div className="flex shrink-0 flex-col gap-2 lg:mt-3 lg:w-full">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCompleteOrder(order)}
+                                                            disabled={!hasReviewedEveryItem || completionSubmitting === order.reference}
+                                                            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-[var(--brand-red)] px-3 text-[10px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:px-4 sm:text-[11px]"
+                                                        >
+                                                            {completionSubmitting === order.reference ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                                            {completionSubmitting === order.reference ? 'Completing…' : 'Mark received & complete'}
+                                                        </button>
+                                                        {!hasReviewedEveryItem && <p className="max-w-[13rem] text-[9px] leading-relaxed text-[var(--text-muted)]">Rate and review every item above to complete this order.</p>}
+                                                        <button onClick={() => handleRepeatOrder(order)} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-[var(--divider)] px-3 text-[10px] font-bold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-red)] hover:text-[var(--brand-red)] sm:text-[11px]">
+                                                            <Repeat2 size={14} /> Repeat order
                                                         </button>
                                                     </div>
                                                 ) : (

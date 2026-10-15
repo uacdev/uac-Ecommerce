@@ -4,10 +4,11 @@ import { Notification } from '../models/Notification';
 import { Product } from '../models/Product';
 import { DeliveryZone } from '../models/DeliveryZone';
 import { isNigerianState } from '../data/nigerianStates';
-import { sendOrderEmails, sendBackInStockEmails, sendPickupOrderReceivedEmail, sendPickupReminderEmail, sendPaymentConfirmationEmail } from '../lib/email';
+import { sendOrderEmails, sendBackInStockEmails, sendPickupOrderReceivedEmail, sendPickupReminderEmail, sendPaymentConfirmationEmail, sendOrderStatusEmail } from '../lib/email';
 import { notify } from '../lib/notify';
 import { StockSubscription } from '../models/StockSubscription';
 import { CheckoutSession } from '../models/CheckoutSession';
+import { loadCheckoutPolicy, type CheckoutPolicy } from '../lib/checkoutPolicy';
 import mongoose from 'mongoose';
 
 const resolveZoneByName = async (name?: string) => {
@@ -16,6 +17,29 @@ const resolveZoneByName = async (name?: string) => {
 };
 
 const COMMISSION_RATE = 0.10;
+const ORDER_TIME_ZONE = 'Africa/Lagos';
+
+const getOrderWindowMessage = (policy: CheckoutPolicy, date = new Date()) => {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: ORDER_TIME_ZONE,
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+    }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    const weekday = values.weekday.toLowerCase();
+    const minuteOfDay = Number(values.hour) * 60 + Number(values.minute);
+    const [openHour, openMinute] = policy.opensAt.split(':').map(Number);
+    const [closeHour, closeMinute] = policy.closesAt.split(':').map(Number);
+    const opensAt = openHour * 60 + openMinute;
+    const closesAt = closeHour * 60 + closeMinute;
+
+    if (!policy.weekdays.includes(weekday) || minuteOfDay < opensAt || minuteOfDay >= closesAt) {
+        return `Orders are available ${policy.weekdays.join(', ')} from ${policy.opensAt} to ${policy.closesAt} WAT.`;
+    }
+    return '';
+};
 
 const resolvePickupLocation = async (items: any[] = []) => {
     const ids = Array.from(new Set((items || []).map((it: any) => String(it.productId || it.id || '')).filter(Boolean)));
@@ -40,7 +64,11 @@ const maybeSendPickupReceivedEmail = async (order: any) => {
         productAmount: order.productAmount,
         amount: order.amount,
         pickupLocation,
-        pickupCode: order.pickupCode || ''
+        pickupCode: order.pickupCode || '',
+        pickupType: order.pickupType || 'self',
+        dispatchAddress: order.dispatchAddress || '',
+        dispatchPhone: order.dispatchPhone || '',
+        pickupDeadlineAt: order.pickupDeadlineAt || null
     }).catch(err => console.error('Pickup received email dispatch failed:', err));
 };
 
@@ -65,7 +93,11 @@ const maybeSendPaymentConfirmationEmail = async (order: any) => {
             pickupCode: order.pickupCode || '',
             buyerAddress: order.buyerAddress || '',
             deliveryZone: order.deliveryZone || '',
-            fulfillmentType: order.fulfillmentType || 'delivery'
+            fulfillmentType: order.fulfillmentType || 'delivery',
+            pickupType: order.pickupType || 'self',
+            dispatchAddress: order.dispatchAddress || '',
+            dispatchPhone: order.dispatchPhone || '',
+            pickupDeadlineAt: order.pickupDeadlineAt || null
         });
     } catch (err) {
         console.error('Payment confirmation email dispatch failed:', err);
@@ -179,17 +211,40 @@ export const createOrder = async (req: Request, res: Response) => {
     try {
         const {
             items, buyerName, buyerEmail, buyerPhone, buyerAddress, buyerState,
-            deliveryZone, paymentMethod, fulfillmentType, checkoutSessionId
+            deliveryZone, paymentMethod, fulfillmentType, pickupType, pickupWindowAccepted,
+            dispatchAddress, dispatchPhone, checkoutSessionId
         } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'items must contain at least one product' });
         }
+        const checkoutPolicy = await loadCheckoutPolicy();
+        const orderWindowMessage = getOrderWindowMessage(checkoutPolicy);
+        if (orderWindowMessage) {
+            return res.status(403).json({ success: false, message: orderWindowMessage });
+        }
         const isOpay = String(paymentMethod || '').toLowerCase() === 'opay';
         const fulfillment = String(fulfillmentType || 'delivery').trim();
+        const pickupArrangement = String(pickupType || 'self').trim();
         const isDelivery = fulfillment === 'delivery';
         const address = String(buyerAddress || '').trim();
         const normalizedState = String(buyerState || '').trim();
+
+        if (!['pickup', 'delivery'].includes(fulfillment)) {
+            return res.status(400).json({ success: false, message: 'fulfillmentType must be pickup or delivery' });
+        }
+        if (!['self', 'dispatch'].includes(pickupArrangement)) {
+            return res.status(400).json({ success: false, message: 'pickupType must be self or dispatch' });
+        }
+        if (isDelivery && !checkoutPolicy.platformDeliveryEnabled) {
+            return res.status(400).json({ success: false, message: 'Platform delivery is currently unavailable' });
+        }
+        if (fulfillment === 'pickup' && pickupArrangement === 'self' && !checkoutPolicy.selfPickupEnabled) {
+            return res.status(400).json({ success: false, message: 'Self pickup is currently unavailable' });
+        }
+        if (fulfillment === 'pickup' && pickupArrangement === 'dispatch' && !checkoutPolicy.dispatchEnabled) {
+            return res.status(400).json({ success: false, message: 'Dispatch rider pickup is currently unavailable' });
+        }
 
         if (isDelivery) {
             if (!buyerName || !buyerEmail || !buyerPhone || !address) {
@@ -199,6 +254,22 @@ export const createOrder = async (req: Request, res: Response) => {
             // pickup: require name, email, phone only
             if (!buyerName || !buyerEmail || !buyerPhone) {
                 return res.status(400).json({ success: false, message: 'buyerName, buyerEmail and buyerPhone are required for pickup orders' });
+            }
+            if (pickupWindowAccepted !== true) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Confirm that you understand your order will be ready for pickup within ${checkoutPolicy.pickupWindowMinutes} minutes after payment confirmation`
+                });
+            }
+            if (pickupArrangement === 'dispatch') {
+                const normalizedDispatchAddress = String(dispatchAddress || '').trim();
+                const normalizedDispatchPhone = String(dispatchPhone || '').trim();
+                if (!normalizedDispatchAddress || !normalizedDispatchPhone) {
+                    return res.status(400).json({ success: false, message: 'dispatchAddress and dispatchPhone are required when using a dispatch rider' });
+                }
+                if (!/^\+?[\d\s().-]{7,20}$/.test(normalizedDispatchPhone) || normalizedDispatchPhone.replace(/\D/g, '').length < 7) {
+                    return res.status(400).json({ success: false, message: 'Enter a valid dispatch rider contact number' });
+                }
             }
         }
         if (isDelivery) {
@@ -235,6 +306,15 @@ export const createOrder = async (req: Request, res: Response) => {
         const productIds = items.map((it: any) => String(it.productId || it.id));
         const productDocs = await Product.find({ _id: { $in: productIds } });
         const productMap = new Map(productDocs.map(p => [String(p._id), p]));
+        const missingProductId = productIds.find(id => !productMap.has(id));
+        if (missingProductId) {
+            return res.status(404).json({ success: false, message: `Product ${missingProductId} not found` });
+        }
+        if (isDelivery && !productDocs.every(product =>
+            [product.brand, product.category, product.name].some(value => String(value || '').toLowerCase().includes('swan'))
+        )) {
+            return res.status(400).json({ success: false, message: 'Platform delivery is only available for SWAN products' });
+        }
 
         for (const item of items) {
             const pid = String(item.productId || item.id);
@@ -298,6 +378,11 @@ export const createOrder = async (req: Request, res: Response) => {
             buyerState: isDelivery ? normalizedState : '',
             deliveryZone: isDelivery ? zone?.name || '' : '',
             fulfillmentType: fulfillment || 'delivery',
+            pickupType: fulfillment === 'pickup' ? pickupArrangement : 'self',
+            pickupWindowAccepted: fulfillment === 'pickup' && pickupWindowAccepted === true,
+            pickupWindowMinutes: fulfillment === 'pickup' ? checkoutPolicy.pickupWindowMinutes : 60,
+            dispatchAddress: fulfillment === 'pickup' && pickupArrangement === 'dispatch' ? String(dispatchAddress).trim() : '',
+            dispatchPhone: fulfillment === 'pickup' && pickupArrangement === 'dispatch' ? String(dispatchPhone).trim() : '',
             pickupCode,
             paymentMethod: paymentMethod || ''
         }).save();
@@ -310,7 +395,9 @@ export const createOrder = async (req: Request, res: Response) => {
                 buyerName, buyerEmail, buyerPhone, buyerAddress,
                 items: created.items as any,
                 productAmount, deliveryFee, deliveryZone: zone?.name,
-                amount, paymentMethod
+                amount, paymentMethod, fulfillmentType: created.fulfillmentType,
+                pickupType: created.pickupType, dispatchAddress: created.dispatchAddress,
+                dispatchPhone: created.dispatchPhone
             }).catch(err => console.error('Email dispatch failed:', err));
         }
 
@@ -358,8 +445,22 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         }
         const before = await Order.findById(id);
         if (!before) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (status === 'completed' && before.status !== 'completed') {
+            return res.status(403).json({ success: false, message: 'Customers complete shipped orders from their account after rating and reviewing every item' });
+        }
 
-        const updated = await Order.findByIdAndUpdate(id, { status }, { returnDocument: 'after' });
+        const statusUpdate: Record<string, any> = { status };
+        if (status === 'shipped' && before.status !== 'shipped') {
+            statusUpdate.shippedAt = new Date();
+            statusUpdate.completionReminderClaimedAt = null;
+            statusUpdate.completionReminderSentAt = null;
+        }
+        if (status === 'paid' && String(before.fulfillmentType || '').toLowerCase() === 'pickup') {
+            const policy = await loadCheckoutPolicy();
+            const pickupWindowMinutes = Number((before as any).pickupWindowMinutes) || policy.pickupWindowMinutes;
+            statusUpdate.pickupDeadlineAt = before.pickupDeadlineAt || new Date(Date.now() + pickupWindowMinutes * 60 * 1000);
+        }
+        const updated = await Order.findByIdAndUpdate(id, statusUpdate, { returnDocument: 'after' });
         if (!updated) return res.status(404).json({ success: false, message: 'Order not found' });
 
         // Cancellation: hand the inventory back, re-trigger restock subscribers if applicable.
@@ -373,12 +474,28 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             await maybeSendPickupReceivedEmail(updated);
         }
 
+        const statusEmailSent = before.status !== updated.status
+            ? await sendOrderStatusEmail({
+                reference: updated.reference,
+                buyerName: updated.buyerName,
+                buyerEmail: updated.buyerEmail,
+                status: updated.status,
+                fulfillmentType: updated.fulfillmentType,
+                pickupType: updated.pickupType,
+                dispatchAddress: updated.dispatchAddress,
+                dispatchPhone: updated.dispatchPhone,
+                buyerAddress: updated.buyerAddress,
+                deliveryZone: updated.deliveryZone,
+                pickupDeadlineAt: updated.pickupDeadlineAt
+            })
+            : false;
+
         let emailSent = false;
         if (before.status !== 'confirmed' && updated.status === 'confirmed' && sendConfirmationEmail) {
             emailSent = await maybeSendPaymentConfirmationEmail(updated);
         }
 
-        res.json({ success: true, data: updated, emailSent });
+        res.json({ success: true, data: updated, emailSent, statusEmailSent });
     } catch (err: any) {
         console.error('Error in updateOrderStatus:', err);
         res.status(400).json({ success: false, message: err.message || 'Error updating order status' });
@@ -426,7 +543,11 @@ export const sendPickupReminder = async (req: Request, res: Response) => {
             productAmount: order.productAmount,
             amount: order.amount,
             pickupLocation,
-            pickupCode: order.pickupCode || ''
+            pickupCode: order.pickupCode || '',
+            pickupType: order.pickupType || 'self',
+            dispatchAddress: order.dispatchAddress || '',
+            dispatchPhone: order.dispatchPhone || '',
+            pickupDeadlineAt: order.pickupDeadlineAt || null
         });
 
         let pickupReminderSentAt = order.pickupReminderSentAt || null;
@@ -436,7 +557,12 @@ export const sendPickupReminder = async (req: Request, res: Response) => {
             await order.save();
         }
 
-        res.json({ success: true, sent, pickupReminderSentAt, message: sent ? 'Pickup reminder sent' : 'Pickup reminder could not be sent' });
+        res.json({
+            success: true,
+            sent,
+            pickupReminderSentAt,
+            message: sent ? 'Buyer notified: the order is ready for pickup.' : 'Could not notify the buyer that the order is ready for pickup.'
+        });
     } catch (err: any) {
         console.error('Error in sendPickupReminder:', err);
         res.status(400).json({ success: false, message: err.message || 'Error sending pickup reminder' });
@@ -499,7 +625,7 @@ export const deleteUnpaidCustomerOrder = async (req: Request, res: Response) => 
 export const updateOrderDelivery = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { deliveryMethod, deliveryZone, logisticsPartner } = req.body;
+        const { deliveryMethod, deliveryZone, logisticsPartner, pickupType, dispatchAddress, dispatchPhone } = req.body;
 
         const updates: Record<string, any> = {};
         if (deliveryMethod) {
@@ -518,8 +644,33 @@ export const updateOrderDelivery = async (req: Request, res: Response) => {
         }
         if (logisticsPartner !== undefined) updates.logisticsPartner = logisticsPartner;
 
+        if (pickupType !== undefined) {
+            if (!['self', 'dispatch'].includes(pickupType)) {
+                return res.status(400).json({ success: false, message: 'pickupType must be self or dispatch' });
+            }
+            if (pickupType === 'dispatch') {
+                const address = String(dispatchAddress || '').trim();
+                const phone = String(dispatchPhone || '').trim();
+                if (!address || !phone) {
+                    return res.status(400).json({ success: false, message: 'Dispatch address and rider contact number are required' });
+                }
+                if (!/^\+?[\d\s().-]{7,20}$/.test(phone) || phone.replace(/\D/g, '').length < 7) {
+                    return res.status(400).json({ success: false, message: 'Enter a valid dispatch rider contact number' });
+                }
+                updates.dispatchAddress = address;
+                updates.dispatchPhone = phone;
+            } else {
+                updates.dispatchAddress = '';
+                updates.dispatchPhone = '';
+            }
+            updates.pickupType = pickupType;
+        }
+
         const order = await Order.findById(id);
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (pickupType !== undefined && String(order.fulfillmentType || '').toLowerCase() !== 'pickup') {
+            return res.status(400).json({ success: false, message: 'Pickup arrangement can only be changed for pickup orders' });
+        }
 
         Object.assign(order, updates);
         if (updates.deliveryFee !== undefined) {

@@ -1,13 +1,97 @@
 import { motion } from 'framer-motion'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
-import { ArrowLeft, ChevronRight, ShieldCheck, Minus, Plus } from 'lucide-react'
+import { ArrowLeft, CalendarDays, ChevronRight, Clock3, MapPin, PackageCheck, ShieldCheck, Truck, Minus, Plus } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
-import { deliveryApi, trackingApi, paymentApi } from '../api/client'
+import { deliveryApi, trackingApi, paymentApi, settingsApi } from '../api/client'
 import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId, setPendingCartPurchase } from '../lib/visitor'
+import { CHECKOUT_WEEKDAYS, DEFAULT_CHECKOUT_POLICY, formatPolicyTime, getOrderWindowStatus, normalizeCheckoutPolicy } from '../lib/checkoutPolicy'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
+
+const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
+    const orderingDays = CHECKOUT_WEEKDAYS
+        .filter(day => policy.weekdays.includes(day.id))
+        .map(day => day.short)
+        .join(' · ')
+    const fulfillmentOptions = [
+        policy.selfPickupEnabled && {
+            icon: PackageCheck,
+            title: 'Self pickup',
+            description: 'Collect at pickup point.'
+        },
+        policy.dispatchEnabled && {
+            icon: MapPin,
+            title: 'Dispatch rider',
+            description: 'Address and rider phone required.'
+        },
+        policy.platformDeliveryEnabled && {
+            icon: Truck,
+            title: 'Platform delivery',
+            description: 'Available for SWAN products only.'
+        }
+    ].filter(Boolean)
+
+    return (
+        <aside aria-label="Checkout hours and fulfillment information" className="relative mb-6 overflow-hidden rounded-xl border border-[var(--divider)] bg-[var(--bg-tertiary)] shadow-sm sm:mb-8">
+            <div className="absolute inset-y-0 left-0 w-1 bg-[var(--brand-red)]" />
+            <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr]">
+                <section className="border-b border-[var(--divider)] p-3 pl-4 sm:p-6 sm:pl-7 md:border-b-0 md:border-r">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                            <CalendarDays size={13} />
+                            <p className="text-[9px] font-black uppercase tracking-widest sm:text-[10px]">Order window · WAT</p>
+                        </div>
+                        <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-wider ${orderWindow.isOpen ? 'bg-emerald-500/10 text-emerald-700' : 'bg-[var(--brand-red)]/10 text-[var(--brand-red)]'}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${orderWindow.isOpen ? 'bg-emerald-500' : 'bg-[var(--brand-red)]'}`} />
+                            {orderWindow.isOpen ? 'Open now' : 'Closed now'}
+                        </span>
+                    </div>
+                    <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-lg font-black leading-tight text-[var(--text-primary)] sm:mt-4 sm:text-2xl">
+                        <span>{formatPolicyTime(policy.opensAt)}</span><span className="text-[var(--text-muted)]">to</span><span>{formatPolicyTime(policy.closesAt)}</span>
+                    </p>
+                    <p className="mt-1 text-[10px] font-bold text-[var(--text-muted)] sm:text-xs">{orderingDays || 'No ordering days enabled'}</p>
+                    <div className="mt-2 flex items-start gap-1.5 border-t border-[var(--divider)] pt-2 text-[9px] leading-snug text-[var(--text-muted)] sm:mt-4 sm:gap-2 sm:pt-3 sm:text-[11px]">
+                        <Clock3 size={12} className="mt-0.5 shrink-0 sm:h-[14px] sm:w-[14px]" />
+                        <span>We handle orders during these hours and are away on weekends.</span>
+                    </div>
+                </section>
+
+                <section className="grid grid-cols-1 sm:grid-cols-[0.8fr_1.2fr]">
+                    <div className="border-b border-[var(--divider)] p-3 sm:border-b-0 sm:border-r sm:p-5">
+                        <div className="flex items-center gap-2 text-[var(--text-muted)]">
+                            <PackageCheck size={13} />
+                            <p className="text-[9px] font-black uppercase tracking-widest sm:text-[10px]">Pickup readiness</p>
+                        </div>
+                        <p className="mt-2 text-[10px] leading-snug text-[var(--text-muted)] sm:mt-3 sm:text-[11px]">
+                            Ready within <span className="font-black text-[var(--text-primary)]">{policy.pickupWindowMinutes} min</span> after payment.
+                        </p>
+                    </div>
+
+                    <div className="p-3 sm:p-5">
+                        <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] sm:mb-3 sm:text-[10px]">Fulfillment options</p>
+                        <div className="space-y-1.5 sm:space-y-2.5">
+                            {fulfillmentOptions.length ? fulfillmentOptions.map(({ icon: Icon, title, description }) => (
+                                <div key={title} className="flex items-center gap-2 sm:items-start sm:gap-2.5">
+                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--bg-secondary)] text-[var(--brand-red)] sm:mt-0.5 sm:h-6 sm:w-6">
+                                        <Icon size={12} />
+                                    </span>
+                                    <div className="min-w-0 text-[10px] leading-snug sm:text-xs">
+                                        <span className="font-bold text-[var(--text-primary)]">{title}</span>
+                                        <span className="text-[var(--text-muted)]"> · {description}</span>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p className="text-[10px] font-bold text-[var(--text-muted)]">No fulfillment options are currently enabled.</p>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </aside>
+    )
+}
 
 const Checkout = () => {
     const { id } = useParams()
@@ -38,6 +122,12 @@ const Checkout = () => {
     const [zonesLoading, setZonesLoading] = useState(true)
     const [zoneName, setZoneName] = useState('')
     const [fulfillmentType, setFulfillmentType] = useState('pickup')
+    const [pickupType, setPickupType] = useState('self')
+    const [pickupWindowAccepted, setPickupWindowAccepted] = useState(false)
+    const [dispatchAddress, setDispatchAddress] = useState('')
+    const [dispatchPhone, setDispatchPhone] = useState('')
+    const [checkoutPolicy, setCheckoutPolicy] = useState({ ...DEFAULT_CHECKOUT_POLICY })
+    const [orderWindow, setOrderWindow] = useState(() => getOrderWindowStatus(new Date(), DEFAULT_CHECKOUT_POLICY))
 
     const [states, setStates] = useState([])
     const [stateName, setStateName] = useState('Lagos')
@@ -50,7 +140,7 @@ const Checkout = () => {
     const subtotal = isSingleItem ? (singleProduct?.price || 0) * singleQty : cartTotal
 
     const allowsDelivery = useMemo(() => {
-        if (checkoutItems.length === 0) return false
+        if (!checkoutPolicy.platformDeliveryEnabled || checkoutItems.length === 0) return false
 
         return checkoutItems.every((item) => {
             const haystack = [item?.brand, item?.category, item?.name]
@@ -59,9 +149,38 @@ const Checkout = () => {
                 .join(' ')
             return haystack.includes('swan')
         })
-    }, [checkoutItems])
+    }, [checkoutItems, checkoutPolicy.platformDeliveryEnabled])
+
+    const hasPickupOption = checkoutPolicy.selfPickupEnabled || checkoutPolicy.dispatchEnabled
+    const hasAvailableFulfillment = hasPickupOption || allowsDelivery
 
     const activeFulfillmentType = allowsDelivery ? fulfillmentType : 'pickup'
+
+    useEffect(() => {
+        let cancelled = false
+        settingsApi.getSetting('checkout_policy')
+            .then(res => {
+                if (!cancelled) setCheckoutPolicy(normalizeCheckoutPolicy(JSON.parse(res.data?.data?.value || '{}')))
+            })
+            .catch(err => {
+                if (!cancelled && err.response?.status !== 404) console.error('Could not load checkout policy:', err)
+            })
+        return () => { cancelled = true }
+    }, [])
+
+    useEffect(() => {
+        const updateOrderWindow = () => setOrderWindow(getOrderWindowStatus(new Date(), checkoutPolicy))
+        updateOrderWindow()
+        const timer = setInterval(updateOrderWindow, 30000)
+        return () => clearInterval(timer)
+    }, [checkoutPolicy])
+
+    useEffect(() => {
+        if (!hasPickupOption && allowsDelivery && fulfillmentType !== 'delivery') setFulfillmentType('delivery')
+        else if (!allowsDelivery && hasPickupOption && fulfillmentType !== 'pickup') setFulfillmentType('pickup')
+        if (pickupType === 'self' && !checkoutPolicy.selfPickupEnabled && checkoutPolicy.dispatchEnabled) setPickupType('dispatch')
+        else if (pickupType === 'dispatch' && !checkoutPolicy.dispatchEnabled && checkoutPolicy.selfPickupEnabled) setPickupType('self')
+    }, [hasPickupOption, allowsDelivery, fulfillmentType, pickupType, checkoutPolicy.selfPickupEnabled, checkoutPolicy.dispatchEnabled])
 
     useEffect(() => {
         Promise.allSettled([deliveryApi.getZones(), deliveryApi.getStates()]).then(([zRes, sRes]) => {
@@ -116,8 +235,30 @@ const Checkout = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (!orderWindow.isOpen) {
+            toast.error('ORDERS ARE CLOSED. PLEASE RETURN MONDAY TO FRIDAY, 8AM TO 5PM WAT.')
+            return
+        }
+        if (!hasAvailableFulfillment) {
+            toast.error('NO FULFILLMENT OPTIONS ARE AVAILABLE FOR THIS ORDER')
+            return
+        }
         if (!customer?.fullName?.trim() || !customer?.email?.trim() || !customer?.phone?.trim()) {
             toast.error('COMPLETE YOUR CONTACT DETAILS IN YOUR PROFILE')
+            return
+        }
+        if (activeFulfillmentType === 'pickup' && pickupType === 'dispatch') {
+            if (!dispatchAddress.trim() || !dispatchPhone.trim()) {
+                toast.error('ENTER THE DELIVERY ADDRESS AND DISPATCH RIDER CONTACT NUMBER')
+                return
+            }
+            if (!/^\+?[\d\s().-]{7,20}$/.test(dispatchPhone.trim()) || dispatchPhone.replace(/\D/g, '').length < 7) {
+                toast.error('ENTER A VALID DISPATCH RIDER CONTACT NUMBER')
+                return
+            }
+        }
+        if (activeFulfillmentType === 'pickup' && !pickupWindowAccepted) {
+            toast.error('CONFIRM PICKUP WITHIN ONE HOUR AFTER PAYMENT')
             return
         }
         if (activeFulfillmentType === 'delivery') {
@@ -152,6 +293,10 @@ const Checkout = () => {
             deliveryZone: activeFulfillmentType === 'delivery' ? zoneName : '',
             paymentMethod,
             fulfillmentType: activeFulfillmentType,
+            pickupType,
+            pickupWindowAccepted: activeFulfillmentType === 'pickup' && pickupWindowAccepted,
+            dispatchAddress: activeFulfillmentType === 'pickup' && pickupType === 'dispatch' ? dispatchAddress : '',
+            dispatchPhone: activeFulfillmentType === 'pickup' && pickupType === 'dispatch' ? dispatchPhone : '',
             checkoutSessionId: getCheckoutSessionId() || undefined
         })
 
@@ -200,6 +345,8 @@ const Checkout = () => {
                         <ChevronRight size={14} />
                         <span>2. Payment</span>
                     </div>
+
+                    <CheckoutPolicyNotice policy={checkoutPolicy} orderWindow={orderWindow} />
 
                     <div className="mx-auto max-w-3xl">
                         <section className="rounded-2xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-5 shadow-sm sm:p-8">
@@ -263,35 +410,57 @@ const Checkout = () => {
                     </Link>
                 </div>
 
+                <CheckoutPolicyNotice policy={checkoutPolicy} orderWindow={orderWindow} />
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-24">
                     
                     {/* Information Form */}
                     <div className="lg:col-span-7">
                         <form id="checkout-form" onSubmit={handleSubmit} className="space-y-20">
-                            
                             <section>
                                 <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--brand-red)] mb-12 border-b border-[var(--divider)] pb-4 w-fit">01 Fulfillment Details</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Fulfillment Type</label>
                                         <div className={`grid gap-4 ${allowsDelivery ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                            <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Self Pickup</button>
+                                            {hasPickupOption && <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Select fulfilment type</button>}
                                             {allowsDelivery && (
                                                 <button type="button" onClick={() => setFulfillmentType('delivery')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'delivery' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Delivery</button>
                                             )}
                                         </div>
-                                        {!allowsDelivery && (
+                                        {!allowsDelivery && !hasPickupOption && (
                                             <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                                                Delivery is available only for SWAN orders.
+                                                No fulfillment options are currently available for this order.
                                             </p>
                                         )}
-                                    </div>
-                                    <div className="md:col-span-2 grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)_minmax(0,1fr)] sm:grid-cols-3 gap-2 sm:gap-6 rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] p-3 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
-                                        <div className="min-w-0"><span className="block text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-[var(--text-muted)] mb-1 sm:mb-2">Name</span><span title={customer.fullName || 'Not provided'} className="block truncate text-[10px] sm:text-base font-bold text-[var(--text-primary)]">{customer.fullName || 'Not provided'}</span></div>
-                                        <div className="min-w-0"><span className="block text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-[var(--text-muted)] mb-1 sm:mb-2">Email</span><span title={customer.email} className="block truncate text-[10px] sm:text-base font-bold text-[var(--text-primary)]">{customer.email}</span></div>
-                                        <div className="min-w-0"><span className="block text-[8px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest text-[var(--text-muted)] mb-1 sm:mb-2">Phone</span><span title={customer.phone || 'Not provided'} className="block truncate text-[10px] sm:text-base font-bold text-[var(--text-primary)]">{customer.phone || 'Not provided'}</span></div>
-                                        {(!customer.fullName || !customer.email || !customer.phone) && (
-                                            <Link to="/account" className="col-span-3 text-xs sm:text-sm font-bold text-[var(--brand-red)] underline underline-offset-4">Complete your contact details in your profile</Link>
+                                        {activeFulfillmentType === 'pickup' && hasPickupOption && (
+                                            <div className="mt-6 space-y-4">
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Pickup arrangement</label>
+                                                <div role="group" aria-label="Pickup arrangement" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {checkoutPolicy.selfPickupEnabled && <button type="button" aria-pressed={pickupType === 'self'} onClick={() => setPickupType('self')} className={pickupType === 'self' ? 'min-h-12 rounded-xl border border-[var(--brand-red)] bg-[var(--brand-red)]/10 px-4 text-xs font-bold text-[var(--brand-red)] transition-colors' : 'min-h-12 rounded-xl border border-[var(--divider)] px-4 text-xs font-bold text-[var(--text-primary)] transition-colors'}>
+                                                        I will pick it up
+                                                    </button>}
+                                                    {checkoutPolicy.dispatchEnabled && <button type="button" aria-pressed={pickupType === 'dispatch'} onClick={() => setPickupType('dispatch')} className={pickupType === 'dispatch' ? 'min-h-12 rounded-xl border border-[var(--brand-red)] bg-[var(--brand-red)]/10 px-4 text-xs font-bold text-[var(--brand-red)] transition-colors' : 'min-h-12 rounded-xl border border-[var(--divider)] px-4 text-xs font-bold text-[var(--text-primary)] transition-colors'}>
+                                                        I will send a dispatch rider
+                                                    </button>}
+                                                </div>
+                                                {pickupType === 'dispatch' && (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                                        <div>
+                                                            <label htmlFor="dispatch-address" className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Delivery address for the rider</label>
+                                                            <input id="dispatch-address" required value={dispatchAddress} onChange={e => setDispatchAddress(e.target.value)} autoComplete="street-address" className="w-full bg-transparent border-b-2 border-[var(--divider)] py-3 text-base font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="RIDER'S DELIVERY ADDRESS" />
+                                                        </div>
+                                                        <div>
+                                                            <label htmlFor="dispatch-phone" className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Dispatch rider contact number</label>
+                                                            <input id="dispatch-phone" required type="tel" inputMode="tel" autoComplete="tel" value={dispatchPhone} onChange={e => setDispatchPhone(e.target.value)} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-3 text-base font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="RIDER'S PHONE NUMBER" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <label className="flex items-start gap-3 pt-2 text-xs font-medium leading-relaxed text-[var(--text-primary)]">
+                                                    <input type="checkbox" required checked={pickupWindowAccepted} onChange={e => setPickupWindowAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--brand-red)]" />
+                                                    <span>{pickupType === 'dispatch' ? `I understand my order will be ready for my dispatch rider within ${checkoutPolicy.pickupWindowMinutes} minutes after payment confirmation.` : `I understand my order will be ready for pickup within ${checkoutPolicy.pickupWindowMinutes} minutes after payment confirmation.`}</span>
+                                                </label>
+                                            </div>
                                         )}
                                     </div>
                                     {activeFulfillmentType === 'delivery' && (
@@ -399,8 +568,8 @@ const Checkout = () => {
 
                                 <button 
                                     form="checkout-form"
-                                    disabled={loading}
-                                    className="hidden md:flex w-full mt-12 bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl items-center justify-center gap-4 group"
+                                    disabled={loading || !orderWindow.isOpen || !hasAvailableFulfillment}
+                                    className="hidden md:flex w-full mt-12 bg-black text-white py-8 rounded-[32px] text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[var(--brand-red)] transition-all shadow-2xl items-center justify-center gap-4 group disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? 'PROCESSING...' : (
                                         <>
@@ -417,7 +586,7 @@ const Checkout = () => {
                                         </div>
                                         <button
                                             form="checkout-form"
-                                            disabled={loading || !customer.fullName || !customer.email || !customer.phone}
+                                            disabled={loading || !orderWindow.isOpen || !hasAvailableFulfillment || !customer.fullName || !customer.email || !customer.phone}
                                             className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-black px-4 text-xs font-black uppercase tracking-wider text-white disabled:opacity-50"
                                         >
                                             {loading ? 'Processing...' : 'Confirm purchase'}

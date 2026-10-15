@@ -304,6 +304,10 @@ export const StoreProvider = ({ children }) => {
                 deliveryZone: orderData.deliveryZone || '',
                 paymentMethod: orderData.paymentMethod || '',
                 fulfillmentType: orderData.fulfillmentType || 'delivery',
+                pickupType: orderData.pickupType || 'self',
+                pickupWindowAccepted: orderData.pickupWindowAccepted || false,
+                dispatchAddress: orderData.dispatchAddress || '',
+                dispatchPhone: orderData.dispatchPhone || '',
                 checkoutSessionId: orderData.checkoutSessionId
             })
             const created = res.data?.data
@@ -324,16 +328,21 @@ export const StoreProvider = ({ children }) => {
             setOrders(prev => prev.map(o => (o.id === id || o._id === id) ? updated : o))
             bumpOrdersTick()
             refreshStats()
-            return { success: true, data: updated, emailSent: Boolean(res.data?.emailSent) }
+            return {
+                success: true,
+                data: updated,
+                emailSent: Boolean(res.data?.emailSent),
+                statusEmailSent: Boolean(res.data?.statusEmailSent)
+            }
         } catch (err) {
             console.error('Update status error:', err)
             return { success: false, message: err.response?.data?.message || err.message }
         }
     }
 
-    const updateOrderDelivery = async (orderId, deliveryMethod, deliveryZone = '', logisticsPartner = '') => {
+    const updateOrderDelivery = async (orderId, deliveryMethod, deliveryZone = '', logisticsPartner = '', pickupDetails = {}) => {
         try {
-            const res = await orderApi.updateDelivery(orderId, { deliveryMethod, deliveryZone, logisticsPartner })
+            const res = await orderApi.updateDelivery(orderId, { deliveryMethod, deliveryZone, logisticsPartner, ...pickupDetails })
             const updated = res.data?.data
             setOrders(prev => prev.map(o => (o.id === orderId || o._id === orderId) ? updated : o))
             bumpOrdersTick()

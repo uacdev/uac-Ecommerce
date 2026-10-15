@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Customer } from '../models/Customer';
 import { Order } from '../models/Order';
+import { Review } from '../models/Review';
 import { signCustomerToken, signCustomerResetToken, verifyCustomerResetToken, comparePassword, hashPassword } from '../lib/auth';
 import { isNigerianState } from '../data/nigerianStates';
 import { notify } from '../lib/notify';
@@ -205,6 +206,19 @@ export const myOrders = async (req: Request, res: Response) => {
     try {
         const email = req.customer!.email.toLowerCase();
         const orders = await Order.find({ buyerEmail: email }).sort({ date: -1 });
+        const reviews = orders.length
+            ? await Review.find({ customerEmail: email, orderReference: { $in: orders.map(order => order.reference) } }).select('orderReference productId')
+            : [];
+        const reviewedProductsByOrder = new Map<string, string[]>();
+        reviews.forEach(review => {
+            const productIds = reviewedProductsByOrder.get(review.orderReference) || [];
+            productIds.push(String(review.productId));
+            reviewedProductsByOrder.set(review.orderReference, productIds);
+        });
+        const ordersWithReviewState = orders.map(order => ({
+            ...order.toObject(),
+            reviewedProductIds: reviewedProductsByOrder.get(order.reference) || []
+        }));
 
         const summary = {
             totalOrders: orders.length,
@@ -215,7 +229,7 @@ export const myOrders = async (req: Request, res: Response) => {
                 .reduce((s, o) => s + (o.amount || 0), 0)
         };
 
-        res.json({ success: true, summary, orders });
+        res.json({ success: true, summary, orders: ordersWithReviewState });
     } catch (err: any) {
         console.error('Error in myOrders:', err);
         res.status(500).json({ success: false, message: err.message });

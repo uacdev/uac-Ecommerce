@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SettingInput } from '../ui/shared_ui'
 import { useStore } from '../../../context/StoreContext'
 import { useAuth } from '../../../context/AuthContext'
-import { authApi, uploadApi, deliveryApi } from '../../../api/client'
+import { authApi, uploadApi, deliveryApi, settingsApi } from '../../../api/client'
+import { CHECKOUT_WEEKDAYS, DEFAULT_CHECKOUT_POLICY, normalizeCheckoutPolicy } from '../../../lib/checkoutPolicy'
 
 const SettingsTab = () => {
     const { adminProfile, setAdminProfile, whatsappNumber, updateWhatsAppNumber, deleteWhatsAppNumber } = useStore()
@@ -29,6 +30,34 @@ const SettingsTab = () => {
     const [showZoneEditModal, setShowZoneEditModal] = useState(false)
     const [showZoneSuccess, setShowZoneSuccess] = useState(false)
     const [zoneSuccessMessage, setZoneSuccessMessage] = useState('')
+    const [checkoutPolicy, setCheckoutPolicy] = useState({ ...DEFAULT_CHECKOUT_POLICY })
+    const [checkoutPolicyExists, setCheckoutPolicyExists] = useState(false)
+    const [checkoutPolicyLoading, setCheckoutPolicyLoading] = useState(false)
+    const [checkoutPolicySaving, setCheckoutPolicySaving] = useState(false)
+
+    useEffect(() => {
+        if (subTab !== 'checkout-policy') return
+        let cancelled = false
+        setCheckoutPolicyLoading(true)
+        settingsApi.getSetting('checkout_policy')
+            .then(res => {
+                if (cancelled) return
+                const stored = JSON.parse(res.data?.data?.value || '{}')
+                setCheckoutPolicy(normalizeCheckoutPolicy(stored))
+                setCheckoutPolicyExists(true)
+            })
+            .catch(err => {
+                if (cancelled) return
+                if (err.response?.status === 404) {
+                    setCheckoutPolicy({ ...DEFAULT_CHECKOUT_POLICY })
+                    setCheckoutPolicyExists(false)
+                } else {
+                    flash(err.response?.data?.message || 'Could not load checkout policy.', true)
+                }
+            })
+            .finally(() => { if (!cancelled) setCheckoutPolicyLoading(false) })
+        return () => { cancelled = true }
+    }, [subTab])
 
     useEffect(() => {
         if (adminProfile) {
@@ -188,6 +217,59 @@ const SettingsTab = () => {
         }
     }
 
+    const updateCheckoutPolicy = (key, value) => {
+        setCheckoutPolicy(current => ({ ...current, [key]: value }))
+    }
+
+    const saveCheckoutPolicy = async () => {
+        if (!checkoutPolicy.weekdays.length) {
+            flash('Select at least one ordering day.', true)
+            return
+        }
+        if (checkoutPolicy.opensAt >= checkoutPolicy.closesAt) {
+            flash('Closing time must be later than opening time.', true)
+            return
+        }
+        if (!Number.isInteger(Number(checkoutPolicy.pickupWindowMinutes))
+            || Number(checkoutPolicy.pickupWindowMinutes) < 1
+            || Number(checkoutPolicy.pickupWindowMinutes) > 1440) {
+            flash('Pickup window must be between 1 and 1,440 minutes.', true)
+            return
+        }
+        if (!checkoutPolicy.selfPickupEnabled && !checkoutPolicy.dispatchEnabled && !checkoutPolicy.platformDeliveryEnabled) {
+            flash('At least one fulfillment option must remain enabled.', true)
+            return
+        }
+
+        setCheckoutPolicySaving(true)
+        try {
+            const policy = { ...checkoutPolicy, pickupWindowMinutes: Number(checkoutPolicy.pickupWindowMinutes) }
+            await settingsApi.upsertSetting('checkout_policy', { value: JSON.stringify(policy) })
+            setCheckoutPolicy(policy)
+            setCheckoutPolicyExists(true)
+            flash('Checkout policy saved.')
+        } catch (err) {
+            flash(err.response?.data?.message || err.message || 'Could not save checkout policy.', true)
+        } finally {
+            setCheckoutPolicySaving(false)
+        }
+    }
+
+    const deleteCheckoutPolicy = async () => {
+        if (!window.confirm('Delete the saved checkout policy and restore default hours and fulfillment options?')) return
+        setCheckoutPolicySaving(true)
+        try {
+            await settingsApi.deleteSetting('checkout_policy')
+            setCheckoutPolicy({ ...DEFAULT_CHECKOUT_POLICY })
+            setCheckoutPolicyExists(false)
+            flash('Saved checkout policy deleted. Defaults are active.')
+        } catch (err) {
+            flash(err.response?.data?.message || err.message || 'Could not delete checkout policy.', true)
+        } finally {
+            setCheckoutPolicySaving(false)
+        }
+    }
+
     useEffect(() => {
         if (adminProfile) {
             setProfile({
@@ -253,6 +335,11 @@ const SettingsTab = () => {
             return
         }
 
+        if (subTab === 'checkout-policy') {
+            setLoading(false)
+            return
+        }
+
         // security
         if (security.newPassword.length < 8) {
             setLoading(false); flash('Password must be at least 8 characters.', true); return
@@ -278,14 +365,14 @@ const SettingsTab = () => {
                 <p className="text-[14px] text-[var(--text-muted)] mt-1 font-medium">General profile management and system security configurations.</p>
             </div>
 
-            <div className="flex border-b border-[var(--divider)] gap-10">
-                {['profile', 'whatsapp', 'delivery-zones', 'security'].map(s => (
+            <div className="flex border-b border-[var(--divider)] gap-6 overflow-x-auto">
+                {['profile', 'whatsapp', 'delivery-zones', 'checkout-policy', 'security'].map(s => (
                     <button
                         key={s}
                         onClick={() => { setSubTab(s); setSuccess(''); setError('') }}
                         className={`pb-5 text-[13px] font-bold transition-all relative ${subTab === s ? 'text-[#ed0000]' : 'text-[var(--text-muted)]'} ${s === 'delivery-zones' ? 'capitalize' : 'tracking-tight'}`}
                     >
-                        {s === 'delivery-zones' ? 'delivery zones' : s} {s !== 'delivery-zones' ? 'details' : ''}
+                        {s === 'delivery-zones' ? 'delivery zones' : s === 'checkout-policy' ? 'checkout policy' : s} {['delivery-zones', 'checkout-policy'].includes(s) ? '' : 'details'}
                         {subTab === s && <motion.div layoutId="setTab" className="absolute bottom-0 left-0 w-full h-1 bg-[#ed0000] rounded-full" />}
                     </button>
                 ))}
@@ -354,6 +441,63 @@ const SettingsTab = () => {
                             <SettingInput label="Confirm Password" name="confirmPassword" type="password" value={security.confirmPassword} onChange={handleSecurityChange} />
                         </div>
                         <p className="text-[11px] text-[var(--text-muted)] font-medium">Minimum 8 characters. Current password is recommended for verification.</p>
+                    </div>
+                ) : subTab === 'checkout-policy' ? (
+                    <div className="space-y-8">
+                        <div>
+                            <h3 className="text-lg font-bold">Checkout policy</h3>
+                            <p className="mt-1 text-sm text-[var(--text-muted)]">Configure when customers can order and which fulfillment options checkout accepts. Times use West Africa Time.</p>
+                        </div>
+                        {checkoutPolicyLoading ? (
+                            <p className="py-8 text-sm text-[var(--text-muted)]">Loading checkout policy…</p>
+                        ) : (
+                            <>
+                                <fieldset className="space-y-4">
+                                    <legend className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Ordering days</legend>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        {CHECKOUT_WEEKDAYS.map(day => {
+                                            const selected = checkoutPolicy.weekdays.includes(day.id)
+                                            return (
+                                                <label key={day.id} className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold ${selected ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/5 text-[var(--text-primary)]' : 'border-[var(--divider)] text-[var(--text-muted)]'}`}>
+                                                    <input type="checkbox" checked={selected} onChange={e => updateCheckoutPolicy('weekdays', e.target.checked ? [...checkoutPolicy.weekdays, day.id] : checkoutPolicy.weekdays.filter(value => value !== day.id))} className="h-4 w-4 accent-[var(--brand-red)]" />
+                                                    {day.label}
+                                                </label>
+                                            )
+                                        })}
+                                    </div>
+                                </fieldset>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                    <label className="space-y-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Opens at
+                                        <input type="time" value={checkoutPolicy.opensAt} onChange={e => updateCheckoutPolicy('opensAt', e.target.value)} className="block w-full rounded-xl border border-[var(--divider)] bg-[var(--bg-primary)] px-4 py-3 text-base font-bold text-[var(--text-primary)]" />
+                                    </label>
+                                    <label className="space-y-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Closes at
+                                        <input type="time" value={checkoutPolicy.closesAt} onChange={e => updateCheckoutPolicy('closesAt', e.target.value)} className="block w-full rounded-xl border border-[var(--divider)] bg-[var(--bg-primary)] px-4 py-3 text-base font-bold text-[var(--text-primary)]" />
+                                    </label>
+                                    <label className="space-y-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Pickup window (minutes)
+                                        <input type="number" min="1" max="1440" step="1" value={checkoutPolicy.pickupWindowMinutes} onChange={e => updateCheckoutPolicy('pickupWindowMinutes', e.target.value)} className="block w-full rounded-xl border border-[var(--divider)] bg-[var(--bg-primary)] px-4 py-3 text-base font-bold text-[var(--text-primary)]" />
+                                    </label>
+                                </div>
+                                <fieldset className="space-y-4">
+                                    <legend className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Fulfillment options</legend>
+                                    <div className="divide-y divide-[var(--divider)] border-y border-[var(--divider)]">
+                                        {[
+                                            ['selfPickupEnabled', 'Customer self pickup', 'Buyer collects the order from the pickup point.'],
+                                            ['dispatchEnabled', 'Buyer-arranged dispatch rider', 'Buyer supplies the rider address and contact number.'],
+                                            ['platformDeliveryEnabled', 'Platform delivery for SWAN products', 'Delivery remains limited to eligible SWAN-only orders.']
+                                        ].map(([key, title, description]) => (
+                                            <label key={key} className="flex items-center justify-between gap-5 py-4">
+                                                <span><span className="block text-sm font-bold text-[var(--text-primary)]">{title}</span><span className="mt-1 block text-xs text-[var(--text-muted)]">{description}</span></span>
+                                                <input type="checkbox" checked={checkoutPolicy[key]} onChange={e => updateCheckoutPolicy(key, e.target.checked)} className="h-5 w-5 shrink-0 accent-[var(--brand-red)]" />
+                                            </label>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                                <div className="flex flex-wrap justify-end gap-3 border-t border-[var(--divider)] pt-6">
+                                    <button type="button" onClick={deleteCheckoutPolicy} disabled={checkoutPolicySaving || !checkoutPolicyExists} className="rounded-xl border border-[var(--divider)] px-5 py-3 text-xs font-bold text-[#ed0000] disabled:opacity-40">Delete saved policy</button>
+                                    <button type="button" onClick={saveCheckoutPolicy} disabled={checkoutPolicySaving || checkoutPolicyLoading} className="rounded-xl bg-[#0f2e53] px-6 py-3 text-xs font-bold text-white disabled:opacity-50">{checkoutPolicySaving ? 'Saving…' : checkoutPolicyExists ? 'Update policy' : 'Create policy'}</button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-8">

@@ -589,21 +589,35 @@ export const getWebAnalytics = async (req: Request, res: Response) => {
 
 export const getCustomers = async (_req: Request, res: Response) => {
     try {
-        const [rows, registeredCustomers] = await Promise.all([
+        const [rows, registeredCustomers, dispatchRows] = await Promise.all([
             Order.aggregate([
                 { $match: EXCLUDE_UNPAID_OPAY },
+                { $sort: { date: -1 } },
                 { $group: {
                     _id: '$buyerEmail',
                     name: { $first: '$buyerName' },
                     email: { $first: '$buyerEmail' },
                     phone: { $first: '$buyerPhone' },
+                    address: { $first: '$buyerAddress' },
+                    state: { $first: '$buyerState' },
+                    dispatchAddress: { $first: '$dispatchAddress' },
+                    dispatchPhone: { $first: '$dispatchPhone' },
                     orders: { $sum: 1 },
                     totalSpend: { $sum: '$amount' },
                     joinDate: { $min: '$date' },
                     lastOrderDate: { $max: '$date' }
                 } }
             ]),
-            Customer.find().select('email fullName phone created_at').lean()
+            Customer.find().select('email fullName phone defaultAddress defaultState created_at').lean(),
+            Order.aggregate([
+                { $match: { ...EXCLUDE_UNPAID_OPAY, fulfillmentType: 'pickup', pickupType: 'dispatch' } },
+                { $sort: { date: -1 } },
+                { $group: {
+                    _id: '$buyerEmail',
+                    dispatchAddress: { $first: '$dispatchAddress' },
+                    dispatchPhone: { $first: '$dispatchPhone' }
+                } }
+            ])
         ]);
 
         const customersByEmail = new Map<string, any>();
@@ -615,6 +629,10 @@ export const getCustomers = async (_req: Request, res: Response) => {
                 name: r.name || 'Unknown',
                 email,
                 phone: r.phone || '',
+                address: r.address || '',
+                state: r.state || '',
+                dispatchAddress: r.dispatchAddress || '',
+                dispatchPhone: r.dispatchPhone || '',
                 orders: r.orders,
                 totalSpend: r.totalSpend,
                 joinDate: r.joinDate,
@@ -631,10 +649,25 @@ export const getCustomers = async (_req: Request, res: Response) => {
                 name: customer.fullName || existing?.name || 'Unknown',
                 email,
                 phone: customer.phone || existing?.phone || '',
+                address: customer.defaultAddress || existing?.address || '',
+                state: customer.defaultState || existing?.state || '',
+                dispatchAddress: existing?.dispatchAddress || '',
+                dispatchPhone: existing?.dispatchPhone || '',
                 orders: existing?.orders || 0,
                 totalSpend: existing?.totalSpend || 0,
                 joinDate: customer.created_at || existing?.joinDate || null,
                 lastOrderDate: existing?.lastOrderDate || null
+            });
+        });
+
+        dispatchRows.forEach(row => {
+            const email = String(row._id || '').trim().toLowerCase();
+            const existing = customersByEmail.get(email);
+            if (!existing) return;
+            customersByEmail.set(email, {
+                ...existing,
+                dispatchAddress: row.dispatchAddress || '',
+                dispatchPhone: row.dispatchPhone || ''
             });
         });
 

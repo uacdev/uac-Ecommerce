@@ -19,7 +19,7 @@ const STATUS_COLOR = {
 const DELIVERY_METHODS = [
     { value: 'pending', label: 'Pending — not yet assigned' },
     { value: 'assisted', label: 'Assisted — platform handles logistics' },
-    { value: 'self', label: 'Self-arranged — buyer pickup or own rider' }
+    { value: 'self', label: 'Self-arranged — buyer’s own dispatch rider' }
 ]
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`
@@ -42,6 +42,9 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
     const [methodDraft, setMethodDraft] = useState(incomingOrder.deliveryMethod || 'pending')
     const [zoneDraft, setZoneDraft] = useState(incomingOrder.deliveryZone || '')
     const [partnerDraft, setPartnerDraft] = useState(incomingOrder.logisticsPartner || '')
+    const [pickupTypeDraft, setPickupTypeDraft] = useState(incomingOrder.pickupType || 'self')
+    const [dispatchAddressDraft, setDispatchAddressDraft] = useState(incomingOrder.dispatchAddress || '')
+    const [dispatchPhoneDraft, setDispatchPhoneDraft] = useState(incomingOrder.dispatchPhone || '')
 
     useEffect(() => {
         deliveryApi.getZones().then(res => setZones(res.data?.data || [])).catch(() => {})
@@ -54,6 +57,9 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
         setMethodDraft(incomingOrder.deliveryMethod || 'pending')
         setZoneDraft(incomingOrder.deliveryZone || '')
         setPartnerDraft(incomingOrder.logisticsPartner || '')
+        setPickupTypeDraft(incomingOrder.pickupType || 'self')
+        setDispatchAddressDraft(incomingOrder.dispatchAddress || '')
+        setDispatchPhoneDraft(incomingOrder.dispatchPhone || '')
     }, [incomingOrder])
 
     const flash = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2200) }
@@ -65,11 +71,11 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
         setSavingStatus(false)
         if (res?.success) {
             if (res.data) setOrder(res.data)
-            if (sendConfirmationEmail && res?.emailSent) {
-                flash('Status updated and confirmation email sent')
-            } else {
-                flash('Status updated')
-            }
+            const statusEmailMessage = res.statusEmailSent ? 'Buyer emailed.' : 'Buyer email could not be sent.'
+            const confirmationMessage = sendConfirmationEmail
+                ? res.emailSent ? ' Payment confirmation sent.' : ' Payment confirmation could not be sent.'
+                : ''
+            flash(`Status updated. ${statusEmailMessage}${confirmationMessage}`)
         } else {
             setError(res?.message || 'Could not update status')
         }
@@ -87,11 +93,22 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
 
     const handleSaveDelivery = async () => {
         setSavingDelivery(true); setError('')
-        const res = await updateOrderDelivery(order.id || order._id, methodDraft, zoneDraft, partnerDraft)
+        if (order.fulfillmentType === 'pickup' && pickupTypeDraft === 'dispatch') {
+            const phone = dispatchPhoneDraft.trim()
+            if (!dispatchAddressDraft.trim() || !phone || !/^\+?[\d\s().-]{7,20}$/.test(phone) || phone.replace(/\D/g, '').length < 7) {
+                setSavingDelivery(false)
+                setError('Enter a dispatch address and valid rider contact number.')
+                return
+            }
+        }
+        const pickupDetails = order.fulfillmentType === 'pickup'
+            ? { pickupType: pickupTypeDraft, dispatchAddress: dispatchAddressDraft, dispatchPhone: dispatchPhoneDraft }
+            : {}
+        const res = await updateOrderDelivery(order.id || order._id, methodDraft, zoneDraft, partnerDraft, pickupDetails)
         setSavingDelivery(false)
         if (res?.success) {
             if (res.data) setOrder(res.data)
-            flash('Delivery updated')
+            flash(order.fulfillmentType === 'pickup' ? 'Pickup arrangement updated' : 'Delivery updated')
         } else {
             setError(res?.message || 'Could not update delivery')
         }
@@ -160,17 +177,27 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                         <div className="space-y-3">
                             <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">
                                 {(order.fulfillmentType === 'pickup') ? (
-                                    <span className="flex items-center gap-2"><Package size={12} /> Self-arranged — buyer pickup or own rider</span>
+                                    <span className="flex items-center gap-2"><Package size={12} /> {order.pickupType === 'dispatch' ? 'Dispatch rider pickup' : 'Customer self pickup'}</span>
                                 ) : (
                                     <span className="flex items-center gap-2"><Truck size={12} /> Delivery</span>
                                 )}
                             </p>
                             {order.fulfillmentType === 'pickup' ? (
                                 <>
+                                    <p className="text-[13px] font-bold text-[var(--text-primary)]">
+                                        {order.pickupType === 'dispatch' ? 'Buyer-arranged dispatch rider' : 'Customer self pickup'}
+                                    </p>
                                     {order.pickupCode ? (
                                         <p className="text-[13px] font-bold text-[#ed0000]">Pickup code · {order.pickupCode}</p>
                                     ) : (
-                                        <p className="text-[13px] font-medium text-[var(--text-primary)]">Self-arranged — buyer pickup or own rider</p>
+                                        <p className="text-[13px] font-medium text-[var(--text-primary)]">Pickup code will be generated when payment is received.</p>
+                                    )}
+                                    {order.pickupDeadlineAt && <p className="text-[12px] font-bold text-[var(--text-muted)]">Collect by {format(new Date(order.pickupDeadlineAt), 'h:mm a')} WAT</p>}
+                                    {order.pickupType === 'dispatch' && (
+                                        <div className="space-y-2 text-[13px] text-[var(--text-primary)]">
+                                            <p className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" /><span>{order.dispatchAddress}</span></p>
+                                            <a href={`tel:${order.dispatchPhone}`} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[#ed0000]"><Phone size={13} /> {order.dispatchPhone}</a>
+                                        </div>
                                     )}
                                 </>
                             ) : (
@@ -223,7 +250,7 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                         </p>
                         <div className="bg-[var(--bg-secondary)] rounded-2xl p-5 space-y-2.5 text-[13px]">
                             <div className="flex justify-between"><span className="text-[var(--text-muted)] font-medium">Items subtotal</span><span className="font-bold text-[var(--text-primary)]">{fmt(order.productAmount)}</span></div>
-                            <div className="flex justify-between"><span className="text-[var(--text-muted)] font-medium">Delivery {order.deliveryZone && <span className="opacity-60">· {order.deliveryZone}</span>}</span><span className="font-bold text-[var(--text-primary)]">{fmt(order.deliveryFee)}</span></div>
+                            <div className="flex justify-between"><span className="text-[var(--text-muted)] font-medium">{order.fulfillmentType === 'pickup' ? 'Pickup / dispatch' : 'Delivery'} {order.deliveryZone && <span className="opacity-60">· {order.deliveryZone}</span>}</span><span className="font-bold text-[var(--text-primary)]">{fmt(order.deliveryFee)}</span></div>
                             {order.commission ? <div className="flex justify-between text-[11px] opacity-70"><span className="text-[var(--text-muted)]">Platform commission (10%)</span><span className="text-[var(--text-muted)]">{fmt(order.commission)}</span></div> : null}
                             <div className="flex justify-between pt-3 mt-2 border-t border-[var(--divider)]">
                                 <span className="font-bold text-[var(--text-primary)]">Total paid</span>
@@ -246,7 +273,7 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                     onChange={(e) => setStatusDraft(e.target.value)}
                                     className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50"
                                 >
-                                    {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                                    {STATUSES.map(s => <option key={s} value={s} disabled={s === 'completed' && order.status !== 'completed'}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                                 </select>
                             </div>
                             <button
@@ -258,15 +285,27 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                             </button>
                         </div>
 
-                        {/* DELIVERY */}
+                        {/* FULFILLMENT */}
                         <div className="space-y-3">
                             <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-2">
-                                {isSelfMethod ? (
-                                    <><Package size={12} /> Self-arranged — buyer pickup or own rider</>
-                                ) : (
-                                    <><Truck size={12} /> Delivery</>
-                                )}
+                                {order.fulfillmentType === 'pickup'
+                                    ? <><Package size={12} /> Pickup arrangement</>
+                                    : methodDraft === 'self' ? <><Package size={12} /> Buyer-arranged delivery</> : <><Truck size={12} /> Platform delivery</>}
                             </label>
+                            {order.fulfillmentType === 'pickup' ? (
+                                <div className="space-y-4">
+                                    <select value={pickupTypeDraft} onChange={e => setPickupTypeDraft(e.target.value)} className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50">
+                                        <option value="self">Customer self pickup</option>
+                                        <option value="dispatch">Buyer-arranged dispatch rider</option>
+                                    </select>
+                                    {pickupTypeDraft === 'dispatch' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <input value={dispatchAddressDraft} onChange={e => setDispatchAddressDraft(e.target.value)} placeholder="Dispatch delivery address" className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50" />
+                                            <input type="tel" value={dispatchPhoneDraft} onChange={e => setDispatchPhoneDraft(e.target.value)} placeholder="Dispatch rider contact number" className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50" />
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <select
                                     value={methodDraft}
@@ -295,17 +334,20 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                     />
                                 )}
                             </div>
+                            )}
                             <div className="flex justify-end">
                                 <button
                                     onClick={handleSaveDelivery}
                                     disabled={savingDelivery}
                                     className="px-5 py-3 bg-black text-white rounded-xl font-bold text-[12px] hover:bg-[#ed0000] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    {savingDelivery ? 'Saving…' : 'Update delivery'}
+                                    {savingDelivery ? 'Saving…' : order.fulfillmentType === 'pickup' ? 'Save pickup arrangement' : 'Update delivery'}
                                 </button>
                             </div>
                             <p className="text-[10px] text-[var(--text-muted)] font-medium leading-relaxed">
-                                Changing the zone recomputes the delivery fee + total automatically.
+                                {order.fulfillmentType === 'delivery'
+                                    ? 'Changing the zone recomputes the delivery fee and total automatically.'
+                                    : `The order will be ready for pickup within ${Math.round(order.pickupWindowMinutes || 60)} minutes after payment confirmation.`}
                             </p>
                         </div>
 
@@ -346,8 +388,8 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                         className="w-full max-w-md rounded-3xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-6 shadow-2xl"
                     >
                         <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--text-muted)]">Send customer email?</p>
-                        <h4 className="mt-2 text-xl font-bold text-[var(--text-primary)]">Would you like a payment confirmation email sent to the customer?</h4>
-                        <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-muted)]">This will send a confirmation email to the customer using the same style as the pickup-ready notice.</p>
+                        <h4 className="mt-2 text-xl font-bold text-[var(--text-primary)]">Send an additional payment confirmation?</h4>
+                        <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-muted)]">The buyer receives a status update email either way. This sends payment confirmation details as a separate email.</p>
                         <div className="mt-6 flex justify-end gap-3">
                             <button
                                 onClick={() => {
@@ -356,7 +398,7 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                 }}
                                 className="rounded-xl border border-[var(--divider)] px-4 py-2.5 text-[12px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
                             >
-                                No
+                                Status email only
                             </button>
                             <button
                                 onClick={() => {
@@ -365,7 +407,7 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                 }}
                                 className="rounded-xl bg-[#ed0000] px-4 py-2.5 text-[12px] font-bold text-white hover:bg-[#c90000]"
                             >
-                                Yes
+                                Send both emails
                             </button>
                         </div>
                     </motion.div>

@@ -71,9 +71,13 @@ export const createCustomerReview = async (req: Request, res: Response) => {
         const order = await Order.findOne({
             reference: orderReference,
             buyerEmail: req.customer!.email.toLowerCase(),
-            status: { $in: ['delivered', 'completed'] }
+            status: { $in: ['shipped', 'delivered', 'completed'] }
         });
-        if (!order) return res.status(403).json({ success: false, message: 'You can review products from delivered orders only' });
+        if (!order) return res.status(403).json({ success: false, message: 'You can review products from shipped or delivered orders only' });
+        const reviewComment = String(comment || '').trim();
+        if (order.status === 'shipped' && !reviewComment) {
+            return res.status(400).json({ success: false, message: 'Please write a review before submitting your rating' });
+        }
 
         const orderItem = order.items.find(item => String(item.productId) === String(productId));
         if (!orderItem) return res.status(403).json({ success: false, message: 'This product was not part of that order' });
@@ -93,7 +97,7 @@ export const createCustomerReview = async (req: Request, res: Response) => {
             customerEmail: req.customer!.email,
             orderReference,
             rating: numericRating,
-            comment: String(comment || '').trim()
+            comment: reviewComment
         });
 
         notify({
@@ -107,6 +111,56 @@ export const createCustomerReview = async (req: Request, res: Response) => {
     } catch (err: any) {
         console.error('Error in createCustomerReview:', err);
         res.status(400).json({ success: false, message: err.message || 'Error creating review' });
+    }
+};
+
+export const completeCustomerOrder = async (req: Request, res: Response) => {
+    try {
+        const email = req.customer!.email.toLowerCase();
+        const order = await Order.findOne({
+            _id: req.params.id,
+            buyerEmail: email,
+            status: 'shipped'
+        });
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Shipped order not found' });
+        }
+
+        const productIds = [...new Set(order.items.map(item => String(item.productId)))];
+        const reviews = await Review.find({
+            customerEmail: email,
+            orderReference: order.reference,
+            productId: { $in: productIds }
+        }).select('productId rating comment');
+        const reviewedProductIds = new Set(reviews
+            .filter(review => review.rating >= 1 && review.rating <= 5 && String(review.comment || '').trim())
+            .map(review => String(review.productId)));
+        const missingReview = productIds.some(productId => !reviewedProductIds.has(productId));
+        if (missingReview) {
+            return res.status(400).json({ success: false, message: 'Rate and write a review for every item before completing this order' });
+        }
+
+        const completed = await Order.findOneAndUpdate(
+            { _id: order._id, buyerEmail: email, status: 'shipped' },
+            { $set: { status: 'completed', completedAt: new Date() } },
+            { returnDocument: 'after' }
+        );
+        if (!completed) {
+            return res.status(409).json({ success: false, message: 'This order has already been updated' });
+        }
+
+        notify({
+            type: 'order',
+            title: 'Order completed by customer',
+            description: `${completed.reference} · ${completed.buyerName}`,
+            link: `/admin?order=${completed.reference}`,
+            meta: { orderId: completed.id, reference: completed.reference, completedBy: email }
+        });
+
+        res.json({ success: true, data: completed });
+    } catch (err: any) {
+        console.error('Error in completeCustomerOrder:', err);
+        res.status(400).json({ success: false, message: err.message || 'Could not complete order' });
     }
 };
 

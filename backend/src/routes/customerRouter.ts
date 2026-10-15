@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import * as customerAuthController from '../controllers/customerAuthController';
 import * as orderController from '../controllers/orderController';
 import { requireCustomer } from '../middlewares/requireCustomer';
-import { createCustomerReview } from '../controllers/reviewController';
+import { createCustomerReview, completeCustomerOrder } from '../controllers/reviewController';
 
 const router = Router();
 
@@ -46,6 +46,7 @@ router.get('/auth/me', requireCustomer, customerAuthController.me);
 router.put('/auth/profile', requireCustomer, customerAuthController.updateProfile);
 router.post('/auth/change-password', requireCustomer, customerAuthController.changePassword);
 router.get('/orders', requireCustomer, customerAuthController.myOrders);
+router.post('/orders/:id/complete', requireCustomer, completeCustomerOrder);
 router.delete('/orders/:id/unpaid', requireCustomer, orderController.deleteUnpaidCustomerOrder);
 router.post('/reviews', requireCustomer, createCustomerReview);
 

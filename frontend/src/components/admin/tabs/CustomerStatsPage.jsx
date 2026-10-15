@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, User, Calendar, Mail, Phone } from 'lucide-react'
+import { ChevronLeft, User, Calendar, Mail, Phone, MapPin, Package, Truck } from 'lucide-react'
 import { format } from 'date-fns'
 import { statsApi } from '../../../api/client'
 
@@ -124,11 +124,13 @@ const CustomerStatsPage = ({ customer, onBack }) => {
                 </div>
             ) : (
                 <div className="bg-[var(--bg-tertiary)] rounded-2xl border border-[var(--divider)] shadow-sm overflow-hidden">
-                    <table className="w-full text-left">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[900px] text-left">
                         <thead className="bg-[var(--bg-secondary)] border-b border-[var(--divider)]">
                             <tr>
                                 <th className="px-6 py-4 text-[11px] font-bold text-[var(--text-muted)]">Reference</th>
                                 <th className="px-6 py-4 text-[11px] font-bold text-[var(--text-muted)]">Items</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-[var(--text-muted)]">Fulfillment & address</th>
                                 <th className="px-6 py-4 text-[11px] font-bold text-[var(--text-muted)]">Date</th>
                                 <th className="px-6 py-4 text-[11px] font-bold text-[var(--text-muted)] text-right">Amount</th>
                                 <th className="px-6 py-4 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
@@ -141,6 +143,23 @@ const CustomerStatsPage = ({ customer, onBack }) => {
                                     <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">
                                         {(o.items || []).reduce((n, it) => n + (it.quantity || 1), 0)} units
                                     </td>
+                                    <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">
+                                        {o.fulfillmentType === 'pickup' && o.pickupType === 'dispatch' ? (
+                                            <div className="space-y-1.5">
+                                                <p className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]"><Truck size={13} /> Dispatch rider</p>
+                                                <p className="flex items-start gap-1.5"><MapPin size={13} className="mt-0.5 shrink-0" /><span className="whitespace-normal">{o.dispatchAddress || 'Address not provided'}</span></p>
+                                                {o.dispatchPhone ? <a href={`tel:${o.dispatchPhone}`} className="inline-flex items-center gap-1.5 hover:text-[#ed0000]"><Phone size={12} /> {o.dispatchPhone}</a> : <span className="opacity-60">No rider contact provided</span>}
+                                            </div>
+                                        ) : o.fulfillmentType === 'pickup' ? (
+                                            <p className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]"><Package size={13} /> Self pickup</p>
+                                        ) : (
+                                            <div className="space-y-1.5">
+                                                <p className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]"><Truck size={13} /> Platform delivery</p>
+                                                <p className="flex items-start gap-1.5"><MapPin size={13} className="mt-0.5 shrink-0" /><span className="whitespace-normal">{o.buyerAddress || 'Address not provided'}</span></p>
+                                                {o.buyerPhone && <a href={`tel:${o.buyerPhone}`} className="inline-flex items-center gap-1.5 hover:text-[#ed0000]"><Phone size={12} /> {o.buyerPhone}</a>}
+                                            </div>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4 text-[12px] font-medium text-[var(--text-muted)]">{format(new Date(o.date), 'MMM dd, yyyy')}</td>
                                     <td className="px-6 py-4 text-[13px] font-bold text-right text-[var(--text-primary)]">{fmt(o.amount)}</td>
                                     <td className="px-6 py-4 text-right">
@@ -152,6 +171,7 @@ const CustomerStatsPage = ({ customer, onBack }) => {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
         </div>

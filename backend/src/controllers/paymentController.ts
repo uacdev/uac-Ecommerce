@@ -4,6 +4,7 @@ import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { sendOrderEmails, sendPickupOrderReceivedEmail } from '../lib/email';
 import { notify } from '../lib/notify';
+import { loadCheckoutPolicy } from '../lib/checkoutPolicy';
 
 const DEFAULT_OPAY_BASE_URL = 'https://sandboxapi.opaycheckout.com/api/v1/international';
 
@@ -32,9 +33,18 @@ const resolvePickupLocation = async (items: any[] = []) => {
 const markOrderPaidAndNotify = async (reference: string) => {
     // Only the first successful callback sends confirmation emails. OPay can
     // deliver both a webhook and a browser verification for the same payment.
+    const pendingOrder = await Order.findOne({ reference, status: 'pending' });
+    if (!pendingOrder) return null;
+    const paidAt = new Date();
+    const policy = await loadCheckoutPolicy();
     const order = await Order.findOneAndUpdate(
         { reference, status: 'pending' },
-        { status: 'paid' },
+        {
+            status: 'paid',
+            pickupDeadlineAt: String(pendingOrder.fulfillmentType || '').toLowerCase() === 'pickup'
+                ? new Date(paidAt.getTime() + (Number((pendingOrder as any).pickupWindowMinutes) || policy.pickupWindowMinutes) * 60 * 1000)
+                : null
+        },
         { returnDocument: 'after' }
     );
     if (!order) return null;
@@ -50,7 +60,11 @@ const markOrderPaidAndNotify = async (reference: string) => {
         deliveryFee: order.deliveryFee,
         deliveryZone: order.deliveryZone,
         amount: order.amount,
-        paymentMethod: 'opay'
+        paymentMethod: 'opay',
+        fulfillmentType: order.fulfillmentType,
+        pickupType: order.pickupType,
+        dispatchAddress: order.dispatchAddress,
+        dispatchPhone: order.dispatchPhone
     };
 
     sendOrderEmails(emailPayload)
@@ -92,7 +106,11 @@ const markOrderPaidAndNotify = async (reference: string) => {
             productAmount: order.productAmount,
             amount: order.amount,
             pickupLocation,
-            pickupCode: order.pickupCode || ''
+            pickupCode: order.pickupCode || '',
+            pickupType: order.pickupType || 'self',
+            dispatchAddress: order.dispatchAddress || '',
+            dispatchPhone: order.dispatchPhone || '',
+            pickupDeadlineAt: order.pickupDeadlineAt || null
         }).catch(err => console.error('[OPay] Pickup received email failed:', err));
     }
 

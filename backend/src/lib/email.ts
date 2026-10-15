@@ -29,6 +29,10 @@ type OrderEmailPayload = {
     deliveryZone?: string;
     amount: number;
     paymentMethod?: string;
+    fulfillmentType?: string;
+    pickupType?: string;
+    dispatchAddress?: string;
+    dispatchPhone?: string;
 };
 
 type PickupEmailPayload = {
@@ -41,6 +45,10 @@ type PickupEmailPayload = {
     amount: number;
     pickupLocation: string;
     pickupCode?: string;
+    pickupType?: string;
+    dispatchAddress?: string;
+    dispatchPhone?: string;
+    pickupDeadlineAt?: Date | null;
 };
 
 type PaymentConfirmationEmailPayload = {
@@ -56,9 +64,37 @@ type PaymentConfirmationEmailPayload = {
     buyerAddress?: string;
     deliveryZone?: string;
     fulfillmentType?: string;
+    pickupType?: string;
+    dispatchAddress?: string;
+    dispatchPhone?: string;
+    pickupDeadlineAt?: Date | null;
+};
+
+type OrderStatusEmailPayload = {
+    reference: string;
+    buyerName: string;
+    buyerEmail: string;
+    status: string;
+    fulfillmentType?: string;
+    pickupType?: string;
+    dispatchAddress?: string;
+    dispatchPhone?: string;
+    buyerAddress?: string;
+    deliveryZone?: string;
+    pickupDeadlineAt?: Date | null;
+};
+
+type ShippedOrderReminderPayload = {
+    reference: string;
+    buyerName: string;
+    buyerEmail: string;
+    shippedAt: Date;
 };
 
 const fmtNgn = (n: number) => `₦${n.toLocaleString('en-NG')}`;
+const formatPickupDeadline = (date?: Date | null) => date
+    ? new Date(date).toLocaleTimeString('en-NG', { timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit' })
+    : '';
 
 const renderItemsTable = (items: OrderItem[]) => `
     <table style="width:100%;border-collapse:collapse;margin:16px 0;">
@@ -89,7 +125,7 @@ const customerHtml = (o: OrderEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${o.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">Thanks for your order. We've received it and our team is preparing it for dispatch. Below is a summary of what's coming your way.</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">Thanks for your order. We've received it. ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? 'Your dispatch rider will collect this order from our pickup point.' : 'This order is for self pickup.') : 'Our team is preparing it for delivery.'} Pickup orders should be collected within one hour after payment confirmation.</p>
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${o.reference}
@@ -103,11 +139,17 @@ const customerHtml = (o: OrderEmailPayload) => `
             <tr style="border-top:1px solid #eee;"><td style="padding:10px 0;font-weight:bold;">Total</td><td style="text-align:right;font-weight:bold;color:#ed0000;font-size:16px;">${fmtNgn(o.amount)}</td></tr>
         </table>
 
-        <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
-            <strong style="display:block;margin-bottom:6px;">Delivering to</strong>
-            ${o.buyerAddress}<br/>
-            ${o.buyerPhone}
-        </div>
+        ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? `
+            <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
+                <strong style="display:block;margin-bottom:6px;">Dispatch details</strong>
+                ${o.dispatchAddress || ''}<br/>Rider contact: ${o.dispatchPhone || ''}
+            </div>
+        ` : '') : `
+            <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
+                <strong style="display:block;margin-bottom:6px;">Delivering to</strong>
+                ${o.buyerAddress}<br/>${o.buyerPhone}
+            </div>
+        `}
 
         <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">If you didn't place this order, reply to this email and we'll sort it out.</p>
         <p style="font-size:12px;color:#aaa;margin-top:8px;">UAC Foods Nigeria · ${new Date().getFullYear()}</p>
@@ -122,7 +164,9 @@ const adminHtml = (o: OrderEmailPayload) => `
             <tr><td style="padding:6px 0;color:#666;width:40%;">Customer name</td><td>${o.buyerName?.trim() || 'Not provided'}</td></tr>
             <tr><td style="padding:6px 0;color:#666;">Email</td><td>${o.buyerEmail}</td></tr>
             <tr><td style="padding:6px 0;color:#666;">Phone</td><td>${o.buyerPhone}</td></tr>
-            <tr><td style="padding:6px 0;color:#666;vertical-align:top;">Address</td><td>${o.buyerAddress}</td></tr>
+            <tr><td style="padding:6px 0;color:#666;">Fulfillment</td><td>${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? 'Buyer-arranged dispatch rider' : 'Self pickup') : 'Delivery'}</td></tr>
+            ${o.pickupType === 'dispatch' ? `<tr><td style="padding:6px 0;color:#666;">Dispatch address</td><td>${o.dispatchAddress || ''}</td></tr><tr><td style="padding:6px 0;color:#666;">Rider contact</td><td>${o.dispatchPhone || ''}</td></tr>` : ''}
+            ${o.fulfillmentType !== 'pickup' ? `<tr><td style="padding:6px 0;color:#666;vertical-align:top;">Address</td><td>${o.buyerAddress}</td></tr>` : ''}
             ${o.deliveryZone ? `<tr><td style="padding:6px 0;color:#666;">Zone</td><td>${o.deliveryZone}</td></tr>` : ''}
             ${o.paymentMethod ? `<tr><td style="padding:6px 0;color:#666;">Payment</td><td>${o.paymentMethod}</td></tr>` : ''}
         </table>
@@ -250,7 +294,7 @@ const pickupReceivedHtml = (p: PickupEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">We’ve received your pickup order and it’s now being prepared. We’ll let you know as soon as it’s ready for collection.</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">We’ve received your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'self pickup'} order. ${p.pickupType === 'dispatch' ? 'Your rider can collect it from our pickup point.' : 'Please collect it within one hour.'}</p>
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${p.reference}
@@ -260,8 +304,10 @@ const pickupReceivedHtml = (p: PickupEmailPayload) => `
         ${renderItemsTable(p.items)}
 
         <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
-            <strong style="display:block;margin-bottom:6px;">Pickup location</strong>
+            <strong style="display:block;margin-bottom:6px;">${p.pickupType === 'dispatch' ? 'Rider collection point' : 'Pickup location'}</strong>
             ${p.pickupLocation}
+            ${p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : ''}
+            ${p.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${p.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${p.dispatchPhone || ''}` : ''}
         </div>
 
         <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">If you need anything else, reply to this email and we’ll help.</p>
@@ -277,7 +323,7 @@ const pickupReminderHtml = (p: PickupEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">Your pickup order is ready for collection. Please head to the pickup location below with your pickup code.</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">Your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'pickup'} order is ready. ${p.pickupType === 'dispatch' ? 'Please have your rider collect it from the location below.' : 'Please collect it within one hour.'}</p>
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${p.reference}
@@ -287,8 +333,10 @@ const pickupReminderHtml = (p: PickupEmailPayload) => `
         ${renderItemsTable(p.items)}
 
         <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
-            <strong style="display:block;margin-bottom:6px;">Pickup location</strong>
+            <strong style="display:block;margin-bottom:6px;">${p.pickupType === 'dispatch' ? 'Rider collection point' : 'Pickup location'}</strong>
             ${p.pickupLocation}
+            ${p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : ''}
+            ${p.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${p.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${p.dispatchPhone || ''}` : ''}
         </div>
 
         <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">If you’re running late, reply to this email and we’ll help you sort it out.</p>
@@ -320,8 +368,10 @@ const paymentConfirmationHtml = (p: PaymentConfirmationEmailPayload) => `
 
         ${p.fulfillmentType === 'pickup' ? `
             <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
-                <strong style="display:block;margin-bottom:6px;">Pickup location</strong>
+                <strong style="display:block;margin-bottom:6px;">${p.pickupType === 'dispatch' ? 'Dispatch rider collection' : 'Pickup location'}</strong>
                 ${p.pickupLocation || 'UAC Foods pickup point'}
+                ${p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : '<br/>Please collect within one hour after payment confirmation.'}
+                ${p.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${p.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${p.dispatchPhone || ''}` : ''}
             </div>
         ` : `
             <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
@@ -336,6 +386,62 @@ const paymentConfirmationHtml = (p: PaymentConfirmationEmailPayload) => `
         <p style="font-size:12px;color:#aaa;margin-top:8px;">UAC Foods Nigeria · ${new Date().getFullYear()}</p>
     </div>
 `;
+
+const orderStatusHtml = (p: OrderStatusEmailPayload) => {
+    const status = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+    const detail = p.status === 'cancelled'
+        ? 'Your order has been cancelled. Please contact us if you need help.'
+        : p.status === 'shipped'
+            ? 'Your order has been shipped and is on its way.'
+            : p.status === 'delivered'
+                ? 'Your order has been marked as delivered.'
+                : `Your order status has been updated to ${status}.`;
+
+    return `
+        <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
+            <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
+                <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
+                <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Order status update</p>
+            </div>
+            <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
+            <p style="font-size:14px;line-height:1.6;color:#333;">${detail}</p>
+            <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;line-height:1.7;">
+                <strong>Order reference:</strong> ${p.reference}<br/>
+                <strong>Status:</strong> ${status}
+                ${p.fulfillmentType === 'pickup' ? `<br/><strong>Pickup:</strong> ${p.pickupType === 'dispatch' ? 'Buyer-arranged dispatch rider' : 'Self pickup'}${p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : ''}${p.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${p.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${p.dispatchPhone || ''}` : ''}` : `<br/><strong>Delivery address:</strong> ${p.buyerAddress || ''}${p.deliveryZone ? `<br/><strong>Zone:</strong> ${p.deliveryZone}` : ''}`}
+            </div>
+            <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">For assistance, reply to this email and our team will help.</p>
+            <p style="font-size:12px;color:#aaa;margin-top:8px;">UAC Foods Nigeria · ${new Date().getFullYear()}</p>
+        </div>
+    `;
+};
+
+const shippedOrderReminderHtml = (p: ShippedOrderReminderPayload) => {
+    const accountUrl = `${(process.env.FRONTEND_URL || 'http://localhost:5180').replace(/\/$/, '')}/account`;
+    const shippedTime = new Date(p.shippedAt).toLocaleString('en-NG', {
+        timeZone: 'Africa/Lagos',
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    });
+
+    return `
+        <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
+            <div style="border-bottom:3px solid #ed0000;padding-bottom:16px;margin-bottom:24px;">
+                <img src="https://ufl-ecommerce-website.vercel.app/images/uac_foods_full.png" alt="UAC Foods" style="height:48px;width:auto;display:block;" />
+                <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Your order is on its way</p>
+            </div>
+            <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
+            <p style="font-size:14px;line-height:1.6;color:#333;">Your order was shipped about two hours ago${p.shippedAt ? `, at ${shippedTime} WAT` : ''}. We hope it has arrived safely.</p>
+            <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;line-height:1.7;">
+                <strong>Order reference:</strong> ${p.reference}
+            </div>
+            <p style="font-size:14px;line-height:1.6;color:#333;">When you have received your order, please sign in to your account to rate and review each item, then mark the order as completed.</p>
+            <p style="margin:24px 0;"><a href="${accountUrl}" style="display:inline-block;background:#ed0000;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:bold;">View my orders</a></p>
+            <p style="font-size:12px;color:#888;margin-top:32px;line-height:1.5;">If your order has not arrived, please reply to this email so our team can help.</p>
+            <p style="font-size:12px;color:#aaa;margin-top:8px;">UAC Foods Nigeria · ${new Date().getFullYear()}</p>
+        </div>
+    `;
+};
 
 export const sendOrderEmails = async (payload: OrderEmailPayload) => {
     const c = getClient();
@@ -417,6 +523,42 @@ export const sendPaymentConfirmationEmail = async (payload: PaymentConfirmationE
         return true;
     } catch (err) {
         console.error('Payment confirmation email failed:', err);
+        return false;
+    }
+};
+
+export const sendOrderStatusEmail = async (payload: OrderStatusEmailPayload) => {
+    const c = getClient();
+    if (!c) return false;
+
+    try {
+        await c.emails.send({
+            from: getFrom(),
+            to: payload.buyerEmail,
+            subject: `Order ${payload.status} — ${payload.reference}`,
+            html: orderStatusHtml(payload)
+        });
+        return true;
+    } catch (err) {
+        console.error('Order status email failed:', err);
+        return false;
+    }
+};
+
+export const sendShippedOrderReminderEmail = async (payload: ShippedOrderReminderPayload) => {
+    const c = getClient();
+    if (!c) return false;
+
+    try {
+        await c.emails.send({
+            from: getFrom(),
+            to: payload.buyerEmail,
+            subject: `Your order shipped about two hours ago — ${payload.reference}`,
+            html: shippedOrderReminderHtml(payload)
+        });
+        return true;
+    } catch (err) {
+        console.error('Shipped-order reminder email failed:', err);
         return false;
     }
 };

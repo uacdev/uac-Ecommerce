@@ -42,7 +42,11 @@ const CategoryModal = ({ category, onClose }) => {
         setFormData(prev => ({
             ...prev,
             packagingOptions: prev.packagingOptions.map((option, optionIndex) =>
-                optionIndex === index ? { ...option, [field]: field === 'price' ? Number(value) : value } : option
+                optionIndex === index
+                    ? field === 'label'
+                        ? { ...option, label: value, value }
+                        : { ...option, [field]: field === 'price' && value !== '' ? Number(value) : value }
+                    : option
             )
         }));
     };
@@ -50,7 +54,7 @@ const CategoryModal = ({ category, onClose }) => {
     const addPackagingOption = () => {
         setFormData(prev => ({
             ...prev,
-            packagingOptions: [...prev.packagingOptions, { label: '', value: '', price: 0 }]
+            packagingOptions: [...prev.packagingOptions, { label: '', value: '', price: '' }]
         }));
     };
 
@@ -64,6 +68,11 @@ const CategoryModal = ({ category, onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name) return;
+        const packagingOptions = formData.packagingOptions.filter((option) => option.label || option.value);
+        if (packagingOptions.some(option => !option.label?.trim() || !option.value?.trim() || option.price === '' || !Number.isFinite(Number(option.price)))) {
+            setError('Each packaging option needs a label and price.');
+            return;
+        }
         setSubmitting(true);
         setError('');
         const payload = {
@@ -72,7 +81,7 @@ const CategoryModal = ({ category, onClose }) => {
             parent: formData.parent,
             coverImage: formData.coverImage,
             color: category?.color || 'bg-indigo-50 text-indigo-600',
-            packagingOptions: formData.packagingOptions.filter((option) => option.label || option.value)
+            packagingOptions: packagingOptions.map(option => ({ ...option, price: Number(option.price) }))
         };
         const res = category
             ? await updateCategoryById(category._id, payload)
@@ -129,7 +138,7 @@ const CategoryModal = ({ category, onClose }) => {
                         </div>
                         <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                             {formData.packagingOptions.map((option, index) => (
-                                <div key={`${option.value || 'new'}-${index}`} className="rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] p-3 space-y-2">
+                                <div key={index} className="rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] p-3 space-y-2">
                                     <div className="flex items-center justify-between">
                                         <p className="text-[11px] font-bold text-[var(--text-muted)]">Option {index + 1}</p>
                                         <button type="button" onClick={() => removePackagingOption(index)} className="text-[#ed0000] hover:text-red-700">
@@ -143,20 +152,26 @@ const CategoryModal = ({ category, onClose }) => {
                                         className="w-full bg-[var(--bg-tertiary)] rounded-lg px-3 py-2 text-[13px] font-bold outline-none border border-transparent focus:border-[#0f2e53]"
                                     />
                                     <input
+                                        readOnly
                                         value={option.value || ''}
-                                        onChange={(e) => updatePackagingOption(index, 'value', e.target.value)}
                                         placeholder="Value e.g. 75CL - 12 pieces"
-                                        className="w-full bg-[var(--bg-tertiary)] rounded-lg px-3 py-2 text-[13px] font-bold outline-none border border-transparent focus:border-[#0f2e53]"
+                                        aria-label={`Value copied from label for option ${index + 1}`}
+                                        className="w-full bg-[var(--bg-tertiary)] rounded-lg px-3 py-2 text-[13px] font-bold outline-none border border-transparent text-[var(--text-muted)] cursor-default"
                                     />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={option.price ?? 0}
-                                        onChange={(e) => updatePackagingOption(index, 'price', e.target.value)}
-                                        placeholder="Price"
-                                        className="w-full bg-[var(--bg-tertiary)] rounded-lg px-3 py-2 text-[13px] font-bold outline-none border border-transparent focus:border-[#0f2e53]"
-                                    />
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-bold text-[var(--text-muted)]">₦</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            inputMode="decimal"
+                                            value={option.price ?? ''}
+                                            onChange={(e) => updatePackagingOption(index, 'price', e.target.value)}
+                                            placeholder="Price"
+                                            aria-label={`Price for packaging option ${index + 1} in naira`}
+                                            className="w-full bg-[var(--bg-tertiary)] rounded-lg pl-8 pr-3 py-2 text-[13px] font-bold outline-none border border-transparent focus:border-[#0f2e53]"
+                                        />
+                                    </div>
                                 </div>
                             ))}
                             {formData.packagingOptions.length === 0 && (

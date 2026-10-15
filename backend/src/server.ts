@@ -4,6 +4,7 @@ dotenv.config();
 import app from './app';
 import { connectDb } from './lib/db';
 import { runStartupMigrations } from './lib/migrations';
+import { startShippedOrderReminderScheduler } from './lib/shippedOrderReminders';
 
 const PORT = process.env.PORT || 4000;
 
@@ -11,6 +12,7 @@ const start = async () => {
     try {
         await connectDb();
         await runStartupMigrations();
+        startShippedOrderReminderScheduler();
         app.listen(PORT, () => {
             console.log(`🚀 UFL E-Commerce API is running on http://localhost:${PORT}`);
             console.log(`🔥 Health check: http://localhost:${PORT}/health`);

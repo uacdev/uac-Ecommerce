@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Download, Search, Phone, Mail } from 'lucide-react'
+import { Download, Search, Phone, Mail, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { CustomDatePicker } from '../ui/shared_ui'
 import { statsApi } from '../../../api/client'
+import CustomerProfileModal from './CustomerProfileModal'
 
 const fmtNgn = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`
 
-const CustomersTab = ({ searchTerm, dateRange, setDateRange, onViewStats, onExport }) => {
+const CustomersTab = ({ searchTerm, dateRange, setDateRange, onExport }) => {
     const [customers, setCustomers] = useState([])
     const [loading, setLoading] = useState(true)
     const [localSearch, setLocalSearch] = useState('')
+    const [selectedProfile, setSelectedProfile] = useState(null)
 
     useEffect(() => {
         let cancelled = false
@@ -111,6 +113,7 @@ const CustomersTab = ({ searchTerm, dateRange, setDateRange, onViewStats, onExpo
                             <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Last order</th>
                             <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Orders</th>
                             <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Total spend</th>
+                            <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Details</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--divider)]">
@@ -123,17 +126,18 @@ const CustomersTab = ({ searchTerm, dateRange, setDateRange, onViewStats, onExpo
                                     <td className="px-6 py-5"><div className="h-3 w-24 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                     <td className="px-6 py-5"><div className="h-3 w-8 bg-[var(--bg-secondary)] rounded animate-pulse ml-auto" /></td>
                                     <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse ml-auto" /></td>
+                                    <td className="px-6 py-5"><div className="h-8 w-16 bg-[var(--bg-secondary)] rounded-lg animate-pulse ml-auto" /></td>
                                 </tr>
                             ))
                         ) : filtered.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">
+                                <td colSpan={7} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">
                                     {customers.length === 0 ? 'No customers yet.' : 'No customers match your search.'}
                                 </td>
                             </tr>
                         ) : (
                             filtered.map((c) => (
-                                <tr key={c.id || c.email} onClick={() => onViewStats(c)} className="group hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer">
+                                <tr key={c.id || c.email} className="group hover:bg-[var(--bg-secondary)] transition-colors">
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center font-bold text-[10px] text-[var(--text-muted)] border border-[var(--divider)]">
@@ -160,12 +164,18 @@ const CustomersTab = ({ searchTerm, dateRange, setDateRange, onViewStats, onExpo
                                     </td>
                                     <td className="px-6 py-5 text-right text-[13px] font-bold text-[var(--text-primary)]">{c.orders || 0}</td>
                                     <td className="px-6 py-5 text-right text-[13px] font-bold text-[#ed0000]">{fmtNgn(c.totalSpend)}</td>
+                                    <td className="px-6 py-5 text-right">
+                                        <button type="button" onClick={() => setSelectedProfile(c)} className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--divider)] px-3 py-2 text-[11px] font-bold text-[var(--text-primary)] hover:border-[#ed0000] hover:text-[#ed0000] transition-colors" aria-label={`View ${c.name || c.email} profile`}>
+                                            <Eye size={13} /> View profile
+                                        </button>
+                                    </td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
             </div>
+            {selectedProfile && <CustomerProfileModal customer={selectedProfile} onClose={() => setSelectedProfile(null)} />}
         </div>
     )
 }

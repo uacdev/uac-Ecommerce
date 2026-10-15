@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Setting } from '../models/Setting';
+import { CHECKOUT_POLICY_KEY, normalizeCheckoutPolicy, validateCheckoutPolicy } from '../lib/checkoutPolicy';
 
 const normalizeKey = (key: any): string => String(key || '').trim().toLowerCase();
 
@@ -30,9 +31,17 @@ export const getSettingByKey = async (req: Request, res: Response) => {
 export const createSetting = async (req: Request, res: Response) => {
     try {
         const key = normalizeKey(req.body.key);
-        const value = String(req.body.value || '').trim();
+        let value = String(req.body.value || '').trim();
         if (!key || !value) {
             return res.status(400).json({ success: false, message: 'key and value are required' });
+        }
+        if (key === CHECKOUT_POLICY_KEY) {
+            let policy;
+            try { policy = JSON.parse(value); }
+            catch { return res.status(400).json({ success: false, message: 'Checkout policy must be valid JSON' }); }
+            const validationError = validateCheckoutPolicy(policy);
+            if (validationError) return res.status(400).json({ success: false, message: validationError });
+            value = JSON.stringify(normalizeCheckoutPolicy(policy));
         }
 
         const setting = await Setting.findOneAndUpdate(
@@ -50,9 +59,17 @@ export const createSetting = async (req: Request, res: Response) => {
 export const upsertSetting = async (req: Request, res: Response) => {
     try {
         const key = normalizeKey(req.params.key);
-        const value = String(req.body.value || '').trim();
+        let value = String(req.body.value || '').trim();
         if (!key || !value) {
             return res.status(400).json({ success: false, message: 'value is required' });
+        }
+        if (key === CHECKOUT_POLICY_KEY) {
+            let policy;
+            try { policy = JSON.parse(value); }
+            catch { return res.status(400).json({ success: false, message: 'Checkout policy must be valid JSON' }); }
+            const validationError = validateCheckoutPolicy(policy);
+            if (validationError) return res.status(400).json({ success: false, message: validationError });
+            value = JSON.stringify(normalizeCheckoutPolicy(policy));
         }
 
         const setting = await Setting.findOneAndUpdate(
