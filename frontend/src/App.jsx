@@ -79,7 +79,7 @@ function Layout() {
 
       <Toaster position="top-center" reverseOrder={false} />
       {!isAdmin && <Navbar />}
-      <main className="portal-main">
+      <main className={`portal-main ${isAdmin ? '' : 'portal-main--storefront'}`}>
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/" element={<Home />} />

@@ -87,10 +87,6 @@ const AboutUs = () => {
                                     <h4 className="text-3xl font-black text-[var(--text-primary)]">62+</h4>
                                     <p className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest">Years of Trust</p>
                                 </div>
-                                <div>
-                                    <h4 className="text-3xl font-black text-[var(--text-primary)]">12+</h4>
-                                    <p className="text-[10px] font-black uppercase text-[var(--text-muted)] tracking-widest">Nutritious Brands</p>
-                                </div>
                             </div>
                         </div>
                         <div className="aspect-[4/5] rounded-[80px] overflow-hidden bg-white border border-[var(--divider)] p-12 flex items-center justify-center">
@@ -125,7 +121,7 @@ const AboutUs = () => {
                      <p className="text-2xl md:text-5xl font-black italic tracking-tighter text-[var(--text-primary)] leading-tight mb-12">
                         "We continue to innovate and expand our footprint while staying true to our core value of providing quality nutrition for all Nigerians."
                      </p>
-                     <h4 className="text-xl font-black uppercase tracking-widest text-[var(--brand-red)]">Oluyemi Oloyede</h4>
+                     <h4 className="text-xl font-black uppercase tracking-widest text-[var(--brand-red)]">Omodele Temitope</h4>
                       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">MD/CEO, UAC Foods Limited</p>
                 </motion.div>
 

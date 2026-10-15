@@ -71,7 +71,8 @@ const BRANDS = [
     {
         name: 'Supreme',
         tagline: 'Creamy, Rich & Delicious',
-        desc: 'Premium ice cream crafted with the finest dairy. Available in over 20 exciting flavours for every occasion.',
+        desc: 'Your favourite creamy treat, made with exciting flavours to bring a little more joy to every moment',
+        descFont: 'Hit and Run, sans-serif',
         img: '/images/supreme_ice_cream.jpg',
         bg: 'from-[#832657] to-[#C1126E]',
         accent: '#ED008C',
@@ -80,7 +81,8 @@ const BRANDS = [
     {
         name: 'Swan',
         tagline: 'Pure Natural Spring Water',
-        desc: 'Sourced from natural springs, Swan water is refreshing, pure and trusted by families across Nigeria.',
+        desc: 'SWAN Natural Spring Water is a premium spring water drawn from the pristine Kerang Hills of the Jos Plateau, naturally pure, refreshing, and trusted by Nigerian families for generations.',
+        descFont: 'Proxima Nova, sans-serif',
         img: '/images/swan_water.png',
         bg: 'from-[#0f4c75] to-[#1b6ca8]',
         accent: '#1b6ca8',
@@ -98,8 +100,10 @@ const BRANDS = [
     {
         name: 'Zuri',
         tagline: 'Seasoning, Reimagined',
-        desc: 'All-purpose and recipe-specific Zuri blends — the modern foundation of every Nigerian kitchen.',
-        img: '/images/zuri.png',
+        desc: 'Zuri Seasoning is designed to enhance everyday cooking with rich taste and appealing aroma. Zuri Seasoning is available in Chicken, Beef, Classic and Jollof flavours',
+        descFont: 'Proxima Nova, sans-serif',
+        cookbookUrl: 'https://zuri.uacfoodsng.com/',
+        img: '/images/zuri%20for%20web%20(002).png',
         // Matches the deep forest-green sachet → brighter accent stripe.
         bg: 'from-[#0E3D22] to-[#2C7A3F]',
         accent: '#2C7A3F',
@@ -152,6 +156,7 @@ const Home = () => {
     }
 
     const brand = BRANDS[activeBrand]
+    const brandFont = brand.descFont || 'inherit'
     const featuredProducts = products.slice(0, 6)
     const topPicks = products.slice(0, 4)
 
@@ -208,20 +213,9 @@ const Home = () => {
 
                 <div className="relative z-10 flex-1 flex flex-col max-w-[1440px] mx-auto w-full px-6 lg:px-16 py-10">
 
-                    {/* Row: Badge + Brand Name */}
+                    {/* Brand label */}
                     <div className="flex items-center gap-4 mb-6">
                         <span className="text-white/60 text-[11px] font-bold tracking-[4px] uppercase">UAC Foods Limited</span>
-                        <AnimatePresence mode="wait">
-                            <motion.span
-                                key={brand.badge}
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                className="px-3 py-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full text-white text-[10px] font-bold"
-                            >
-                                {brand.badge}
-                            </motion.span>
-                        </AnimatePresence>
                     </div>
 
                     {/* Main 3-col hero grid */}
@@ -238,12 +232,12 @@ const Home = () => {
                                     transition={{ duration: 0.5 }}
                                     className="space-y-5"
                                 >
-                                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.9] tracking-tight">
+                                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.9] tracking-tight" style={{ fontFamily: brandFont }}>
                                         {brand.name}
                                     </h1>
-                                    <p className="text-white/80 text-[15px] font-semibold">{brand.tagline}</p>
-                                    <p className="text-white/60 text-sm leading-relaxed max-w-xs">{brand.desc}</p>
-                                    <div className="flex gap-3 pt-2">
+                                    <p className="text-white/80 text-[15px] font-semibold" style={{ fontFamily: brandFont }}>{brand.tagline}</p>
+                                    <p className="text-white/60 text-sm leading-relaxed max-w-xs" style={{ fontFamily: brandFont }}>{brand.desc}</p>
+                                    <div className="flex flex-wrap gap-3 pt-2">
                                         <Link
                                             to="/products"
                                             className="inline-flex items-center gap-2 bg-white text-gray-900 px-7 py-3.5 rounded-full text-[12px] font-bold hover:bg-white/90 transition-all shadow-2xl"
@@ -256,6 +250,16 @@ const Home = () => {
                                         >
                                             Our story
                                         </Link>
+                                        {brand.cookbookUrl && (
+                                            <a
+                                                href={brand.cookbookUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 border border-white/40 text-white px-7 py-3.5 rounded-full text-[12px] font-bold hover:bg-white/10 transition-all"
+                                            >
+                                                Zuri Cookbook <ArrowUpRight size={14} />
+                                            </a>
+                                        )}
                                     </div>
                                 </motion.div>
                             </AnimatePresence>
@@ -279,15 +283,6 @@ const Home = () => {
                                             className="w-full h-full object-cover"
                                         />
                                     </div>
-                                    {/* Floating chip */}
-                                    <motion.div
-                                        animate={{ y: [-6, 6, -6] }}
-                                        transition={{ repeat: Infinity, duration: 3 }}
-                                        className="absolute -bottom-5 -left-6 bg-white rounded-2xl px-4 py-3 shadow-2xl hidden md:block"
-                                    >
-                                        <p className="text-[10px] font-bold text-gray-500">Top selling</p>
-                                        <p className="text-[13px] font-bold text-gray-900">{brand.name}</p>
-                                    </motion.div>
                                     <motion.div
                                         animate={{ y: [6, -6, 6] }}
                                         transition={{ repeat: Infinity, duration: 3.5 }}

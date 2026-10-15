@@ -78,7 +78,7 @@ const ProductCard = ({ product }) => {
                         onClick={handleAddToCart}
                         aria-label={isInCart ? `Remove ${product.name} from cart` : `Add ${product.name} to cart`}
                         title={isInCart ? 'Remove from cart' : 'Add to cart'}
-                        className={`absolute bottom-2.5 left-2.5 right-2.5 md:bottom-6 md:left-auto md:right-6 md:w-auto rounded-xl md:rounded-full px-3 md:px-4 h-9 md:h-12 shadow-xl flex items-center justify-center gap-1.5 md:gap-2 transition-all duration-300 md:translate-y-12 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 z-10 text-[8px] md:text-[10px] font-black uppercase tracking-wider ${isInCart ? 'bg-[var(--brand-red)] text-white' : 'bg-white text-gray-900 hover:bg-[var(--brand-red)] hover:text-white'}`}
+                        className={`absolute bottom-2.5 left-2.5 right-2.5 md:bottom-6 md:left-auto md:right-6 md:w-auto rounded-xl md:rounded-full px-3 md:px-4 h-9 md:h-12 shadow-xl flex items-center justify-center gap-1.5 md:gap-2 transition-all duration-300 ${isInCart ? 'md:translate-y-0 md:opacity-100' : 'md:translate-y-12 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100'} z-10 text-[8px] md:text-[10px] font-black uppercase tracking-wider ${isInCart ? 'bg-[var(--brand-red)] text-white' : 'bg-white text-gray-900 hover:bg-[var(--brand-red)] hover:text-white'}`}
                     >
                         {isInCart ? <Check size={16} strokeWidth={3} /> : <ShoppingBag size={16} strokeWidth={2.5} />}
                         <span>{isInCart ? 'Added' : 'Add to cart'}</span>

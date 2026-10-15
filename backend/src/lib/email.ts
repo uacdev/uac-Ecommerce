@@ -119,7 +119,7 @@ const adminHtml = (o: OrderEmailPayload) => `
         <h1 style="margin:0 0 16px;font-size:18px;color:#ed0000;">New order · ${o.reference}</h1>
 
         <table style="width:100%;font-size:13px;border-collapse:collapse;">
-            <tr><td style="padding:6px 0;color:#666;width:40%;">Customer</td><td>${o.buyerName}</td></tr>
+            <tr><td style="padding:6px 0;color:#666;width:40%;">Customer name</td><td>${o.buyerName?.trim() || 'Not provided'}</td></tr>
             <tr><td style="padding:6px 0;color:#666;">Email</td><td>${o.buyerEmail}</td></tr>
             <tr><td style="padding:6px 0;color:#666;">Phone</td><td>${o.buyerPhone}</td></tr>
             <tr><td style="padding:6px 0;color:#666;vertical-align:top;">Address</td><td>${o.buyerAddress}</td></tr>
@@ -352,7 +352,7 @@ export const sendOrderEmails = async (payload: OrderEmailPayload) => {
             ? c.emails.send({
             from: getFrom(),
             to: getAdminEmail(),
-                subject: `[UAC] New order ${payload.reference} — ${fmtNgn(payload.amount)}`,
+                subject: `[UAC] New order from ${payload.buyerName?.trim() || 'customer'} — ${payload.reference} — ${fmtNgn(payload.amount)}`,
                 html: adminHtml(payload)
             })
             : Promise.resolve(null)

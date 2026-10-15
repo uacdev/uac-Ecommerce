@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Proxima+Nova&display=swap');
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Anja Eliana';
+  src: url('/fonts/Anja-Eliane.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
 
 /* ─── MODERN MINIMALIST THEME (MYCOGEN CONCEPT) ─── */
 @layer base {
@@ -526,6 +535,10 @@
   .portal-main > div[class~="pb-40"]:not(.checkout-mobile),
   .portal-main > div[class~="pb-32"]:not(.checkout-mobile) {
     padding-bottom: 3rem;
+  }
+
+  .portal-main.portal-main--storefront > * {
+    padding-bottom: 16rem !important;
   }
 
   .portal-main > div > div[class~="mb-24"] {
