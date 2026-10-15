@@ -74,6 +74,8 @@ const ProductDetails = () => {
                                 src={cdnHero(productImages[activeImage])}
                                 alt={product.name}
                                 className="w-full h-full object-contain p-6 md:p-10 grayscale-0"
+                                fetchPriority="high"
+                                decoding="async"
                             />
                             <button
                                 type="button"

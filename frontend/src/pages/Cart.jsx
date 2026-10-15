@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Minus, Plus, Trash2, ArrowLeft, ShoppingBag, ChevronRight } from 'lucide-react'
 import { useStore } from '../context/StoreContext'
-import { cdnHero } from '../lib/img'
+import { cdnCard } from '../lib/img'
 
 const Cart = () => {
     const navigate = useNavigate()
@@ -54,7 +54,7 @@ const Cart = () => {
                     {/* Cart Items */}
                     <div className="lg:col-span-7 space-y-3 md:space-y-6">
                         <AnimatePresence initial={false}>
-                            {cart.map((item) => (
+                            {cart.map((item, index) => (
                                 <motion.div
                                     key={item.id}
                                     layout
@@ -66,9 +66,12 @@ const Cart = () => {
                                     {/* Image */}
                                     <div className="w-20 h-24 sm:w-24 sm:h-28 md:w-28 md:h-36 rounded-xl md:rounded-[20px] overflow-hidden bg-[var(--bg-primary)] border border-[var(--divider)] shrink-0">
                                         <img
-                                            src={cdnHero(item.image)}
+                                            src={cdnCard(item.image)}
                                             alt={item.name}
                                             className="w-full h-full object-contain p-1.5 md:p-3"
+                                            loading={index === 0 ? 'eager' : 'lazy'}
+                                            fetchPriority={index === 0 ? 'high' : 'auto'}
+                                            decoding="async"
                                         />
                                     </div>
 

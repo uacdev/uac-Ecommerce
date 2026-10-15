@@ -195,8 +195,8 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                     {order.pickupDeadlineAt && <p className="text-[12px] font-bold text-[var(--text-muted)]">Collect by {format(new Date(order.pickupDeadlineAt), 'h:mm a')} WAT</p>}
                                     {order.pickupType === 'dispatch' && (
                                         <div className="space-y-2 text-[13px] text-[var(--text-primary)]">
-                                            <p className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" /><span>{order.dispatchAddress}</span></p>
-                                            <a href={`tel:${order.dispatchPhone}`} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[#ed0000]"><Phone size={13} /> {order.dispatchPhone}</a>
+                                            <p className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 shrink-0 text-[var(--text-muted)]" /><span>Delivery to buyer: {order.dispatchAddress}</span></p>
+                                            <a href={`tel:${order.dispatchPhone}`} className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[#ed0000]"><Phone size={13} /> Rider's phone: {order.dispatchPhone}</a>
                                         </div>
                                     )}
                                 </>
@@ -300,8 +300,14 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                     </select>
                                     {pickupTypeDraft === 'dispatch' && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <input value={dispatchAddressDraft} onChange={e => setDispatchAddressDraft(e.target.value)} placeholder="Dispatch delivery address" className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50" />
-                                            <input type="tel" value={dispatchPhoneDraft} onChange={e => setDispatchPhoneDraft(e.target.value)} placeholder="Dispatch rider contact number" className="bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50" />
+                                            <label className="space-y-2 text-xs font-semibold text-[var(--text-muted)]">
+                                                Buyer's delivery address <span aria-hidden="true" className="text-red-600">*</span>
+                                                <input required value={dispatchAddressDraft} onChange={e => setDispatchAddressDraft(e.target.value)} placeholder="Buyer's delivery address" className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50" />
+                                            </label>
+                                            <label className="space-y-2 text-xs font-semibold text-[var(--text-muted)]">
+                                                Dispatch rider's phone number <span aria-hidden="true" className="text-red-600">*</span>
+                                                <input required type="tel" value={dispatchPhoneDraft} onChange={e => setDispatchPhoneDraft(e.target.value)} placeholder="Dispatch rider's phone number" className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-medium text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50" />
+                                            </label>
                                         </div>
                                     )}
                                 </div>

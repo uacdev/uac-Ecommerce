@@ -440,6 +440,10 @@
 }
 
 @media (max-width: 767px) {
+  .portal-main--mobile-title h1 {
+    display: none;
+  }
+
   .checkout-mobile {
     padding-top: 6rem;
     padding-bottom: 10rem;

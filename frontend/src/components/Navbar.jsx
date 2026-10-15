@@ -6,18 +6,52 @@ import { useTheme } from '../context/ThemeContext'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 
+const getMobilePageTitle = (pathname, search, products, customer) => {
+    if (pathname === '/') return ''
+    if (pathname.startsWith('/product/')) {
+        const productId = pathname.split('/')[2]
+        return products.find(product => String(product.id) === productId)?.name || 'Product'
+    }
+    if (pathname === '/checkout' || pathname.startsWith('/checkout/')) return customer ? 'Checkout' : 'Sign in to checkout'
+    if (pathname === '/products' || pathname === '/shop') {
+        return new URLSearchParams(search).has('search') ? 'Search results' : 'Products'
+    }
+
+    const titles = {
+        '/cart': 'Your cart',
+        '/favorites': 'Favorites',
+        '/success': 'Order confirmed',
+        '/order-failed': 'Payment issue',
+        '/delivery-selection': 'Choose delivery method',
+        '/deliver-selection': 'Choose delivery method',
+        '/success-delivery': 'Delivery confirmed',
+        '/track-order': 'Track your order',
+        '/about': 'Our story',
+        '/privacy-policy': 'Privacy policy',
+        '/data-protection': 'Data protection',
+        '/terms': 'Terms and conditions',
+        '/account/login': 'Sign in',
+        '/account/signup': 'Create account',
+        '/account/reset-password': 'Reset password',
+        '/account': 'My account'
+    }
+
+    return titles[pathname] || ''
+}
+
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false)
     const [searchOpen, setSearchOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const { isDark, toggleTheme } = useTheme()
     const store = useStore() || {}
-    const { cartCount = 0, favorites = [] } = store
+    const { cartCount = 0, favorites = [], products = [] } = store
     const navigate = useNavigate()
     const location = useLocation()
     const { customer } = useCustomerAuth() || {}
     const accountHref = customer ? '/account' : '/account/login'
     const pathname = location.pathname
+    const mobilePageTitle = getMobilePageTitle(pathname, location.search, products, customer)
     const mobileLinks = [
         { to: '/', label: 'Home', icon: House, active: pathname === '/' },
         { to: '/products', label: 'Shop', icon: ShoppingBag, active: pathname === '/products' || pathname === '/shop' || pathname.startsWith('/product/') },
@@ -41,10 +75,15 @@ const Navbar = () => {
                 <div className="max-w-[1440px] mx-auto flex justify-between items-center px-4 py-3 md:px-6 md:py-6 lg:px-12">
                     
                     {/* Logo Section */}
-                    <div className="flex-1">
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5">
                         <Link to="/" className="inline-block group shrink-0">
-                            <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-8 w-auto object-contain transition-transform hover:scale-105 md:h-10" />
+                            <img src="/images/uac_foods_full.png" alt="UAC Foods" className="h-7 w-auto object-contain transition-transform hover:scale-105 md:h-10" />
                         </Link>
+                        {mobilePageTitle && (
+                            <h1 className="min-w-0 truncate text-[13px] font-bold leading-tight text-[var(--text-primary)] md:hidden">
+                                {mobilePageTitle}
+                            </h1>
+                        )}
                     </div>
 
                     {/* Desktop Menu - Centered */}

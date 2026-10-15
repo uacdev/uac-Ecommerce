@@ -147,8 +147,8 @@ const CustomerStatsPage = ({ customer, onBack }) => {
                                         {o.fulfillmentType === 'pickup' && o.pickupType === 'dispatch' ? (
                                             <div className="space-y-1.5">
                                                 <p className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]"><Truck size={13} /> Dispatch rider</p>
-                                                <p className="flex items-start gap-1.5"><MapPin size={13} className="mt-0.5 shrink-0" /><span className="whitespace-normal">{o.dispatchAddress || 'Address not provided'}</span></p>
-                                                {o.dispatchPhone ? <a href={`tel:${o.dispatchPhone}`} className="inline-flex items-center gap-1.5 hover:text-[#ed0000]"><Phone size={12} /> {o.dispatchPhone}</a> : <span className="opacity-60">No rider contact provided</span>}
+                                                <p className="flex items-start gap-1.5"><MapPin size={13} className="mt-0.5 shrink-0" /><span className="whitespace-normal">Delivery to buyer: {o.dispatchAddress || 'Address not provided'}</span></p>
+                                                {o.dispatchPhone ? <a href={`tel:${o.dispatchPhone}`} className="inline-flex items-center gap-1.5 hover:text-[#ed0000]"><Phone size={12} /> Rider's phone: {o.dispatchPhone}</a> : <span className="opacity-60">No rider phone provided</span>}
                                             </div>
                                         ) : o.fulfillmentType === 'pickup' ? (
                                             <p className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]"><Package size={13} /> Self pickup</p>

@@ -482,7 +482,7 @@ const SettingsTab = () => {
                                     <div className="divide-y divide-[var(--divider)] border-y border-[var(--divider)]">
                                         {[
                                             ['selfPickupEnabled', 'Customer self pickup', 'Buyer collects the order from the pickup point.'],
-                                            ['dispatchEnabled', 'Buyer-arranged dispatch rider', 'Buyer supplies the rider address and contact number.'],
+                                            ['dispatchEnabled', 'Buyer-arranged dispatch rider', "Buyer provides the delivery address and the rider's phone number."],
                                             ['platformDeliveryEnabled', 'Platform delivery for SWAN products', 'Delivery remains limited to eligible SWAN-only orders.']
                                         ].map(([key, title, description]) => (
                                             <label key={key} className="flex items-center justify-between gap-5 py-4">

@@ -255,12 +255,6 @@ export const createOrder = async (req: Request, res: Response) => {
             if (!buyerName || !buyerEmail || !buyerPhone) {
                 return res.status(400).json({ success: false, message: 'buyerName, buyerEmail and buyerPhone are required for pickup orders' });
             }
-            if (pickupWindowAccepted !== true) {
-                return res.status(400).json({
-                    success: false,
-                    message: `Confirm that you understand your order will be ready for pickup within ${checkoutPolicy.pickupWindowMinutes} minutes after payment confirmation`
-                });
-            }
             if (pickupArrangement === 'dispatch') {
                 const normalizedDispatchAddress = String(dispatchAddress || '').trim();
                 const normalizedDispatchPhone = String(dispatchPhone || '').trim();

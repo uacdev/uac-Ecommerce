@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, ChevronRight, Clock3, MapPin, PackageCheck, ShieldCheck, Truck, Minus, Plus } from 'lucide-react'
+import { ArrowLeft, CalendarDays, ChevronRight, Clock3, MapPin, PackageCheck, ShieldCheck, Truck, Minus, Plus, Trash2 } from 'lucide-react'
 import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 import { deliveryApi, trackingApi, paymentApi, settingsApi } from '../api/client'
 import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId, setPendingCartPurchase } from '../lib/visitor'
 import { CHECKOUT_WEEKDAYS, DEFAULT_CHECKOUT_POLICY, formatPolicyTime, getOrderWindowStatus, normalizeCheckoutPolicy } from '../lib/checkoutPolicy'
+import { cdnCard } from '../lib/img'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
 
@@ -99,7 +100,8 @@ const Checkout = () => {
     const location = useLocation()
     const [loading, setLoading] = useState(false)
     const [paymentMethod, setPaymentMethod] = useState('opay')
-    const { products, addOrder, cart, cartTotal, updateCartQuantity } = useStore()
+    const [itemToRemove, setItemToRemove] = useState(null)
+    const { products, addOrder, cart, cartTotal, updateCartQuantity, removeFromCart } = useStore()
     const { customer, loading: authLoading } = useCustomerAuth() || {}
 
     const [buyer, setBuyer] = useState({
@@ -123,7 +125,6 @@ const Checkout = () => {
     const [zoneName, setZoneName] = useState('')
     const [fulfillmentType, setFulfillmentType] = useState('pickup')
     const [pickupType, setPickupType] = useState('self')
-    const [pickupWindowAccepted, setPickupWindowAccepted] = useState(false)
     const [dispatchAddress, setDispatchAddress] = useState('')
     const [dispatchPhone, setDispatchPhone] = useState('')
     const [checkoutPolicy, setCheckoutPolicy] = useState({ ...DEFAULT_CHECKOUT_POLICY })
@@ -257,10 +258,6 @@ const Checkout = () => {
                 return
             }
         }
-        if (activeFulfillmentType === 'pickup' && !pickupWindowAccepted) {
-            toast.error('CONFIRM PICKUP WITHIN ONE HOUR AFTER PAYMENT')
-            return
-        }
         if (activeFulfillmentType === 'delivery') {
             if (!buyer.address?.trim()) {
                 toast.error('ENTER DELIVERY LOCATION')
@@ -294,7 +291,6 @@ const Checkout = () => {
             paymentMethod,
             fulfillmentType: activeFulfillmentType,
             pickupType,
-            pickupWindowAccepted: activeFulfillmentType === 'pickup' && pickupWindowAccepted,
             dispatchAddress: activeFulfillmentType === 'pickup' && pickupType === 'dispatch' ? dispatchAddress : '',
             dispatchPhone: activeFulfillmentType === 'pickup' && pickupType === 'dispatch' ? dispatchPhone : '',
             checkoutSessionId: getCheckoutSessionId() || undefined
@@ -423,7 +419,7 @@ const Checkout = () => {
                                     <div className="md:col-span-2">
                                         <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Fulfillment Type</label>
                                         <div className={`grid gap-4 ${allowsDelivery ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                            {hasPickupOption && <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Select fulfilment type</button>}
+                                            {hasPickupOption && <button type="button" onClick={() => setFulfillmentType('pickup')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'pickup' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Pickup</button>}
                                             {allowsDelivery && (
                                                 <button type="button" onClick={() => setFulfillmentType('delivery')} className={`py-4 px-6 rounded-[32px] border-2 ${activeFulfillmentType === 'delivery' ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/10' : 'border-[var(--divider)] bg-transparent'} font-black uppercase tracking-[0.15em] text-sm transition-all`}>Delivery</button>
                                             )}
@@ -435,7 +431,7 @@ const Checkout = () => {
                                         )}
                                         {activeFulfillmentType === 'pickup' && hasPickupOption && (
                                             <div className="mt-6 space-y-4">
-                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Pickup arrangement</label>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Choose one pickup option below</label>
                                                 <div role="group" aria-label="Pickup arrangement" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     {checkoutPolicy.selfPickupEnabled && <button type="button" aria-pressed={pickupType === 'self'} onClick={() => setPickupType('self')} className={pickupType === 'self' ? 'min-h-12 rounded-xl border border-[var(--brand-red)] bg-[var(--brand-red)]/10 px-4 text-xs font-bold text-[var(--brand-red)] transition-colors' : 'min-h-12 rounded-xl border border-[var(--divider)] px-4 text-xs font-bold text-[var(--text-primary)] transition-colors'}>
                                                         I will pick it up
@@ -447,19 +443,15 @@ const Checkout = () => {
                                                 {pickupType === 'dispatch' && (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                                                         <div>
-                                                            <label htmlFor="dispatch-address" className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Delivery address for the rider</label>
-                                                            <input id="dispatch-address" required value={dispatchAddress} onChange={e => setDispatchAddress(e.target.value)} autoComplete="street-address" className="w-full bg-transparent border-b-2 border-[var(--divider)] py-3 text-base font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="RIDER'S DELIVERY ADDRESS" />
+                                                            <label htmlFor="dispatch-address" className="block text-[10px] font-black text-[var(--text-muted)] mb-3">Where should the rider deliver? <span aria-hidden="true" className="text-[var(--brand-red)]">*</span></label>
+                                                            <input id="dispatch-address" required value={dispatchAddress} onChange={e => setDispatchAddress(e.target.value)} autoComplete="street-address" className="w-full bg-transparent border-b-2 border-[var(--divider)] py-3 text-base font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="Buyer's delivery address" />
                                                         </div>
                                                         <div>
-                                                            <label htmlFor="dispatch-phone" className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-3">Dispatch rider contact number</label>
-                                                            <input id="dispatch-phone" required type="tel" inputMode="tel" autoComplete="tel" value={dispatchPhone} onChange={e => setDispatchPhone(e.target.value)} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-3 text-base font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="RIDER'S PHONE NUMBER" />
+                                                            <label htmlFor="dispatch-phone" className="block text-[10px] font-black text-[var(--text-muted)] mb-3">Dispatch rider's phone number <span aria-hidden="true" className="text-[var(--brand-red)]">*</span></label>
+                                                            <input id="dispatch-phone" required type="tel" inputMode="tel" autoComplete="tel" value={dispatchPhone} onChange={e => setDispatchPhone(e.target.value)} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-3 text-base font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="Rider's phone number" />
                                                         </div>
                                                     </div>
                                                 )}
-                                                <label className="flex items-start gap-3 pt-2 text-xs font-medium leading-relaxed text-[var(--text-primary)]">
-                                                    <input type="checkbox" required checked={pickupWindowAccepted} onChange={e => setPickupWindowAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--brand-red)]" />
-                                                    <span>{pickupType === 'dispatch' ? `I understand my order will be ready for my dispatch rider within ${checkoutPolicy.pickupWindowMinutes} minutes after payment confirmation.` : `I understand my order will be ready for pickup within ${checkoutPolicy.pickupWindowMinutes} minutes after payment confirmation.`}</span>
-                                                </label>
                                             </div>
                                         )}
                                     </div>
@@ -470,9 +462,9 @@ const Checkout = () => {
                                                 <div className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase text-[var(--text-primary)] flex items-center h-14">Lagos</div>
                                             </div>
                                             <div>
-                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Delivery Zone</label>
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Delivery Zone <span aria-hidden="true" className="text-[var(--brand-red)]">*</span></label>
                                                 <select required value={zoneName} onChange={e => setZoneName(e.target.value)} disabled={zonesLoading} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold uppercase transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none appearance-none cursor-pointer">
-                                                    <option value="">{zonesLoading ? 'LOADING ZONES…' : 'SELECT YOUR ZONE'}</option>
+                                                    <option value="">{zonesLoading ? 'Loading zones...' : 'Select your zone'}</option>
                                                     {zones.map(z => (
                                                         <option key={z.name} value={z.name}>
                                                             {z.name} — ₦{z.fee.toLocaleString()}
@@ -481,8 +473,8 @@ const Checkout = () => {
                                                 </select>
                                             </div>
                                             <div className="md:col-span-2">
-                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Street Address</label>
-                                                <input required type="text" value={buyer.address} onChange={e => setBuyer({...buyer, address: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none uppercase" placeholder="DELIVERY LOCATION" />
+                                                <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-4">Street Address <span aria-hidden="true" className="text-[var(--brand-red)]">*</span></label>
+                                                <input required type="text" value={buyer.address} onChange={e => setBuyer({...buyer, address: e.target.value})} className="w-full bg-transparent border-b-2 border-[var(--divider)] py-4 text-xl font-bold transition-all focus:border-[var(--brand-red)] text-[var(--text-primary)] outline-none" placeholder="Delivery location" />
                                             </div>
                                         </>
                                     )}
@@ -499,10 +491,17 @@ const Checkout = () => {
                                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-12">Your Cart</h2>
                                 
                                 <div className="checkout-summary-items space-y-8 mb-12 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
-                                    {checkoutItems.map(item => (
+                                    {checkoutItems.map((item, index) => (
                                         <div key={item.id} className="flex gap-6">
                                             <div className="w-24 h-32 rounded-[24px] overflow-hidden bg-[var(--bg-primary)] border border-[var(--divider)] shrink-0">
-                                                <img src={item.image} className="w-full h-full object-contain p-2 md:p-3" />
+                                                <img
+                                                    src={cdnCard(item.image)}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-contain p-2 md:p-3"
+                                                    loading={index === 0 ? 'eager' : 'lazy'}
+                                                    fetchPriority={index === 0 ? 'high' : 'auto'}
+                                                    decoding="async"
+                                                />
                                             </div>
                                             <div className="flex flex-col justify-between flex-1 py-1">
                                                 <div>
@@ -516,7 +515,8 @@ const Checkout = () => {
                                                     )}
                                                 </div>
                                                 {/* Qty controls */}
-                                                <div className="flex items-center gap-3 border border-[var(--divider)] rounded-full px-3 py-1.5 w-fit mt-2">
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <div className="flex items-center gap-3 border border-[var(--divider)] rounded-full px-3 py-1.5 w-fit">
                                                     <button
                                                         type="button"
                                                         onClick={() => isSingleItem
@@ -540,6 +540,18 @@ const Checkout = () => {
                                                     >
                                                         <Plus size={12} strokeWidth={3} />
                                                     </button>
+                                                    </div>
+                                                    {!isSingleItem && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setItemToRemove(item)}
+                                                            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-500"
+                                                            aria-label={`Remove ${item.name} from checkout`}
+                                                            title="Remove item"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -598,12 +610,47 @@ const Checkout = () => {
 
                             <div className="flex items-center gap-6 px-12">
                                 <ShieldCheck size={32} className="text-[var(--text-muted)]" />
-                                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] leading-relaxed">Secured via UAC Escrow Strategy. 256-bit Encryption Active.</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] leading-relaxed">Payments are processed by OPay.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {itemToRemove && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
+                    <button
+                        type="button"
+                        aria-label="Cancel item removal"
+                        onClick={() => setItemToRemove(null)}
+                        className="absolute inset-0 h-full w-full cursor-default"
+                    />
+                    <section role="alertdialog" aria-modal="true" aria-labelledby="remove-checkout-item-title" className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--divider)] bg-[var(--bg-primary)] p-5 shadow-2xl sm:p-6">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-950/30">
+                            <Trash2 size={20} />
+                        </div>
+                        <h2 id="remove-checkout-item-title" className="mt-4 text-lg font-black text-[var(--text-primary)]">Remove this item?</h2>
+                        <p className="mt-2 text-sm leading-relaxed text-[var(--text-muted)]">
+                            <span className="font-bold text-[var(--text-primary)]">{itemToRemove.name}</span> will be removed from your cart.
+                        </p>
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => setItemToRemove(null)} className="min-h-11 rounded-xl border border-[var(--divider)] px-4 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-secondary)]">
+                                Keep item
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    removeFromCart(itemToRemove.id)
+                                    setItemToRemove(null)
+                                    if (cart.length === 1) navigate('/cart')
+                                }}
+                                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-bold text-white transition-colors hover:bg-red-700"
+                            >
+                                <Trash2 size={15} /> Remove item
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            )}
         </div>
     )
 }
