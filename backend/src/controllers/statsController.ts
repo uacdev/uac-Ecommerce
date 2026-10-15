@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Order } from '../models/Order';
+import { Customer } from '../models/Customer';
 import { Product } from '../models/Product';
 import { Visit } from '../models/Visit';
 import { CheckoutSession } from '../models/CheckoutSession';
@@ -85,7 +86,7 @@ export const getKpis = async (_req: Request, res: Response) => {
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        const [thisMonth, lastMonth, allOrders, totalProducts, returning, abandonment, visitors, pendingOrders] = await Promise.all([
+        const [thisMonth, lastMonth, allOrders, totalProducts, totalCustomers, returning, abandonment, visitors, pendingOrders] = await Promise.all([
             Order.aggregate([
                 { $match: { date: { $gte: thisMonthStart }, ...EXCLUDE_UNPAID_OPAY } },
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
@@ -99,6 +100,7 @@ export const getKpis = async (_req: Request, res: Response) => {
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
             ]),
             Product.countDocuments(),
+            Customer.countDocuments(),
             computeReturningRate(thisMonthStart, lastMonthStart),
             computeAbandonmentRate(thisMonthStart, lastMonthStart),
             computeVisitorStats(),
@@ -115,7 +117,6 @@ export const getKpis = async (_req: Request, res: Response) => {
         const aovLast = lm.count > 0 ? lm.revenue / lm.count : 0;
         const aovDelta = pctDelta(aovThis, aovLast);
 
-        const totalCustomers = (all.customers || []).length;
         const newThisMonth = (tm.customers || []).filter((e: string) => !(lm.customers || []).includes(e)).length;
         const newLastMonth = (lm.customers || []).length;
         const customersDelta = pctDelta(newThisMonth, newLastMonth);
@@ -588,31 +589,59 @@ export const getWebAnalytics = async (req: Request, res: Response) => {
 
 export const getCustomers = async (_req: Request, res: Response) => {
     try {
-        const rows = await Order.aggregate([
-            { $match: EXCLUDE_UNPAID_OPAY },
-            { $group: {
-                _id: '$buyerEmail',
-                name: { $first: '$buyerName' },
-                email: { $first: '$buyerEmail' },
-                phone: { $first: '$buyerPhone' },
-                orders: { $sum: 1 },
-                totalSpend: { $sum: '$amount' },
-                joinDate: { $min: '$date' },
-                lastOrderDate: { $max: '$date' }
-            } },
-            { $sort: { lastOrderDate: -1 } }
+        const [rows, registeredCustomers] = await Promise.all([
+            Order.aggregate([
+                { $match: EXCLUDE_UNPAID_OPAY },
+                { $group: {
+                    _id: '$buyerEmail',
+                    name: { $first: '$buyerName' },
+                    email: { $first: '$buyerEmail' },
+                    phone: { $first: '$buyerPhone' },
+                    orders: { $sum: 1 },
+                    totalSpend: { $sum: '$amount' },
+                    joinDate: { $min: '$date' },
+                    lastOrderDate: { $max: '$date' }
+                } }
+            ]),
+            Customer.find().select('email fullName phone created_at').lean()
         ]);
 
-        const data = rows.map(r => ({
-            id: Buffer.from(r._id || '').toString('base64').slice(0, 12),
-            name: r.name || 'Unknown',
-            email: r.email || '',
-            phone: r.phone || '',
-            orders: r.orders,
-            totalSpend: r.totalSpend,
-            joinDate: r.joinDate,
-            lastOrderDate: r.lastOrderDate
-        }));
+        const customersByEmail = new Map<string, any>();
+        rows.forEach(r => {
+            const email = String(r.email || r._id || '').trim().toLowerCase();
+            if (!email) return;
+            customersByEmail.set(email, {
+                id: Buffer.from(email).toString('base64').slice(0, 12),
+                name: r.name || 'Unknown',
+                email,
+                phone: r.phone || '',
+                orders: r.orders,
+                totalSpend: r.totalSpend,
+                joinDate: r.joinDate,
+                lastOrderDate: r.lastOrderDate
+            });
+        });
+
+        registeredCustomers.forEach(customer => {
+            const email = String(customer.email || '').trim().toLowerCase();
+            if (!email) return;
+            const existing = customersByEmail.get(email);
+            customersByEmail.set(email, {
+                id: customer._id.toString(),
+                name: customer.fullName || existing?.name || 'Unknown',
+                email,
+                phone: customer.phone || existing?.phone || '',
+                orders: existing?.orders || 0,
+                totalSpend: existing?.totalSpend || 0,
+                joinDate: customer.created_at || existing?.joinDate || null,
+                lastOrderDate: existing?.lastOrderDate || null
+            });
+        });
+
+        const data = [...customersByEmail.values()].sort((a, b) =>
+            new Date(b.lastOrderDate || b.joinDate || 0).getTime()
+            - new Date(a.lastOrderDate || a.joinDate || 0).getTime()
+        );
 
         res.json({ success: true, count: data.length, data });
     } catch (err: any) {
