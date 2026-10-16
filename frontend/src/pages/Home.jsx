@@ -157,7 +157,7 @@ const Home = () => {
     }
 
     const brand = BRANDS[activeBrand]
-    const brandFont = brand.descFont || '"Hit and Run", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive'
+    const brandFont = brand.descFont || 'inherit'
     const featuredProducts = products.slice(0, 6)
     const topPicks = products.slice(0, 4)
 
@@ -240,12 +240,12 @@ const Home = () => {
                                             className="w-full max-w-[440px] h-auto drop-shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
                                         />
                                     ) : (
-                                        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.9] tracking-tight font-display" style={{ fontFamily: brandFont, letterSpacing: '-0.08em' }}>
+                                        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[0.9] tracking-tight" style={{ fontFamily: brandFont }}>
                                             {brand.name}
                                         </h1>
                                     )}
-                                    <p className="text-white/80 text-[17px] md:text-[18px] font-semibold font-display leading-none tracking-[0.005em]" style={{ fontFamily: brandFont }}>{brand.tagline}</p>
-                                    <p className="text-white/70 text-[12px] md:text-[13px] leading-[1.45] max-w-md font-display tracking-[0.002em]" style={{ fontFamily: brandFont }}>{brand.desc}</p>
+                                    <p className={brand.descFont ? 'text-white/80 text-[17px] md:text-[18px] font-semibold leading-none tracking-[0.005em]' : 'text-white/80 text-[15px] font-semibold'} style={{ fontFamily: brandFont }}>{brand.tagline}</p>
+                                    <p className={brand.descFont ? 'text-white/70 text-[12px] md:text-[13px] leading-[1.45] max-w-md tracking-[0.002em]' : 'text-white/60 text-sm leading-relaxed max-w-xs'} style={{ fontFamily: brandFont }}>{brand.desc}</p>
                                     <div className="flex flex-wrap gap-3 pt-2">
                                         <Link
                                             to="/products"

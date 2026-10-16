@@ -19,14 +19,7 @@
     
     --font-main: 'Sen', 'Inter', sans-serif;
     --font-heading: 'Sen', 'Inter', sans-serif;
-    --font-display: 'Hit and Run', 'Sen', sans-serif;
     --transition-smooth: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  }
-
-  .font-display {
-    font-family: 'Hit and Run', 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
-    font-weight: 700;
-    letter-spacing: -0.06em;
   }
 
   /* Light theme - Premium Editorial (Inspired by PICCOLLO/Nuve) */
