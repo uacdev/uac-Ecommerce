@@ -85,6 +85,10 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
             setFeedback('Reminder is currently available for pickup orders only')
             return
         }
+        if (String(order.pickupType || 'self').toLowerCase() !== 'self') {
+            setFeedback('Reminder is only available for self-pickup orders')
+            return
+        }
 
         setRemindingId(order.id || order._id)
         try {
@@ -241,10 +245,13 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                     <td className="px-6 py-5 text-[13px] font-bold text-[#ed0000]">₦{(o.amount || 0).toLocaleString()}</td>
                                     <td className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">{format(new Date(o.date), 'MMM dd, yyyy')}</td>
                                     <td className="px-6 py-5">
-                                        {['paid', 'confirmed'].includes(String(o.status || '').toLowerCase()) ? (
+                                        {['paid', 'confirmed'].includes(String(o.status || '').toLowerCase())
+                                            && String(o.fulfillmentType || '').toLowerCase() === 'pickup'
+                                            && String(o.pickupType || 'self').toLowerCase() === 'self' ? (
                                             <button
                                                 onClick={(e) => handlePickupReminder(o, e)}
                                                 disabled={remindingId === (o.id || o._id)}
+                                                title="Only for self-pickup orders. It tells the buyer the order is ready for collection."
                                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--bg-secondary)] text-[11px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all disabled:opacity-50"
                                             >
                                                 <BellRing size={13} />

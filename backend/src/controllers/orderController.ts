@@ -439,6 +439,14 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         }
         const before = await Order.findById(id);
         if (!before) return res.status(404).json({ success: false, message: 'Order not found' });
+        if (status === 'shipped' && before.status !== 'shipped') {
+            const isDispatchPickup = String(before.fulfillmentType || '').toLowerCase() === 'pickup'
+                && String(before.pickupType || '').toLowerCase() === 'dispatch';
+            const isPlatformDelivery = String(before.fulfillmentType || '').toLowerCase() === 'delivery';
+            if (!isDispatchPickup && !isPlatformDelivery) {
+                return res.status(400).json({ success: false, message: 'Only dispatch-rider pickup or platform-delivery orders can be marked as shipped' });
+            }
+        }
         if (status === 'completed' && before.status !== 'completed') {
             return res.status(403).json({ success: false, message: 'Customers complete shipped orders from their account after rating and reviewing every item' });
         }
@@ -522,6 +530,9 @@ export const sendPickupReminder = async (req: Request, res: Response) => {
 
         if (String(order.fulfillmentType || '').toLowerCase() !== 'pickup') {
             return res.status(400).json({ success: false, message: 'Reminder emails are only available for pickup orders' });
+        }
+        if (String(order.pickupType || 'self').toLowerCase() !== 'self') {
+            return res.status(400).json({ success: false, message: 'Reminder emails are only available for self-pickup orders' });
         }
         if (!['paid', 'confirmed'].includes(String(order.status || ''))) {
             return res.status(400).json({ success: false, message: 'Reminder emails are only available for paid or confirmed pickup orders' });

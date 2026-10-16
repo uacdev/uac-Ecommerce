@@ -431,7 +431,7 @@ const shippedOrderReminderHtml = (p: ShippedOrderReminderPayload) => {
                 <p style="margin:4px 0 0;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:1.5px;">Your order is on its way</p>
             </div>
             <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
-            <p style="font-size:14px;line-height:1.6;color:#333;">Your order was shipped about two hours ago${p.shippedAt ? `, at ${shippedTime} WAT` : ''}. We hope it has arrived safely.</p>
+            <p style="font-size:14px;line-height:1.6;color:#333;">Your order was shipped about one hour ago${p.shippedAt ? `, at ${shippedTime} WAT` : ''}. We hope it has arrived safely.</p>
             <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;line-height:1.7;">
                 <strong>Order reference:</strong> ${p.reference}
             </div>
@@ -553,7 +553,7 @@ export const sendShippedOrderReminderEmail = async (payload: ShippedOrderReminde
         await c.emails.send({
             from: getFrom(),
             to: payload.buyerEmail,
-            subject: `Your order shipped about two hours ago — ${payload.reference}`,
+            subject: `Your order shipped about one hour ago — ${payload.reference}`,
             html: shippedOrderReminderHtml(payload)
         });
         return true;

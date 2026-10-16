@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Mail, Phone, MapPin, Package, Truck, CreditCard, CheckCircle2, Trash2 } from 'lucide-react'
+import { X, Mail, Phone, MapPin, Package, Truck, CreditCard, CheckCircle2, Trash2, Info } from 'lucide-react'
 import { format } from 'date-fns'
 import { useStore } from '../../../context/StoreContext'
 import { deliveryApi } from '../../../api/client'
@@ -45,6 +45,8 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
     const [pickupTypeDraft, setPickupTypeDraft] = useState(incomingOrder.pickupType || 'self')
     const [dispatchAddressDraft, setDispatchAddressDraft] = useState(incomingOrder.dispatchAddress || '')
     const [dispatchPhoneDraft, setDispatchPhoneDraft] = useState(incomingOrder.dispatchPhone || '')
+    const canMarkShipped = order.fulfillmentType === 'delivery'
+        || (order.fulfillmentType === 'pickup' && order.pickupType === 'dispatch')
 
     useEffect(() => {
         deliveryApi.getZones().then(res => setZones(res.data?.data || [])).catch(() => {})
@@ -271,9 +273,19 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                                 <select
                                     value={statusDraft}
                                     onChange={(e) => setStatusDraft(e.target.value)}
+                                    title="Shipped is only for delivery orders or dispatch-rider pickup orders. Self-pickup orders should use the pickup notification instead."
                                     className="w-full bg-[var(--bg-secondary)] border border-[var(--divider)] rounded-xl px-4 py-3 text-[13px] font-bold text-[var(--text-primary)] outline-none focus:border-[#ed0000]/50"
                                 >
-                                    {STATUSES.map(s => <option key={s} value={s} disabled={s === 'completed' && order.status !== 'completed'}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                                    {STATUSES.map(s => (
+                                        <option
+                                            key={s}
+                                            value={s}
+                                            title={s === 'shipped' ? 'Shipped is only allowed for delivery orders and dispatch-rider pickup orders.' : ''}
+                                            disabled={(s === 'completed' && order.status !== 'completed') || (s === 'shipped' && !canMarkShipped && s !== order.status)}
+                                        >
+                                            {s.charAt(0).toUpperCase() + s.slice(1)}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <button
@@ -283,6 +295,10 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                             >
                                 {savingStatus ? 'Saving…' : 'Update status'}
                             </button>
+                        </div>
+                        <div className="flex items-start gap-2 rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] px-3 py-2 text-[10px] font-medium text-[var(--text-muted)]">
+                            <Info size={12} className="mt-0.5 shrink-0 text-[var(--brand-red)]" />
+                            <span>Self-pickup orders use the pickup-ready notification. Shipped is for delivery orders or dispatch-rider pickup only.</span>
                         </div>
 
                         {/* FULFILLMENT */}

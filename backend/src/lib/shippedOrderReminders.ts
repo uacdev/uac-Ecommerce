@@ -1,7 +1,7 @@
 import { Order } from '../models/Order';
 import { sendShippedOrderReminderEmail } from './email';
 
-const REMINDER_AFTER_MS = 2 * 60 * 60 * 1000;
+const REMINDER_AFTER_MS = 60 * 60 * 1000;
 const CLAIM_TIMEOUT_MS = 10 * 60 * 1000;
 const BATCH_SIZE = 50;
 

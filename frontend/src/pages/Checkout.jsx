@@ -42,18 +42,18 @@ const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 text-[var(--text-muted)]">
                             <CalendarDays size={13} />
-                            <p className="text-[9px] font-black uppercase tracking-widest sm:text-[10px]">Order window · WAT</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest sm:text-[10px]">Order window · WAT</p>
                         </div>
                         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[8px] font-black uppercase tracking-wider ${orderWindow.isOpen ? 'bg-emerald-500/10 text-emerald-700' : 'bg-[var(--brand-red)]/10 text-[var(--brand-red)]'}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${orderWindow.isOpen ? 'bg-emerald-500' : 'bg-[var(--brand-red)]'}`} />
                             {orderWindow.isOpen ? 'Open now' : 'Closed now'}
                         </span>
                     </div>
-                    <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-lg font-black leading-tight text-[var(--text-primary)] sm:mt-4 sm:text-2xl">
+                    <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-xl font-black leading-tight text-[var(--text-primary)] sm:mt-4 sm:text-2xl">
                         <span>{formatPolicyTime(policy.opensAt)}</span><span className="text-[var(--text-muted)]">to</span><span>{formatPolicyTime(policy.closesAt)}</span>
                     </p>
                     <p className="mt-1 text-[10px] font-bold text-[var(--text-muted)] sm:text-xs">{orderingDays || 'No ordering days enabled'}</p>
-                    <div className="mt-2 flex items-start gap-1.5 border-t border-[var(--divider)] pt-2 text-[9px] leading-snug text-[var(--text-muted)] sm:mt-4 sm:gap-2 sm:pt-3 sm:text-[11px]">
+                    <div className="mt-2 flex items-start gap-1.5 border-t border-[var(--divider)] pt-2 text-[10px] leading-snug text-[var(--text-muted)] sm:mt-4 sm:gap-2 sm:pt-3 sm:text-[11px]">
                         <Clock3 size={12} className="mt-0.5 shrink-0 sm:h-[14px] sm:w-[14px]" />
                         <span>We handle orders during these hours and are away on weekends.</span>
                     </div>
@@ -63,22 +63,22 @@ const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
                     <div className="border-b border-[var(--divider)] p-3 sm:border-b-0 sm:border-r sm:p-5">
                         <div className="flex items-center gap-2 text-[var(--text-muted)]">
                             <PackageCheck size={13} />
-                            <p className="text-[9px] font-black uppercase tracking-widest sm:text-[10px]">Pickup readiness</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest sm:text-[10px]">Pickup readiness</p>
                         </div>
-                        <p className="mt-2 text-[10px] leading-snug text-[var(--text-muted)] sm:mt-3 sm:text-[11px]">
+                        <p className="mt-2 text-[11px] leading-snug text-[var(--text-muted)] sm:mt-3 sm:text-[11px]">
                             Ready within <span className="font-black text-[var(--text-primary)]">{policy.pickupWindowMinutes} min</span> after payment.
                         </p>
                     </div>
 
                     <div className="p-3 sm:p-5">
-                        <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)] sm:mb-3 sm:text-[10px]">Fulfillment options</p>
-                        <div className="space-y-1.5 sm:space-y-2.5">
+                        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] sm:mb-3 sm:text-[10px]">Fulfillment options</p>
+                        <div className="space-y-2 sm:space-y-2.5">
                             {fulfillmentOptions.length ? fulfillmentOptions.map(({ icon: Icon, title, description }) => (
                                 <div key={title} className="flex items-center gap-2 sm:items-start sm:gap-2.5">
                                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--bg-secondary)] text-[var(--brand-red)] sm:mt-0.5 sm:h-6 sm:w-6">
                                         <Icon size={12} />
                                     </span>
-                                    <div className="min-w-0 text-[10px] leading-snug sm:text-xs">
+                                    <div className="min-w-0 text-[11px] leading-snug sm:text-xs">
                                         <span className="font-bold text-[var(--text-primary)]">{title}</span>
                                         <span className="text-[var(--text-muted)]"> · {description}</span>
                                     </div>
