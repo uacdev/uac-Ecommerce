@@ -31,6 +31,9 @@ type OrderEmailPayload = {
     paymentMethod?: string;
     fulfillmentType?: string;
     pickupType?: string;
+    pickupLocation?: string;
+    pickupCode?: string;
+    pickupDeadlineAt?: Date | null;
     dispatchAddress?: string;
     dispatchPhone?: string;
 };
@@ -125,10 +128,11 @@ const customerHtml = (o: OrderEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${o.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">Thanks for your order. We've received it. ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? 'Your dispatch rider will collect this order from our pickup point.' : 'This order is for self pickup.') : 'Our team is preparing it for delivery.'} Pickup orders should be collected within one hour after payment confirmation.</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">Thanks for your order. We've received it${o.pickupDeadlineAt ? ' and confirmed your payment' : ''}. ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? 'Your dispatch rider will collect this order from our pickup point.' : 'This order is for self pickup.') : 'Our team is preparing it for delivery.'}</p>
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${o.reference}
+            ${o.pickupCode ? `<br/><strong>Pickup code:</strong> ${o.pickupCode}` : ''}
         </div>
 
         ${renderItemsTable(o.items)}
@@ -139,12 +143,14 @@ const customerHtml = (o: OrderEmailPayload) => `
             <tr style="border-top:1px solid #eee;"><td style="padding:10px 0;font-weight:bold;">Total</td><td style="text-align:right;font-weight:bold;color:#ed0000;font-size:16px;">${fmtNgn(o.amount)}</td></tr>
         </table>
 
-        ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? `
+        ${o.fulfillmentType === 'pickup' ? `
             <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
-                <strong style="display:block;margin-bottom:6px;">Dispatch details</strong>
-                ${o.dispatchAddress || ''}<br/>Rider contact: ${o.dispatchPhone || ''}
+                <strong style="display:block;margin-bottom:6px;">${o.pickupType === 'dispatch' ? 'Rider collection point' : 'Pickup location'}</strong>
+                ${o.pickupLocation || 'UAC Foods pickup point'}
+                ${o.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(o.pickupDeadlineAt)} WAT` : '<br/>Please collect within one hour after payment confirmation.'}
+                ${o.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${o.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${o.dispatchPhone || ''}` : ''}
             </div>
-        ` : '') : `
+        ` : `
             <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
                 <strong style="display:block;margin-bottom:6px;">Delivering to</strong>
                 ${o.buyerAddress}<br/>${o.buyerPhone}
@@ -294,7 +300,7 @@ const pickupReceivedHtml = (p: PickupEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">We’ve received your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'self pickup'} order. ${p.pickupType === 'dispatch' ? 'Your rider can collect it from our pickup point.' : 'Please collect it within one hour.'}</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">Your payment is confirmed and we’ve received your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'self pickup'} order. ${p.pickupType === 'dispatch' ? 'Your rider can collect it from our pickup point.' : 'Please collect it within one hour.'}</p>
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${p.reference}

@@ -1,6 +1,8 @@
 import { Setting } from '../models/Setting';
 
 export const CHECKOUT_POLICY_KEY = 'checkout_policy';
+export const CHECKOUT_LOCK_KEY = 'checkout_locked';
+export const CHECKOUT_LOCK_MESSAGE = 'Checkout is currently under maintenance. Please check back soon.';
 export const CHECKOUT_WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export type CheckoutPolicy = {
@@ -68,4 +70,9 @@ export const loadCheckoutPolicy = async (): Promise<CheckoutPolicy> => {
     } catch {
         return { ...DEFAULT_CHECKOUT_POLICY };
     }
+};
+
+export const loadCheckoutLocked = async (): Promise<boolean> => {
+    const setting = await Setting.findOne({ key: CHECKOUT_LOCK_KEY }).lean();
+    return setting?.value === 'true';
 };

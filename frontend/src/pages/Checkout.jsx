@@ -129,6 +129,9 @@ const Checkout = () => {
     const [dispatchPhone, setDispatchPhone] = useState('')
     const [checkoutPolicy, setCheckoutPolicy] = useState({ ...DEFAULT_CHECKOUT_POLICY })
     const [orderWindow, setOrderWindow] = useState(() => getOrderWindowStatus(new Date(), DEFAULT_CHECKOUT_POLICY))
+    const [checkoutAvailabilityLoading, setCheckoutAvailabilityLoading] = useState(true)
+    const [checkoutLocked, setCheckoutLocked] = useState(false)
+    const [checkoutAvailabilityError, setCheckoutAvailabilityError] = useState(false)
 
     const [states, setStates] = useState([])
     const [stateName, setStateName] = useState('Lagos')
@@ -159,13 +162,34 @@ const Checkout = () => {
 
     useEffect(() => {
         let cancelled = false
-        settingsApi.getSetting('checkout_policy')
-            .then(res => {
-                if (!cancelled) setCheckoutPolicy(normalizeCheckoutPolicy(JSON.parse(res.data?.data?.value || '{}')))
-            })
-            .catch(err => {
-                if (!cancelled && err.response?.status !== 404) console.error('Could not load checkout policy:', err)
-            })
+        const loadCheckoutSettings = async () => {
+            const [policyResult, lockResult] = await Promise.allSettled([
+                settingsApi.getSetting('checkout_policy'),
+                settingsApi.getSetting('checkout_locked')
+            ])
+            if (cancelled) return
+
+            if (policyResult.status === 'fulfilled') {
+                try {
+                    setCheckoutPolicy(normalizeCheckoutPolicy(JSON.parse(policyResult.value.data?.data?.value || '{}')))
+                } catch (err) {
+                    console.error('Could not parse checkout policy:', err)
+                }
+            } else if (policyResult.reason.response?.status !== 404) {
+                console.error('Could not load checkout policy:', policyResult.reason)
+            }
+
+            if (lockResult.status === 'fulfilled') {
+                setCheckoutLocked(lockResult.value.data?.data?.value === 'true')
+            } else if (lockResult.reason.response?.status === 404) {
+                setCheckoutLocked(false)
+            } else {
+                console.error('Could not load checkout availability:', lockResult.reason)
+                setCheckoutAvailabilityError(true)
+            }
+            setCheckoutAvailabilityLoading(false)
+        }
+        loadCheckoutSettings()
         return () => { cancelled = true }
     }, [])
 
@@ -231,6 +255,31 @@ const Checkout = () => {
     const selectedZone = useMemo(() => zones.find(z => z.name === zoneName), [zones, zoneName])
     const deliveryFee = selectedZone?.fee || 0
     const totalAmount = subtotal + deliveryFee
+
+    if (checkoutAvailabilityLoading) return <Preloader />
+
+    if (checkoutAvailabilityError || checkoutLocked) {
+        return (
+            <div className="checkout-mobile flex min-h-[70vh] items-center justify-center bg-[var(--bg-primary)] px-4 py-24 font-['Sen',sans-serif]">
+                <section className="w-full max-w-xl rounded-3xl border border-[var(--divider)] bg-[var(--bg-tertiary)] p-8 text-center shadow-sm sm:p-12">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand-red)]/10 text-[var(--brand-red)]">
+                        <Clock3 size={26} />
+                    </div>
+                    <h1 className="checkout-maintenance-title mt-6 text-2xl font-black tracking-tight text-[var(--text-primary)] sm:text-3xl">
+                        {checkoutAvailabilityError ? 'Checkout unavailable' : 'This page is currently under maintenance'}
+                    </h1>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--text-muted)]">
+                        {checkoutAvailabilityError
+                            ? 'We could not confirm checkout availability right now. Please try again in a few minutes.'
+                            : 'We’re working to improve your shopping experience. Please check back soon.'}
+                    </p>
+                    <Link to="/shop" className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[var(--brand-red)] px-6 text-xs font-bold text-white transition-opacity hover:opacity-90">
+                        <ArrowLeft size={15} /> Continue shopping
+                    </Link>
+                </section>
+            </div>
+        )
+    }
 
     if (authLoading || (isSingleItem && !singleProduct)) return <Preloader />
 

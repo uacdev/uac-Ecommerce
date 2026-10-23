@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { Order } from '../models/Order';
 import { Product } from '../models/Product';
-import { sendOrderEmails, sendPickupOrderReceivedEmail } from '../lib/email';
+import { sendOrderEmails } from '../lib/email';
 import { notify } from '../lib/notify';
-import { loadCheckoutPolicy } from '../lib/checkoutPolicy';
+import { CHECKOUT_LOCK_MESSAGE, loadCheckoutLocked, loadCheckoutPolicy } from '../lib/checkoutPolicy';
 
 const DEFAULT_OPAY_BASE_URL = 'https://sandboxapi.opaycheckout.com/api/v1/international';
 
@@ -20,15 +20,6 @@ function buildWebhookSignature(payload: any): string {
     hmac.update(authPayload);
     return hmac.digest('hex');
 }
-
-const resolvePickupLocation = async (items: any[] = []) => {
-    const ids = Array.from(new Set((items || []).map((it: any) => String(it.productId || it.id || '')).filter(Boolean)));
-    if (!ids.length) return 'UAC Foods pickup point';
-
-    const products = await Product.find({ _id: { $in: ids } }, { location: 1 });
-    const locations = Array.from(new Set(products.map(p => String(p.location || '')).filter(Boolean)));
-    return locations.length ? locations.join(', ') : 'UAC Foods pickup point';
-};
 
 const markOrderPaidAndNotify = async (reference: string) => {
     // Only the first successful callback sends confirmation emails. OPay can
@@ -67,7 +58,18 @@ const markOrderPaidAndNotify = async (reference: string) => {
         dispatchPhone: order.dispatchPhone
     };
 
-    sendOrderEmails(emailPayload)
+    let pickupEmailDetails: { pickupLocation?: string; pickupCode?: string; pickupDeadlineAt?: Date | null } = {};
+    if (String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
+        const ids = Array.from(new Set((order.items as any[]).map((item: any) => String(item.productId || item.id || '')).filter(Boolean)));
+        const products = ids.length ? await Product.find({ _id: { $in: ids } }, { location: 1 }) : [];
+        pickupEmailDetails = {
+            pickupLocation: Array.from(new Set(products.map(product => String(product.location || '')).filter(Boolean))).join(', ') || 'UAC Foods pickup point',
+            pickupCode: order.pickupCode || '',
+            pickupDeadlineAt: order.pickupDeadlineAt || null
+        };
+    }
+
+    sendOrderEmails({ ...emailPayload, ...pickupEmailDetails })
         .then(result => {
             if (!result.admin) console.warn(`[OPay] Admin email not sent for ${reference}`);
         })
@@ -95,30 +97,15 @@ const markOrderPaidAndNotify = async (reference: string) => {
         });
     }
 
-    if (String(order.fulfillmentType || '').toLowerCase() === 'pickup') {
-        const pickupLocation = await resolvePickupLocation(order.items as any[]);
-        sendPickupOrderReceivedEmail({
-            reference: order.reference,
-            buyerName: order.buyerName,
-            buyerEmail: order.buyerEmail,
-            buyerPhone: order.buyerPhone,
-            items: order.items as any,
-            productAmount: order.productAmount,
-            amount: order.amount,
-            pickupLocation,
-            pickupCode: order.pickupCode || '',
-            pickupType: order.pickupType || 'self',
-            dispatchAddress: order.dispatchAddress || '',
-            dispatchPhone: order.dispatchPhone || '',
-            pickupDeadlineAt: order.pickupDeadlineAt || null
-        }).catch(err => console.error('[OPay] Pickup received email failed:', err));
-    }
-
     return order;
 };
 
 export const initiatePayment = async (req: Request, res: Response) => {
     try {
+        if (await loadCheckoutLocked()) {
+            return res.status(503).json({ success: false, message: CHECKOUT_LOCK_MESSAGE });
+        }
+
         const { reference, amount, buyerName, buyerEmail, buyerPhone, productName } = req.body;
 
         if (!reference || !amount) {

@@ -8,7 +8,7 @@ import { sendOrderEmails, sendBackInStockEmails, sendPickupOrderReceivedEmail, s
 import { notify } from '../lib/notify';
 import { StockSubscription } from '../models/StockSubscription';
 import { CheckoutSession } from '../models/CheckoutSession';
-import { loadCheckoutPolicy, type CheckoutPolicy } from '../lib/checkoutPolicy';
+import { CHECKOUT_LOCK_MESSAGE, loadCheckoutLocked, loadCheckoutPolicy, type CheckoutPolicy } from '../lib/checkoutPolicy';
 import mongoose from 'mongoose';
 
 const resolveZoneByName = async (name?: string) => {
@@ -215,6 +215,9 @@ export const createOrder = async (req: Request, res: Response) => {
             dispatchAddress, dispatchPhone, checkoutSessionId
         } = req.body;
 
+        if (await loadCheckoutLocked()) {
+            return res.status(503).json({ success: false, message: CHECKOUT_LOCK_MESSAGE });
+        }
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ success: false, message: 'items must contain at least one product' });
         }
@@ -472,11 +475,12 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
             await restoreOrderStock(updated.items as any[]);
         }
 
-        if (updated.status === 'paid' && String(updated.fulfillmentType || '').toLowerCase() === 'pickup') {
+        if (before.status !== 'paid' && updated.status === 'paid' && String(updated.fulfillmentType || '').toLowerCase() === 'pickup') {
             await maybeSendPickupReceivedEmail(updated);
         }
 
         const statusEmailSent = before.status !== updated.status
+            && !(updated.status === 'paid' && String(updated.fulfillmentType || '').toLowerCase() === 'pickup')
             ? await sendOrderStatusEmail({
                 reference: updated.reference,
                 buyerName: updated.buyerName,

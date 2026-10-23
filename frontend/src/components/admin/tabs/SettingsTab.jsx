@@ -34,6 +34,9 @@ const SettingsTab = () => {
     const [checkoutPolicyExists, setCheckoutPolicyExists] = useState(false)
     const [checkoutPolicyLoading, setCheckoutPolicyLoading] = useState(false)
     const [checkoutPolicySaving, setCheckoutPolicySaving] = useState(false)
+    const [checkoutLocked, setCheckoutLocked] = useState(false)
+    const [checkoutLockLoading, setCheckoutLockLoading] = useState(false)
+    const [checkoutLockSaving, setCheckoutLockSaving] = useState(false)
 
     useEffect(() => {
         if (subTab !== 'checkout-policy') return
@@ -56,6 +59,23 @@ const SettingsTab = () => {
                 }
             })
             .finally(() => { if (!cancelled) setCheckoutPolicyLoading(false) })
+        return () => { cancelled = true }
+    }, [subTab])
+
+    useEffect(() => {
+        if (subTab !== 'checkout-policy') return
+        let cancelled = false
+        setCheckoutLockLoading(true)
+        settingsApi.getSetting('checkout_locked')
+            .then(res => {
+                if (!cancelled) setCheckoutLocked(res.data?.data?.value === 'true')
+            })
+            .catch(err => {
+                if (cancelled) return
+                if (err.response?.status === 404) setCheckoutLocked(false)
+                else flash(err.response?.data?.message || 'Could not load checkout availability.', true)
+            })
+            .finally(() => { if (!cancelled) setCheckoutLockLoading(false) })
         return () => { cancelled = true }
     }, [subTab])
 
@@ -219,6 +239,20 @@ const SettingsTab = () => {
 
     const updateCheckoutPolicy = (key, value) => {
         setCheckoutPolicy(current => ({ ...current, [key]: value }))
+    }
+
+    const toggleCheckoutLock = async () => {
+        setCheckoutLockSaving(true)
+        try {
+            const nextLocked = !checkoutLocked
+            await settingsApi.upsertSetting('checkout_locked', { value: String(nextLocked) })
+            setCheckoutLocked(nextLocked)
+            flash(nextLocked ? 'Checkout has been locked.' : 'Checkout has been unlocked.')
+        } catch (err) {
+            flash(err.response?.data?.message || err.message || 'Could not update checkout availability.', true)
+        } finally {
+            setCheckoutLockSaving(false)
+        }
     }
 
     const saveCheckoutPolicy = async () => {
@@ -452,6 +486,26 @@ const SettingsTab = () => {
                             <p className="py-8 text-sm text-[var(--text-muted)]">Loading checkout policy…</p>
                         ) : (
                             <>
+                                <section className="flex flex-col gap-4 rounded-2xl border border-[var(--divider)] bg-[var(--bg-primary)] p-5 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-[var(--text-primary)]">Checkout access</h4>
+                                        <p className="mt-1 text-xs text-[var(--text-muted)]">
+                                            {checkoutLocked
+                                                ? 'Checkout is locked. Customers will see a maintenance notice and cannot place new orders.'
+                                                : 'Checkout is open and customers can place orders during the configured ordering hours.'}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={toggleCheckoutLock}
+                                        disabled={checkoutLockLoading || checkoutLockSaving}
+                                        className={`shrink-0 rounded-xl px-5 py-3 text-xs font-bold text-white disabled:opacity-50 ${checkoutLocked ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-[#ed0000] hover:bg-red-700'}`}
+                                    >
+                                        {checkoutLockLoading || checkoutLockSaving
+                                            ? 'Please wait…'
+                                            : checkoutLocked ? 'Unlock checkout' : 'Lock checkout'}
+                                    </button>
+                                </section>
                                 <fieldset className="space-y-4">
                                     <legend className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Ordering days</legend>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
