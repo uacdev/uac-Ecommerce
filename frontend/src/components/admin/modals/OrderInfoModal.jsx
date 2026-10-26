@@ -253,7 +253,6 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                         <div className="bg-[var(--bg-secondary)] rounded-2xl p-5 space-y-2.5 text-[13px]">
                             <div className="flex justify-between"><span className="text-[var(--text-muted)] font-medium">Items subtotal</span><span className="font-bold text-[var(--text-primary)]">{fmt(order.productAmount)}</span></div>
                             <div className="flex justify-between"><span className="text-[var(--text-muted)] font-medium">{order.fulfillmentType === 'pickup' ? 'Pickup / dispatch' : 'Delivery'} {order.deliveryZone && <span className="opacity-60">· {order.deliveryZone}</span>}</span><span className="font-bold text-[var(--text-primary)]">{fmt(order.deliveryFee)}</span></div>
-                            {order.commission ? <div className="flex justify-between text-[11px] opacity-70"><span className="text-[var(--text-muted)]">Platform commission (10%)</span><span className="text-[var(--text-muted)]">{fmt(order.commission)}</span></div> : null}
                             <div className="flex justify-between pt-3 mt-2 border-t border-[var(--divider)]">
                                 <span className="font-bold text-[var(--text-primary)]">Total paid</span>
                                 <span className="text-2xl font-bold text-[#ed0000] tracking-tight">{fmt(order.amount)}</span>
