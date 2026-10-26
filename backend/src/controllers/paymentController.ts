@@ -123,7 +123,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
             },
             returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/success?ref=${reference}`,
             cancelUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/order-failed?ref=${reference}`,
-            displayName: 'UFL Foods',
+            displayName: 'UAC Foods',
             customerVisitSource: 'BROWSER',
             userClientIP: (() => {
                 let raw = ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim();
@@ -141,8 +141,8 @@ export const initiatePayment = async (req: Request, res: Response) => {
                 userMobile: buyerPhone || ''
             },
             product: {
-                name: productName || 'UFL Foods Order',
-                description: productName || 'UFL Foods Order'
+                name: productName || 'UAC Foods Order',
+                description: productName || 'UAC Foods Order'
             }
         };
 
