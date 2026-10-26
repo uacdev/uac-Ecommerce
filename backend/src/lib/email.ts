@@ -19,6 +19,7 @@ const getAdminEmail = () => process.env.ADMIN_EMAIL || '';
 type OrderItem = { name: string; quantity: number; price: number; image?: string };
 type OrderEmailPayload = {
     reference: string;
+    orderCreatedAt?: Date | string;
     buyerName: string;
     buyerEmail: string;
     buyerPhone: string;
@@ -40,6 +41,7 @@ type OrderEmailPayload = {
 
 type PickupEmailPayload = {
     reference: string;
+    orderCreatedAt?: Date | string;
     buyerName: string;
     buyerEmail: string;
     buyerPhone: string;
@@ -56,6 +58,7 @@ type PickupEmailPayload = {
 
 type PaymentConfirmationEmailPayload = {
     reference: string;
+    orderCreatedAt?: Date | string;
     buyerName: string;
     buyerEmail: string;
     buyerPhone: string;
@@ -95,6 +98,19 @@ type ShippedOrderReminderPayload = {
 };
 
 const fmtNgn = (n: number) => `₦${n.toLocaleString('en-NG')}`;
+const isWeekendOrder = (orderCreatedAt?: Date | string) => {
+    if (!orderCreatedAt) return false;
+    const date = new Date(orderCreatedAt);
+    if (Number.isNaN(date.getTime())) return false;
+    const weekday = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Africa/Lagos',
+        weekday: 'short'
+    }).format(date).toLowerCase();
+    return weekday === 'sat' || weekday === 'sun';
+};
+const weekendProcessingNotice = (orderCreatedAt?: Date | string) => isWeekendOrder(orderCreatedAt)
+    ? `<div style="margin:16px 0;padding:14px 16px;background:#fff7ed;border-left:4px solid #ed0000;border-radius:8px;font-size:13px;line-height:1.6;color:#333;"><strong>Weekend order:</strong> We do not process orders on Saturdays or Sundays. We’ll begin processing your order on Monday.</div>`
+    : '';
 const formatPickupDeadline = (date?: Date | null) => date
     ? new Date(date).toLocaleTimeString('en-NG', { timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit' })
     : '';
@@ -128,7 +144,10 @@ const customerHtml = (o: OrderEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${o.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">Thanks for your order. We've received it${o.pickupDeadlineAt ? ' and confirmed your payment' : ''}. ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? 'Your dispatch rider will collect this order from our pickup point.' : 'This order is for self pickup.') : 'Our team is preparing it for delivery.'}</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">${isWeekendOrder(o.orderCreatedAt)
+            ? `Thanks for your order. We've received it${o.pickupDeadlineAt ? ' and confirmed your payment' : ''}. We do not process orders on weekends, and we’ll begin processing your order on Monday.`
+            : `Thanks for your order. We've received it${o.pickupDeadlineAt ? ' and confirmed your payment' : ''}. ${o.fulfillmentType === 'pickup' ? (o.pickupType === 'dispatch' ? 'Your dispatch rider will collect this order from our pickup point.' : 'This order is for self pickup.') : 'Our team is preparing it for delivery.'}`}</p>
+        ${weekendProcessingNotice(o.orderCreatedAt)}
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${o.reference}
@@ -147,7 +166,9 @@ const customerHtml = (o: OrderEmailPayload) => `
             <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
                 <strong style="display:block;margin-bottom:6px;">${o.pickupType === 'dispatch' ? 'Rider collection point' : 'Pickup location'}</strong>
                 ${o.pickupLocation || 'UAC Foods pickup point'}
-                ${o.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(o.pickupDeadlineAt)} WAT` : '<br/>Please collect within one hour after payment confirmation.'}
+                ${isWeekendOrder(o.orderCreatedAt)
+                    ? '<br/>This pickup order will be processed on Monday. We’ll notify you when it is ready for collection.'
+                    : o.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(o.pickupDeadlineAt)} WAT` : '<br/>Please collect within one hour after payment confirmation.'}
                 ${o.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${o.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${o.dispatchPhone || ''}` : ''}
             </div>
         ` : `
@@ -165,6 +186,7 @@ const customerHtml = (o: OrderEmailPayload) => `
 const adminHtml = (o: OrderEmailPayload) => `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
         <h1 style="margin:0 0 16px;font-size:18px;color:#ed0000;">New order · ${o.reference}</h1>
+        ${weekendProcessingNotice(o.orderCreatedAt)}
 
         <table style="width:100%;font-size:13px;border-collapse:collapse;">
             <tr><td style="padding:6px 0;color:#666;width:40%;">Customer name</td><td>${o.buyerName?.trim() || 'Not provided'}</td></tr>
@@ -300,7 +322,10 @@ const pickupReceivedHtml = (p: PickupEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">Your payment is confirmed and we’ve received your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'self pickup'} order. ${p.pickupType === 'dispatch' ? 'Your rider can collect it from our pickup point.' : 'Please collect it within one hour.'}</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">${isWeekendOrder(p.orderCreatedAt)
+            ? `Your payment is confirmed and we’ve received your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'self pickup'} order. We do not process orders on weekends, and we’ll begin processing it on Monday.`
+            : `Your payment is confirmed and we’ve received your ${p.pickupType === 'dispatch' ? 'dispatch rider' : 'self pickup'} order. ${p.pickupType === 'dispatch' ? 'Your rider can collect it from our pickup point.' : 'Please collect it within one hour.'}`}</p>
+        ${weekendProcessingNotice(p.orderCreatedAt)}
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${p.reference}
@@ -312,7 +337,9 @@ const pickupReceivedHtml = (p: PickupEmailPayload) => `
         <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
             <strong style="display:block;margin-bottom:6px;">${p.pickupType === 'dispatch' ? 'Rider collection point' : 'Pickup location'}</strong>
             ${p.pickupLocation}
-            ${p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : ''}
+            ${isWeekendOrder(p.orderCreatedAt)
+                ? '<br/>This pickup order will be processed on Monday. We’ll notify you when it is ready for collection.'
+                : p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : ''}
             ${p.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${p.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${p.dispatchPhone || ''}` : ''}
         </div>
 
@@ -358,7 +385,10 @@ const paymentConfirmationHtml = (p: PaymentConfirmationEmailPayload) => `
         </div>
 
         <p style="font-size:15px;line-height:1.5;">Hi ${p.buyerName.split(' ')[0]},</p>
-        <p style="font-size:14px;line-height:1.6;color:#333;">Your payment has been confirmed and your order is now confirmed. Your order is being prepared and we’ll keep you updated.</p>
+        <p style="font-size:14px;line-height:1.6;color:#333;">${isWeekendOrder(p.orderCreatedAt)
+            ? 'Your payment has been confirmed. We do not process orders on weekends, and we’ll begin processing your order on Monday.'
+            : 'Your payment has been confirmed and your order is now confirmed. Your order is being prepared and we’ll keep you updated.'}</p>
+        ${weekendProcessingNotice(p.orderCreatedAt)}
 
         <div style="background:#f9f9f9;border-radius:12px;padding:16px;margin:20px 0;font-size:13px;">
             <strong>Order reference:</strong> ${p.reference}
@@ -376,7 +406,9 @@ const paymentConfirmationHtml = (p: PaymentConfirmationEmailPayload) => `
             <div style="margin-top:20px;padding:16px;background:#f9f9f9;border-radius:12px;font-size:13px;line-height:1.6;">
                 <strong style="display:block;margin-bottom:6px;">${p.pickupType === 'dispatch' ? 'Dispatch rider collection' : 'Pickup location'}</strong>
                 ${p.pickupLocation || 'UAC Foods pickup point'}
-                ${p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : '<br/>Please collect within one hour after payment confirmation.'}
+                ${isWeekendOrder(p.orderCreatedAt)
+                    ? '<br/>This pickup order will be processed on Monday. We’ll notify you when it is ready for collection.'
+                    : p.pickupDeadlineAt ? `<br/><strong>Collect by:</strong> ${formatPickupDeadline(p.pickupDeadlineAt)} WAT` : '<br/>Please collect within one hour after payment confirmation.'}
                 ${p.pickupType === 'dispatch' ? `<br/><strong>Delivery address:</strong> ${p.dispatchAddress || ''}<br/><strong>Rider contact:</strong> ${p.dispatchPhone || ''}` : ''}
             </div>
         ` : `

@@ -6,16 +6,12 @@ import { useStore } from '../context/StoreContext'
 import { useCustomerAuth } from '../context/CustomerAuthContext'
 import { deliveryApi, trackingApi, paymentApi, settingsApi } from '../api/client'
 import { getVisitorId, setCheckoutSessionId, getCheckoutSessionId, clearCheckoutSessionId, setPendingCartPurchase } from '../lib/visitor'
-import { CHECKOUT_WEEKDAYS, DEFAULT_CHECKOUT_POLICY, formatPolicyTime, getOrderWindowStatus, normalizeCheckoutPolicy } from '../lib/checkoutPolicy'
+import { DEFAULT_CHECKOUT_POLICY, formatPolicyTime, getOrderWindowStatus, normalizeCheckoutPolicy } from '../lib/checkoutPolicy'
 import { cdnCard } from '../lib/img'
 import toast from 'react-hot-toast'
 import Preloader from '../components/Preloader'
 
 const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
-    const orderingDays = CHECKOUT_WEEKDAYS
-        .filter(day => policy.weekdays.includes(day.id))
-        .map(day => day.short)
-        .join(' · ')
     const fulfillmentOptions = [
         policy.selfPickupEnabled && {
             icon: PackageCheck,
@@ -30,7 +26,7 @@ const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
         policy.platformDeliveryEnabled && {
             icon: Truck,
             title: 'Platform delivery',
-            description: 'Available for SWAN products only.'
+            description: 'Available for orders containing SWAN products.'
         }
     ].filter(Boolean)
 
@@ -52,10 +48,10 @@ const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
                     <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-xl font-black leading-tight text-[var(--text-primary)] sm:mt-4 sm:text-2xl">
                         <span>{formatPolicyTime(policy.opensAt)}</span><span className="text-[var(--text-muted)]">to</span><span>{formatPolicyTime(policy.closesAt)}</span>
                     </p>
-                    <p className="mt-1 text-[10px] font-bold text-[var(--text-muted)] sm:text-xs">{orderingDays || 'No ordering days enabled'}</p>
+                    <p className="mt-1 text-[10px] font-bold text-[var(--text-muted)] sm:text-xs">Every day</p>
                     <div className="mt-2 flex items-start gap-1.5 border-t border-[var(--divider)] pt-2 text-[10px] leading-snug text-[var(--text-muted)] sm:mt-4 sm:gap-2 sm:pt-3 sm:text-[11px]">
                         <Clock3 size={12} className="mt-0.5 shrink-0 sm:h-[14px] sm:w-[14px]" />
-                        <span>We handle orders during these hours and are away on weekends.</span>
+                        <span>Orders are accepted every day. Orders placed on Saturday or Sunday are processed on Monday.</span>
                     </div>
                 </section>
 
@@ -66,7 +62,7 @@ const CheckoutPolicyNotice = ({ policy, orderWindow }) => {
                             <p className="text-[10px] font-black uppercase tracking-widest sm:text-[10px]">Pickup readiness</p>
                         </div>
                         <p className="mt-2 text-[11px] leading-snug text-[var(--text-muted)] sm:mt-3 sm:text-[11px]">
-                            Ready within <span className="font-black text-[var(--text-primary)]">{policy.pickupWindowMinutes} min</span> after payment.
+                            Weekday orders are ready within <span className="font-black text-[var(--text-primary)]">{policy.pickupWindowMinutes} min</span> after payment. Weekend orders are processed on Monday.
                         </p>
                     </div>
 
@@ -146,7 +142,7 @@ const Checkout = () => {
     const allowsDelivery = useMemo(() => {
         if (!checkoutPolicy.platformDeliveryEnabled || checkoutItems.length === 0) return false
 
-        return checkoutItems.every((item) => {
+        return checkoutItems.some((item) => {
             const haystack = [item?.brand, item?.category, item?.name]
                 .filter(Boolean)
                 .map((value) => String(value).toLowerCase())
@@ -286,7 +282,7 @@ const Checkout = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!orderWindow.isOpen) {
-            toast.error('ORDERS ARE CLOSED. PLEASE RETURN MONDAY TO FRIDAY, 8AM TO 5PM WAT.')
+            toast.error(orderWindow.message.toUpperCase())
             return
         }
         if (!hasAvailableFulfillment) {

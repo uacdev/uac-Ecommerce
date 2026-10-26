@@ -16,7 +16,7 @@ export type CheckoutPolicy = {
 };
 
 export const DEFAULT_CHECKOUT_POLICY: CheckoutPolicy = {
-    weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'],
+    weekdays: [...CHECKOUT_WEEKDAYS],
     opensAt: '08:00',
     closesAt: '17:00',
     pickupWindowMinutes: 60,
@@ -52,7 +52,7 @@ export const validateCheckoutPolicy = (value: any): string | null => {
 export const normalizeCheckoutPolicy = (value: any): CheckoutPolicy => {
     if (validateCheckoutPolicy(value)) return { ...DEFAULT_CHECKOUT_POLICY };
     return {
-        weekdays: [...new Set(value.weekdays)],
+        weekdays: [...CHECKOUT_WEEKDAYS],
         opensAt: value.opensAt,
         closesAt: value.closesAt,
         pickupWindowMinutes: value.pickupWindowMinutes,

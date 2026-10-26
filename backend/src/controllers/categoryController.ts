@@ -82,13 +82,55 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const payload = req.body;
+        const { productNameMappings = [], ...payload } = req.body;
         if (payload?.packagingOptions && !Array.isArray(payload.packagingOptions)) {
             return res.status(400).json({ success: false, message: 'packagingOptions must be an array' });
         }
+        if (!Array.isArray(productNameMappings) || productNameMappings.some(mapping =>
+            !mapping || typeof mapping.from !== 'string' || !mapping.from.trim()
+            || typeof mapping.to !== 'string' || !mapping.to.trim()
+        )) {
+            return res.status(400).json({ success: false, message: 'productNameMappings must contain valid from and to values' });
+        }
+        const before = await Category.findById(id);
+        if (!before) return res.status(404).json({ success: false, message: 'Category not found' });
+
         const updated = await Category.findByIdAndUpdate(id, payload, { returnDocument: 'after', runValidators: true });
         if (!updated) return res.status(404).json({ success: false, message: 'Category not found' });
-        res.json({ success: true, data: updated });
+
+        const changedNames = productNameMappings.filter(mapping => mapping.from !== mapping.to);
+        let updatedProducts: any[] = [];
+        if (changedNames.length > 0) {
+            try {
+                const updates = [];
+                for (const mapping of changedNames) {
+                    const matchingProducts = await Product.find({
+                        brand: before.name,
+                        $or: [{ name: mapping.from }, { packaging: mapping.from }]
+                    });
+                    for (const product of matchingProducts) {
+                        const fields: Record<string, string> = {};
+                        if (product.name === mapping.from) fields.name = mapping.to;
+                        if (product.packaging === mapping.from) fields.packaging = mapping.to;
+                        if (Object.keys(fields).length) {
+                            updates.push({ updateOne: { filter: { _id: product._id }, update: { $set: fields } } });
+                        }
+                    }
+                }
+                if (updates.length) {
+                    await Product.bulkWrite(updates);
+                    const productIds = updates.map(update => update.updateOne.filter._id);
+                    updatedProducts = await Product.find({ _id: { $in: productIds } });
+                }
+            } catch (syncError) {
+                console.error('Category updated but product name synchronization failed:', syncError);
+                return res.status(500).json({
+                    success: false,
+                    message: 'Category was updated, but matching product names could not be synchronized'
+                });
+            }
+        }
+        res.json({ success: true, data: updated, updatedProducts });
     } catch (err: any) {
         if (err?.code === 11000) {
             return res.status(409).json({ success: false, message: 'A category with that name already exists' });

@@ -9,7 +9,7 @@ export const CHECKOUT_WEEKDAYS = [
 ]
 
 export const DEFAULT_CHECKOUT_POLICY = {
-    weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'],
+    weekdays: CHECKOUT_WEEKDAYS.map(day => day.id),
     opensAt: '08:00',
     closesAt: '17:00',
     pickupWindowMinutes: 60,
@@ -21,7 +21,7 @@ export const DEFAULT_CHECKOUT_POLICY = {
 export const normalizeCheckoutPolicy = (value) => ({
     ...DEFAULT_CHECKOUT_POLICY,
     ...(value && typeof value === 'object' && !Array.isArray(value) ? value : {}),
-    weekdays: Array.isArray(value?.weekdays) ? value.weekdays : [...DEFAULT_CHECKOUT_POLICY.weekdays]
+    weekdays: CHECKOUT_WEEKDAYS.map(day => day.id)
 })
 
 export const formatPolicyTime = (value) => {
@@ -34,28 +34,24 @@ export const formatPolicyTime = (value) => {
 export const getOrderWindowStatus = (date = new Date(), policy = DEFAULT_CHECKOUT_POLICY) => {
     const parts = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Africa/Lagos',
-        weekday: 'short',
         hour: '2-digit',
         minute: '2-digit',
         hourCycle: 'h23'
     }).formatToParts(date)
     const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
-    const day = values.weekday.toLowerCase()
     const minuteOfDay = Number(values.hour) * 60 + Number(values.minute)
     const [openHour, openMinute] = policy.opensAt.split(':').map(Number)
     const [closeHour, closeMinute] = policy.closesAt.split(':').map(Number)
     const opensAt = openHour * 60 + openMinute
     const closesAt = closeHour * 60 + closeMinute
-    const orderingDays = policy.weekdays.map(value => CHECKOUT_WEEKDAYS.find(item => item.id === value)?.short).filter(Boolean).join(', ')
     const hours = `${formatPolicyTime(policy.opensAt)} to ${formatPolicyTime(policy.closesAt)} WAT`
-    const isOpen = policy.weekdays.includes(day)
-        && minuteOfDay >= opensAt
+    const isOpen = minuteOfDay >= opensAt
         && minuteOfDay < closesAt
 
     return {
         isOpen,
         message: isOpen
-            ? `We’re currently accepting orders ${orderingDays}, ${hours}.`
-            : `We’ll be accepting orders ${orderingDays}, ${hours}.`
+            ? `We’re currently accepting orders every day, ${hours}.`
+            : `We’ll be accepting orders every day, ${hours}.`
     }
 }

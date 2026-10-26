@@ -22,21 +22,19 @@ const ORDER_TIME_ZONE = 'Africa/Lagos';
 const getOrderWindowMessage = (policy: CheckoutPolicy, date = new Date()) => {
     const parts = new Intl.DateTimeFormat('en-GB', {
         timeZone: ORDER_TIME_ZONE,
-        weekday: 'short',
         hour: '2-digit',
         minute: '2-digit',
         hourCycle: 'h23'
     }).formatToParts(date);
     const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-    const weekday = values.weekday.toLowerCase();
     const minuteOfDay = Number(values.hour) * 60 + Number(values.minute);
     const [openHour, openMinute] = policy.opensAt.split(':').map(Number);
     const [closeHour, closeMinute] = policy.closesAt.split(':').map(Number);
     const opensAt = openHour * 60 + openMinute;
     const closesAt = closeHour * 60 + closeMinute;
 
-    if (!policy.weekdays.includes(weekday) || minuteOfDay < opensAt || minuteOfDay >= closesAt) {
-        return `Orders are available ${policy.weekdays.join(', ')} from ${policy.opensAt} to ${policy.closesAt} WAT.`;
+    if (minuteOfDay < opensAt || minuteOfDay >= closesAt) {
+        return `Orders are available every day from ${policy.opensAt} to ${policy.closesAt} WAT.`;
     }
     return '';
 };
@@ -57,6 +55,7 @@ const maybeSendPickupReceivedEmail = async (order: any) => {
     const pickupLocation = await resolvePickupLocation(order.items || []);
     sendPickupOrderReceivedEmail({
         reference: order.reference,
+        orderCreatedAt: order.date,
         buyerName: order.buyerName,
         buyerEmail: order.buyerEmail,
         buyerPhone: order.buyerPhone,
@@ -83,6 +82,7 @@ const maybeSendPaymentConfirmationEmail = async (order: any) => {
     try {
         return await sendPaymentConfirmationEmail({
             reference: order.reference,
+            orderCreatedAt: order.date,
             buyerName: order.buyerName,
             buyerEmail: order.buyerEmail,
             buyerPhone: order.buyerPhone,
@@ -307,10 +307,10 @@ export const createOrder = async (req: Request, res: Response) => {
         if (missingProductId) {
             return res.status(404).json({ success: false, message: `Product ${missingProductId} not found` });
         }
-        if (isDelivery && !productDocs.every(product =>
+        if (isDelivery && !productDocs.some(product =>
             [product.brand, product.category, product.name].some(value => String(value || '').toLowerCase().includes('swan'))
         )) {
-            return res.status(400).json({ success: false, message: 'Platform delivery is only available for SWAN products' });
+            return res.status(400).json({ success: false, message: 'Platform delivery is only available for orders containing SWAN products' });
         }
 
         for (const item of items) {
@@ -393,6 +393,7 @@ export const createOrder = async (req: Request, res: Response) => {
                 items: created.items as any,
                 productAmount, deliveryFee, deliveryZone: zone?.name,
                 amount, paymentMethod, fulfillmentType: created.fulfillmentType,
+                orderCreatedAt: created.date,
                 pickupType: created.pickupType, dispatchAddress: created.dispatchAddress,
                 dispatchPhone: created.dispatchPhone
             }).catch(err => console.error('Email dispatch failed:', err));

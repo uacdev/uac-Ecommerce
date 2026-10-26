@@ -4,6 +4,12 @@ import { X, Plus, Trash2 } from 'lucide-react'
 import { useStore } from '../../../context/StoreContext'
 import { uploadApi } from '../../../api/client'
 
+const withOriginalPackagingValue = (option, index) => ({
+    ...option,
+    _originalValue: option.value || option.label || '',
+    _rowKey: `existing-${index}`
+})
+
 const CategoryModal = ({ category, onClose }) => {
     const { addCategory, updateCategoryById } = useStore();
     const [formData, setFormData] = useState({
@@ -11,7 +17,7 @@ const CategoryModal = ({ category, onClose }) => {
         abstract: category?.abstract || '',
         parent: category?.parent || '',
         coverImage: category?.coverImage || '',
-        packagingOptions: category?.packagingOptions || []
+        packagingOptions: (category?.packagingOptions || []).map(withOriginalPackagingValue)
     });
     const [submitting, setSubmitting] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
@@ -54,7 +60,7 @@ const CategoryModal = ({ category, onClose }) => {
     const addPackagingOption = () => {
         setFormData(prev => ({
             ...prev,
-            packagingOptions: [...prev.packagingOptions, { label: '', value: '', price: '' }]
+            packagingOptions: [...prev.packagingOptions, { label: '', value: '', price: '', _originalValue: '', _rowKey: `new-${Date.now()}-${prev.packagingOptions.length}` }]
         }));
     };
 
@@ -81,7 +87,12 @@ const CategoryModal = ({ category, onClose }) => {
             parent: formData.parent,
             coverImage: formData.coverImage,
             color: category?.color || 'bg-indigo-50 text-indigo-600',
-            packagingOptions: packagingOptions.map(option => ({ ...option, price: Number(option.price) }))
+            packagingOptions: packagingOptions.map(({ label, value, price }) => ({ label, value, price: Number(price) })),
+            productNameMappings: category
+                ? packagingOptions
+                    .filter(option => option._originalValue && option._originalValue !== (option.value || option.label))
+                    .map(option => ({ from: option._originalValue, to: option.value || option.label }))
+                : []
         };
         const res = category
             ? await updateCategoryById(category._id, payload)
@@ -138,7 +149,7 @@ const CategoryModal = ({ category, onClose }) => {
                         </div>
                         <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
                             {formData.packagingOptions.map((option, index) => (
-                                <div key={index} className="rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] p-3 space-y-2">
+                                <div key={option._rowKey || index} className="rounded-xl border border-[var(--divider)] bg-[var(--bg-secondary)] p-3 space-y-2">
                                     <div className="flex items-center justify-between">
                                         <p className="text-[11px] font-bold text-[var(--text-muted)]">Option {index + 1}</p>
                                         <button type="button" onClick={() => removePackagingOption(index)} className="text-[#ed0000] hover:text-red-700">

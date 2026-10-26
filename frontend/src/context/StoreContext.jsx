@@ -478,17 +478,28 @@ export const StoreProvider = ({ children }) => {
             const res = await categoryApi.update(id, updates)
             if (res.data?.success) {
                 const updated = res.data.data
+                const renamedProducts = new Map(
+                    (res.data.updatedProducts || []).map(product => [String(product.id || product._id), product])
+                )
                 setAdminSegments(prev => prev.map(c => c._id === id ? updated : c))
                 setBusinessSegments(prev => updated.isActive === false
                     ? prev.filter(c => c._id !== id)
                     : prev.some(c => c._id === id)
                         ? prev.map(c => c._id === id ? updated : c)
                         : [...prev, updated])
+                setAdminProducts(prev => prev.map(product =>
+                    renamedProducts.get(String(product.id || product._id)) || product
+                ))
                 setProducts(prev => {
                     if (updated.isActive === false) return prev.filter(p => p.brand !== updated.name)
-                    const restored = adminProducts.filter(p => p.brand === updated.name && p.isActive !== false)
-                    const currentIds = new Set(prev.map(p => String(p.id || p._id)))
-                    return sortProductsForDisplay([...prev, ...restored.filter(p => !currentIds.has(String(p.id || p._id)))])
+                    const current = prev.map(product =>
+                        renamedProducts.get(String(product.id || product._id)) || product
+                    )
+                    const restored = adminProducts
+                        .map(product => renamedProducts.get(String(product.id || product._id)) || product)
+                        .filter(product => product.brand === updated.name && product.isActive !== false)
+                    const currentIds = new Set(current.map(p => String(p.id || p._id)))
+                    return sortProductsForDisplay([...current, ...restored.filter(p => !currentIds.has(String(p.id || p._id)))])
                 })
                 return { success: true }
             }

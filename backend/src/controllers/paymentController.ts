@@ -42,6 +42,7 @@ const markOrderPaidAndNotify = async (reference: string) => {
 
     const emailPayload = {
         reference: order.reference,
+        orderCreatedAt: order.date,
         buyerName: order.buyerName,
         buyerEmail: order.buyerEmail,
         buyerPhone: order.buyerPhone,
@@ -123,7 +124,7 @@ export const initiatePayment = async (req: Request, res: Response) => {
             },
             returnUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/success?ref=${reference}`,
             cancelUrl: `${process.env.FRONTEND_URL || 'http://localhost:5180'}/order-failed?ref=${reference}`,
-            displayName: 'UAC Foods',
+            displayName: 'UAC Foods Limited',
             customerVisitSource: 'BROWSER',
             userClientIP: (() => {
                 let raw = ((req.headers['x-forwarded-for'] as string) || req.ip || '').split(',')[0].trim();
@@ -141,8 +142,8 @@ export const initiatePayment = async (req: Request, res: Response) => {
                 userMobile: buyerPhone || ''
             },
             product: {
-                name: productName || 'UAC Foods Order',
-                description: productName || 'UAC Foods Order'
+                name: productName || 'UAC Foods Limited Order',
+                description: productName || 'UAC Foods Limited Order'
             }
         };
 

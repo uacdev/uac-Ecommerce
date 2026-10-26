@@ -480,7 +480,7 @@ const SettingsTab = () => {
                     <div className="space-y-8">
                         <div>
                             <h3 className="text-lg font-bold">Checkout policy</h3>
-                            <p className="mt-1 text-sm text-[var(--text-muted)]">Configure when customers can order and which fulfillment options checkout accepts. Times use West Africa Time.</p>
+                            <p className="mt-1 text-sm text-[var(--text-muted)]">Orders are accepted every day; weekend orders are processed on Monday. Configure ordering hours and fulfillment options here. Times use West Africa Time.</p>
                         </div>
                         {checkoutPolicyLoading ? (
                             <p className="py-8 text-sm text-[var(--text-muted)]">Loading checkout policy…</p>
@@ -507,13 +507,13 @@ const SettingsTab = () => {
                                     </button>
                                 </section>
                                 <fieldset className="space-y-4">
-                                    <legend className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Ordering days</legend>
+                                    <legend className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Ordering days · every day</legend>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {CHECKOUT_WEEKDAYS.map(day => {
-                                            const selected = checkoutPolicy.weekdays.includes(day.id)
+                                            const selected = true
                                             return (
                                                 <label key={day.id} className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-bold ${selected ? 'border-[var(--brand-red)] bg-[var(--brand-red)]/5 text-[var(--text-primary)]' : 'border-[var(--divider)] text-[var(--text-muted)]'}`}>
-                                                    <input type="checkbox" checked={selected} onChange={e => updateCheckoutPolicy('weekdays', e.target.checked ? [...checkoutPolicy.weekdays, day.id] : checkoutPolicy.weekdays.filter(value => value !== day.id))} className="h-4 w-4 accent-[var(--brand-red)]" />
+                                                    <input type="checkbox" checked={selected} disabled className="h-4 w-4 accent-[var(--brand-red)]" />
                                                     {day.label}
                                                 </label>
                                             )
