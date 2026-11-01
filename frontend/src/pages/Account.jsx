@@ -8,6 +8,7 @@ import { customerApi, paymentApi } from '../api/client'
 import { useStore } from '../context/StoreContext'
 import toast from 'react-hot-toast'
 import EditProfilePanel from '../components/EditProfilePanel'
+import { getOrderStatusLabel } from '../lib/orderStatus'
 
 const STATUS_COLOR = {
     pending: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -21,10 +22,6 @@ const STATUS_COLOR = {
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`
 const fmtCompact = (n) => `₦${new Intl.NumberFormat('en-NG', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(n || 0))}`
-const formatOrderStatus = (status) => status === 'pending'
-    ? 'Awaiting payment'
-    : (status || 'pending').replace(/^./, firstLetter => firstLetter.toUpperCase())
-
 const OrderReviewControl = ({ order, item, reviewOpen, setReviewOpen, reviewDrafts, setReviewDrafts, submittedReviews, reviewSubmitting, handleSubmitReview }) => {
     const key = `${order.reference}:${item.productId}`
     const draft = reviewDrafts[key] || { rating: 0, comment: '' }
@@ -308,7 +305,7 @@ const Account = () => {
                                                 </p>
                                             </div>
                                             <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-bold sm:text-[10px] ${STATUS_COLOR[order.status] || STATUS_COLOR.pending}`}>
-                                                {formatOrderStatus(order.status)}
+                                                {getOrderStatusLabel(order)}
                                             </span>
                                         </div>
 

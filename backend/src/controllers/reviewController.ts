@@ -142,7 +142,7 @@ export const completeCustomerOrder = async (req: Request, res: Response) => {
 
         const completed = await Order.findOneAndUpdate(
             { _id: order._id, buyerEmail: email, status: 'shipped' },
-            { $set: { status: 'completed', completedAt: new Date() } },
+            { $set: { status: 'completed', statusUpdatedAt: new Date(), completedAt: new Date() } },
             { returnDocument: 'after' }
         );
         if (!completed) {

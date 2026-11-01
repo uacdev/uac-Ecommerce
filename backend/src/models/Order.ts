@@ -51,7 +51,9 @@ const orderSchema = new Schema(
         logisticsPartner: { type: String, default: '' },
 
         paymentMethod: { type: String, default: '' },
-        status: { type: String, enum: ORDER_STATUSES, default: 'pending' }
+        status: { type: String, enum: ORDER_STATUSES, default: 'pending' },
+        statusUpdatedAt: { type: Date, default: null },
+        cancellationReason: { type: String, default: '' }
     },
     {
         timestamps: { createdAt: 'date', updatedAt: 'updated_at' },

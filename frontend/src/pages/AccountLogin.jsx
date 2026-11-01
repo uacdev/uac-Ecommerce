@@ -123,6 +123,12 @@ const AccountLogin = () => {
                     No account yet?{' '}
                     <Link to="/account/signup" state={{ after, afterState: location.state?.afterState }} className="font-bold text-[#ed0000] hover:underline">Create one</Link>
                 </div>
+                <p className="mt-6 text-center text-[11px] leading-relaxed text-[var(--text-muted)]">
+                    Read our{' '}
+                    <Link to="/privacy-policy" className="font-bold text-[#ed0000] hover:underline">Privacy Policy</Link>
+                    {' '}and{' '}
+                    <Link to="/terms" className="font-bold text-[#ed0000] hover:underline">Terms &amp; Conditions</Link>.
+                </p>
             </motion.div>
         </div>
     )

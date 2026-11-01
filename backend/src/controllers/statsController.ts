@@ -17,6 +17,7 @@ const PAID_STATUSES = ['paid', 'confirmed', 'shipped', 'delivered', 'completed']
 const EXCLUDE_UNPAID_OPAY = {
     $nor: [{ status: 'pending', paymentMethod: { $regex: /^opay$/i } }]
 };
+const EXCLUDE_CANCELLED_ORDERS = { status: { $ne: 'cancelled' } };
 
 const pctDelta = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? 100 : 0;
@@ -35,14 +36,16 @@ const computeReturningRate = async (thisMonthStart: Date, lastMonthStart: Date) 
         const buyersThisWindow: string[] = await Order.distinct('buyerEmail', {
             date: { $gte: windowStart, $lt: windowEnd },
             buyerEmail: { $ne: '' },
-            ...EXCLUDE_UNPAID_OPAY
+            ...EXCLUDE_UNPAID_OPAY,
+            ...EXCLUDE_CANCELLED_ORDERS
         });
         if (buyersThisWindow.length === 0) return 0;
         // Of those buyers, how many had a PRIOR order before the window?
         const returning = await Order.distinct('buyerEmail', {
             buyerEmail: { $in: buyersThisWindow },
             date: { $lt: windowStart },
-            ...EXCLUDE_UNPAID_OPAY
+            ...EXCLUDE_UNPAID_OPAY,
+            ...EXCLUDE_CANCELLED_ORDERS
         });
         return (returning.length / buyersThisWindow.length) * 100;
     };
@@ -88,15 +91,15 @@ export const getKpis = async (_req: Request, res: Response) => {
 
         const [thisMonth, lastMonth, allOrders, totalProducts, totalCustomers, returning, abandonment, visitors, pendingOrders] = await Promise.all([
             Order.aggregate([
-                { $match: { date: { $gte: thisMonthStart }, ...EXCLUDE_UNPAID_OPAY } },
+                { $match: { date: { $gte: thisMonthStart }, ...EXCLUDE_UNPAID_OPAY, ...EXCLUDE_CANCELLED_ORDERS } },
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
             ]),
             Order.aggregate([
-                { $match: { date: { $gte: lastMonthStart, $lt: thisMonthStart }, ...EXCLUDE_UNPAID_OPAY } },
+                { $match: { date: { $gte: lastMonthStart, $lt: thisMonthStart }, ...EXCLUDE_UNPAID_OPAY, ...EXCLUDE_CANCELLED_ORDERS } },
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
             ]),
             Order.aggregate([
-                { $match: EXCLUDE_UNPAID_OPAY },
+                { $match: { ...EXCLUDE_UNPAID_OPAY, ...EXCLUDE_CANCELLED_ORDERS } },
                 { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 }, customers: { $addToSet: '$buyerEmail' } } }
             ]),
             Product.countDocuments(),
@@ -180,7 +183,7 @@ export const getSalesChart = async (req: Request, res: Response) => {
         }
 
         const rows = await Order.aggregate([
-            { $match: { date: { $gte: startDate }, ...EXCLUDE_UNPAID_OPAY } },
+            { $match: { date: { $gte: startDate }, ...EXCLUDE_UNPAID_OPAY, ...EXCLUDE_CANCELLED_ORDERS } },
             { $group: { _id: groupBy, value: { $sum: '$amount' } } },
             { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1, '_id.w': 1 } }
         ]);
@@ -361,7 +364,7 @@ export const getCustomerOrders = async (req: Request, res: Response) => {
 export const getGeography = async (_req: Request, res: Response) => {
     try {
         const rows = await Order.aggregate([
-            { $match: { buyerState: { $exists: true, $ne: '' }, ...EXCLUDE_UNPAID_OPAY } },
+            { $match: { buyerState: { $exists: true, $ne: '' }, ...EXCLUDE_UNPAID_OPAY, ...EXCLUDE_CANCELLED_ORDERS } },
             { $group: {
                 _id: '$buyerState',
                 orderCount: { $sum: 1 },
@@ -469,7 +472,11 @@ export const getStatusFunnel = async (_req: Request, res: Response) => {
     try {
         const rows = await Order.aggregate([
             { $match: EXCLUDE_UNPAID_OPAY },
-            { $group: { _id: '$status', count: { $sum: 1 }, revenue: { $sum: '$amount' } } }
+            { $group: {
+                _id: '$status',
+                count: { $sum: 1 },
+                revenue: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 0, '$amount'] } }
+            } }
         ]);
         const map = new Map<string, { count: number; revenue: number }>();
         rows.forEach(r => map.set(r._id, { count: r.count, revenue: r.revenue }));
@@ -603,7 +610,7 @@ export const getCustomers = async (_req: Request, res: Response) => {
                     dispatchAddress: { $first: '$dispatchAddress' },
                     dispatchPhone: { $first: '$dispatchPhone' },
                     orders: { $sum: 1 },
-                    totalSpend: { $sum: '$amount' },
+                    totalSpend: { $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 0, '$amount'] } },
                     joinDate: { $min: '$date' },
                     lastOrderDate: { $max: '$date' }
                 } }

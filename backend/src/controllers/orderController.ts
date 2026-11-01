@@ -456,6 +456,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         }
 
         const statusUpdate: Record<string, any> = { status };
+        if (before.status !== status) {
+            statusUpdate.statusUpdatedAt = new Date();
+            statusUpdate.cancellationReason = status === 'cancelled' ? 'admin_cancelled' : '';
+        }
         if (status === 'shipped' && before.status !== 'shipped') {
             statusUpdate.shippedAt = new Date();
             statusUpdate.completionReminderClaimedAt = null;

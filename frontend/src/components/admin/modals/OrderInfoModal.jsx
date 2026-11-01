@@ -4,6 +4,7 @@ import { X, Mail, Phone, MapPin, Package, Truck, CreditCard, CheckCircle2, Trash
 import { format } from 'date-fns'
 import { useStore } from '../../../context/StoreContext'
 import { deliveryApi } from '../../../api/client'
+import { getOrderStatusLabel, isPaymentFailedCancellation } from '../../../lib/orderStatus'
 
 const STATUSES = ['pending', 'paid', 'confirmed', 'shipped', 'delivered', 'completed', 'cancelled']
 const STATUS_COLOR = {
@@ -147,8 +148,11 @@ const OrderInfoModal = ({ order: incomingOrder, onClose }) => {
                         {order.date && <p className="text-[11px] text-[var(--text-muted)] font-medium mt-1">{format(new Date(order.date), 'MMM dd, yyyy · HH:mm')}</p>}
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold border ${STATUS_COLOR[order.status] || STATUS_COLOR.pending}`}>
-                            {(order.status || 'pending').replace(/^./, (firstLetter) => firstLetter.toUpperCase())}
+                        <span
+                            title={isPaymentFailedCancellation(order) ? 'OPay payment failed or was closed' : undefined}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold border ${STATUS_COLOR[order.status] || STATUS_COLOR.pending}`}
+                        >
+                            {getOrderStatusLabel(order)}
                         </span>
                         <button onClick={onClose} className="p-2 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-muted)] transition-all">
                             <X size={22} />

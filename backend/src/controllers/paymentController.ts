@@ -32,6 +32,7 @@ const markOrderPaidAndNotify = async (reference: string) => {
         { reference, status: 'pending' },
         {
             status: 'paid',
+            statusUpdatedAt: paidAt,
             pickupDeadlineAt: String(pendingOrder.fulfillmentType || '').toLowerCase() === 'pickup'
                 ? new Date(paidAt.getTime() + (Number((pendingOrder as any).pickupWindowMinutes) || policy.pickupWindowMinutes) * 60 * 1000)
                 : null
@@ -218,7 +219,10 @@ export const handleWebhook = async (req: Request, res: Response) => {
             const order = await markOrderPaidAndNotify(reference);
             console.log(`[OPay] Order ${reference} marked as paid via webhook`);
         } else if (status === 'FAIL' || status === 'CLOSED') {
-            await Order.findOneAndUpdate({ reference }, { status: 'cancelled' });
+            await Order.findOneAndUpdate(
+                { reference, status: { $ne: 'cancelled' } },
+                { status: 'cancelled', statusUpdatedAt: new Date(), cancellationReason: 'payment_failed' }
+            );
             console.log(`[OPay] Order ${reference} cancelled via webhook`);
         }
 

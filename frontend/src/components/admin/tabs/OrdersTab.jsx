@@ -14,9 +14,22 @@ import { format } from 'date-fns'
 import { CustomDatePicker } from '../ui/shared_ui'
 import { orderApi } from '../../../api/client'
 import { useStore } from '../../../context/StoreContext'
+import { getOrderStatusLabel, isPaymentFailedCancellation } from '../../../lib/orderStatus'
 
 const STATUSES = ['all', 'pending', 'paid', 'confirmed', 'shipped', 'delivered']
-const PAGE_SIZE = 25
+const PAGE_SIZE = 30
+
+const getFulfillmentLabel = (order) => {
+    const type = String(order.fulfillmentType || '').trim().toLowerCase()
+    const pickupType = String(order.pickupType || '').trim().toLowerCase()
+    const hasDeliveryDetails = Boolean(String(order.deliveryZone || '').trim())
+        || (Boolean(String(order.buyerAddress || '').trim()) && !String(order.dispatchAddress || '').trim())
+
+    if (type === 'pickup' && pickupType === 'dispatch') return 'Dispatch rider pickup'
+    if (hasDeliveryDetails || type === 'delivery') return 'Delivery'
+    if (type === 'pickup') return 'Pickup'
+    return '—'
+}
 
 const useDebounced = (value, delay = 300) => {
     const [debounced, setDebounced] = useState(value)
@@ -208,10 +221,12 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                     <table className="w-full text-left">
                         <thead className="bg-[var(--bg-secondary)] border-b border-[var(--divider)]">
                             <tr>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">S/N</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Reference</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Customer</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Amount</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Date</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Fulfillment type</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Pickup ready email</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Buyer notified</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
@@ -222,10 +237,12 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                             {loading ? (
                                 [1, 2, 3, 4, 5].map(i => (
                                     <tr key={i}>
+                                        <td className="px-6 py-5"><div className="h-3 w-6 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-28 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-32 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-20 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-24 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
+                                        <td className="px-6 py-5"><div className="h-3 w-20 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-20 bg-[var(--bg-secondary)] rounded-full animate-pulse ml-auto" /></td>
@@ -233,19 +250,23 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                     </tr>
                                 ))
                             ) : orders.length === 0 ? (
-                                <tr><td colSpan={8} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
-                            ) : orders.map(o => (
+                                <tr><td colSpan={10} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
+                            ) : orders.map((o, index) => (
                                 <tr
                                     key={o.id || o._id}
                                     onClick={() => onSelect(o)}
                                     className={`group hover:bg-[var(--bg-secondary)] cursor-pointer transition-colors ${selectedId === (o.id || o._id) ? 'bg-[#ed0000]/5' : ''}`}
                                 >
+                                    <td className="px-6 py-5 text-[12px] font-medium text-[var(--text-muted)]">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                                     <td className="px-6 py-5 text-[12px] font-bold text-[var(--text-primary)] tracking-tight">{o.reference || `#${(o.id || o._id || '').slice(-8)}`}</td>
                                     <td className="px-6 py-5 text-[13px] font-bold text-[var(--text-primary)]">{o.buyerName}</td>
                                     <td className="px-6 py-5 text-[13px] font-bold text-[#ed0000]">₦{(o.amount || 0).toLocaleString()}</td>
-                                    <td className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">{format(new Date(o.date), 'MMM dd, yyyy')}</td>
+                                    <td className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] whitespace-nowrap">{o.date && !Number.isNaN(new Date(o.date).getTime()) ? format(new Date(o.date), 'MMM dd, yyyy hh:mmaaa') : '—'}</td>
+                                    <td className="px-6 py-5 text-[11px] font-medium text-[var(--text-muted)]">{getFulfillmentLabel(o)}</td>
                                     <td className="px-6 py-5">
-                                        {['paid', 'confirmed'].includes(String(o.status || '').toLowerCase())
+                                        {o.pickupReminderSentAt ? (
+                                            <span className="text-[11px] font-bold text-emerald-600">Sent</span>
+                                        ) : ['paid', 'confirmed'].includes(String(o.status || '').toLowerCase())
                                             && String(o.fulfillmentType || '').toLowerCase() === 'pickup'
                                             && String(o.pickupType || 'self').toLowerCase() === 'self' ? (
                                             <button
@@ -262,16 +283,32 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         )}
                                     </td>
                                     <td className="px-6 py-5 text-[11px] font-medium text-[var(--text-muted)]">
-                                        {String(o.fulfillmentType || '').toLowerCase() !== 'pickup'
+                                        {String(o.fulfillmentType || '').toLowerCase() === 'pickup'
+                                            && String(o.pickupType || 'self').toLowerCase() === 'dispatch'
+                                            ? 'Not applicable'
+                                            : String(o.fulfillmentType || '').toLowerCase() !== 'pickup'
                                             ? '—'
                                             : o.pickupReminderSentAt
                                                 ? `Sent ${format(new Date(o.pickupReminderSentAt), 'MMM dd, yyyy HH:mm')}`
                                                 : 'Not sent'}
                                     </td>
                                     <td className="px-6 py-5 text-right">
-                                        <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}>
-                                            {(o.status || 'pending').replace(/^./, (firstLetter) => firstLetter.toUpperCase())}
-                                        </span>
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span
+                                                title={isPaymentFailedCancellation(o) ? 'OPay payment failed or was closed' : undefined}
+                                                className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${STATUS_COLOR[o.status] || STATUS_COLOR.pending}`}
+                                            >
+                                                {getOrderStatusLabel(o)}
+                                            </span>
+                                            {(() => {
+                                                const statusDate = o.statusUpdatedAt
+                                                return statusDate && !Number.isNaN(new Date(statusDate).getTime()) ? (
+                                                    <span className="text-[10px] font-medium text-[var(--text-muted)] whitespace-nowrap">
+                                                        {format(new Date(statusDate), 'EEE, MMM d, yyyy (hh:mmaaa)')}
+                                                    </span>
+                                                ) : null
+                                            })()}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-5 text-right">
                                         <button
