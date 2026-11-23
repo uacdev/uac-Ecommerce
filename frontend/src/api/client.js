@@ -120,7 +120,12 @@ export const orderApi = {
     updateDelivery: (id, data) => api.patch(`/orders/${id}/delivery`, data),
     selectDeliveryMethod: (id, deliveryMethod) => api.patch(`/orders/${id}/delivery-method`, { deliveryMethod }),
     remindPickup: (id) => api.post(`/orders/${id}/remind-pickup`),
+    retrySap: (id) => api.post(`/orders/${id}/sap-sync`),
     delete: (id) => api.delete(`/orders/${id}`)
+};
+
+export const sapApi = {
+    connectionCheck: () => api.get('/sap/connection-check')
 };
 
 export const statsApi = {

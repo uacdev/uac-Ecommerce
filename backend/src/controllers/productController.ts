@@ -7,7 +7,7 @@ import { sendBackInStockEmails } from '../lib/email';
 
 const ALLOWED_FIELDS = [
     'name', 'brand', 'description', 'category', 'image', 'images',
-    'location', 'packaging', 'piecesPerPack', 'displayOrder', 'price', 'status', 'stockCount', 'is_reserved', 'isActive'
+    'location', 'packaging', 'piecesPerPack', 'displayOrder', 'price', 'status', 'stockCount', 'is_reserved', 'isActive', 'sapMaterialCode'
 ];
 
 const sanitize = (body: any) => {

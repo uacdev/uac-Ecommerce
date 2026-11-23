@@ -123,7 +123,8 @@ const AddProductPage = ({ product, onClose }) => {
         piecesPerPack: '',
         displayOrder: '',
         price: '',
-        stockCount: ''
+        stockCount: '',
+        sapMaterialCode: ''
     });
 
     useEffect(() => {
@@ -139,7 +140,8 @@ const AddProductPage = ({ product, onClose }) => {
                 piecesPerPack: product.piecesPerPack ?? '',
                 displayOrder: product.displayOrder ?? '',
                 price: product.price ?? '',
-                stockCount: product.stockCount ?? ''
+                stockCount: product.stockCount ?? '',
+                sapMaterialCode: product.sapMaterialCode || ''
             });
         }
     }, [product]);
@@ -274,7 +276,8 @@ const AddProductPage = ({ product, onClose }) => {
             piecesPerPack: isSupremeCategory && formData.piecesPerPack !== '' ? Number(formData.piecesPerPack) : null,
             displayOrder: formData.displayOrder === '' ? 0 : Number(formData.displayOrder),
             price: Number(formData.price),
-            stockCount: Math.max(0, Math.floor(Number(formData.stockCount) || 0))
+            stockCount: Math.max(0, Math.floor(Number(formData.stockCount) || 0)),
+            sapMaterialCode: formData.sapMaterialCode.trim()
         };
 
         try {
@@ -583,6 +586,16 @@ const AddProductPage = ({ product, onClose }) => {
                                     className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
                                 />
                                 <p className="text-[10px] text-[var(--text-muted)] font-medium">Lower numbers appear first on the products page.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[12px] font-bold text-[var(--text-primary)]">SAP material code</label>
+                                <input
+                                    name="sapMaterialCode" type="text" inputMode="numeric"
+                                    value={formData.sapMaterialCode} onChange={handleChange}
+                                    placeholder="e.g. 1200010023"
+                                    className="w-full border border-[var(--divider)] bg-[var(--bg-tertiary)] rounded-xl px-4 py-3 text-[13px] outline-none focus:border-[#0f2e53]"
+                                />
+                                <p className="text-[10px] text-[var(--text-muted)] font-medium">Used to create the sales order in SAP. Orders containing a product without this code are not sent to SAP.</p>
                             </div>
                         </div>
 

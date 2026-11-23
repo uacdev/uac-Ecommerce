@@ -5,6 +5,7 @@ import app from './app';
 import { connectDb } from './lib/db';
 import { runStartupMigrations } from './lib/migrations';
 import { startShippedOrderReminderScheduler } from './lib/shippedOrderReminders';
+import { startSapScheduler } from './lib/sap';
 
 const PORT = process.env.PORT || 4000;
 
@@ -13,6 +14,7 @@ const start = async () => {
         await connectDb();
         await runStartupMigrations();
         startShippedOrderReminderScheduler();
+        startSapScheduler();
         app.listen(PORT, () => {
             console.log(`🚀 UFL E-Commerce API is running on http://localhost:${PORT}`);
             console.log(`🔥 Health check: http://localhost:${PORT}/health`);
