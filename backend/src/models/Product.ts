@@ -21,7 +21,9 @@ const productSchema = new Schema(
         // Numeric inventory. Auto-flips status to out_of_stock when this hits 0;
         // back to available when it goes positive again.
         stockCount: { type: Number, default: 0, min: 0 },
-        is_reserved: { type: Boolean, default: false }
+        is_reserved: { type: Boolean, default: false },
+        // SAP material number, sent as `Material` on each sales order line.
+        sapMaterialCode: { type: String, default: '', trim: true }
     },
     {
         timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },

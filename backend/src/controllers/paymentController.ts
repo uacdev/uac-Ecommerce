@@ -5,6 +5,7 @@ import { Product } from '../models/Product';
 import { sendOrderEmails } from '../lib/email';
 import { notify } from '../lib/notify';
 import { CHECKOUT_LOCK_MESSAGE, loadCheckoutLocked, loadCheckoutPolicy } from '../lib/checkoutPolicy';
+import { syncOrderToSap } from '../lib/sap';
 
 const DEFAULT_OPAY_BASE_URL = 'https://sandboxapi.opaycheckout.com/api/v1/international';
 
@@ -21,7 +22,7 @@ function buildWebhookSignature(payload: any): string {
     return hmac.digest('hex');
 }
 
-const markOrderPaidAndNotify = async (reference: string) => {
+const markOrderPaidAndNotify = async (reference: string, opayTransactionId = '') => {
     // Only the first successful callback sends confirmation emails. OPay can
     // deliver both a webhook and a browser verification for the same payment.
     const pendingOrder = await Order.findOne({ reference, status: 'pending' });
@@ -33,6 +34,8 @@ const markOrderPaidAndNotify = async (reference: string) => {
         {
             status: 'paid',
             statusUpdatedAt: paidAt,
+            paidAt,
+            ...(opayTransactionId ? { opayTransactionId: String(opayTransactionId) } : {}),
             pickupDeadlineAt: String(pendingOrder.fulfillmentType || '').toLowerCase() === 'pickup'
                 ? new Date(paidAt.getTime() + (Number((pendingOrder as any).pickupWindowMinutes) || policy.pickupWindowMinutes) * 60 * 1000)
                 : null
@@ -84,6 +87,10 @@ const markOrderPaidAndNotify = async (reference: string) => {
         link: `/admin?order=${reference}`,
         meta: { orderId: order.id, reference, amount: order.amount, paymentMethod: 'opay' }
     });
+
+    // Create the SAP sales order + payment notification in the background.
+    // Failures are saved on the order and retried by the SAP scheduler.
+    syncOrderToSap(order.id).catch(err => console.error(`[SAP] Sync crashed for ${reference}:`, err));
 
     const previousPaidOrder = await Order.exists({
         _id: { $ne: order._id },
@@ -209,14 +216,14 @@ export const handleWebhook = async (req: Request, res: Response) => {
             return res.status(401).json({ code: '02003', message: 'Signature mismatch' });
         }
 
-        const { reference, status } = payloadObj.payload;
+        const { reference, status, transactionId } = payloadObj.payload;
 
         if (!reference) {
             return res.status(400).json({ code: '00002', message: 'Missing reference' });
         }
 
         if (status === 'SUCCESS') {
-            const order = await markOrderPaidAndNotify(reference);
+            const order = await markOrderPaidAndNotify(reference, transactionId);
             console.log(`[OPay] Order ${reference} marked as paid via webhook`);
         } else if (status === 'FAIL' || status === 'CLOSED') {
             await Order.findOneAndUpdate(
@@ -264,7 +271,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
         const paymentStatus = data.data?.status;
 
         if (paymentStatus === 'SUCCESS') {
-            const paidOrder = await markOrderPaidAndNotify(reference)
+            const paidOrder = await markOrderPaidAndNotify(reference, data.data?.orderNo)
                 || await Order.findOne({ reference }, { items: 1 });
             const purchasedItems = (paidOrder?.items || []).map((item: any) => ({
                 productId: String(item.productId || item.id || ''),

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Download, ChevronLeft, ChevronRight, BellRing, Trash2 } from 'lucide-react'
+import { Search, Download, ChevronLeft, ChevronRight, BellRing, Trash2, RotateCw } from 'lucide-react'
 
 const STATUS_COLOR = {
     pending: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -15,6 +15,12 @@ import { CustomDatePicker } from '../ui/shared_ui'
 import { orderApi } from '../../../api/client'
 import { useStore } from '../../../context/StoreContext'
 import { getOrderStatusLabel, isPaymentFailedCancellation } from '../../../lib/orderStatus'
+
+const SAP_LABEL = {
+    synced: { text: 'Sent', cls: 'text-emerald-600' },
+    processing: { text: 'Sending…', cls: 'text-blue-600' },
+    failed: { text: 'Failed', cls: 'text-[#ed0000]' }
+}
 
 const STATUSES = ['all', 'pending', 'paid', 'confirmed', 'shipped', 'delivered']
 const PAGE_SIZE = 30
@@ -50,6 +56,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [remindingId, setRemindingId] = useState(null)
+    const [sapRetryingId, setSapRetryingId] = useState(null)
     const [feedback, setFeedback] = useState('')
     const [deletingId, setDeletingId] = useState(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -121,6 +128,25 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
             setError(err.response?.data?.message || err.message || 'Could not send reminder')
         } finally {
             setRemindingId(null)
+        }
+    }
+
+    const handleSapRetry = async (order, e) => {
+        e.stopPropagation()
+        const id = order.id || order._id
+        setSapRetryingId(id)
+        setError('')
+        setFeedback('')
+        try {
+            const res = await orderApi.retrySap(id)
+            if (res.data?.data) setOrders(prev => prev.map(item => (item.id || item._id) === id ? res.data.data : item))
+            setFeedback(`${order.reference} sent to SAP`)
+        } catch (err) {
+            const updated = err.response?.data?.data
+            if (updated) setOrders(prev => prev.map(item => (item.id || item._id) === id ? updated : item))
+            setError(err.response?.data?.message || err.message || 'Could not send to SAP')
+        } finally {
+            setSapRetryingId(null)
         }
     }
 
@@ -229,6 +255,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Fulfillment type</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Pickup ready email</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">Buyer notified</th>
+                                <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)]">SAP</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Status</th>
                                 <th className="px-6 py-5 text-[11px] font-bold text-[var(--text-muted)] text-right">Delete</th>
                             </tr>
@@ -245,12 +272,13 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                         <td className="px-6 py-5"><div className="h-3 w-20 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
+                                        <td className="px-6 py-5"><div className="h-3 w-16 bg-[var(--bg-secondary)] rounded animate-pulse" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-20 bg-[var(--bg-secondary)] rounded-full animate-pulse ml-auto" /></td>
                                         <td className="px-6 py-5"><div className="h-5 w-8 bg-[var(--bg-secondary)] rounded animate-pulse ml-auto" /></td>
                                     </tr>
                                 ))
                             ) : orders.length === 0 ? (
-                                <tr><td colSpan={10} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
+                                <tr><td colSpan={11} className="px-6 py-10 text-center text-[13px] text-[var(--text-muted)]">No orders match these filters.</td></tr>
                             ) : orders.map((o, index) => (
                                 <tr
                                     key={o.id || o._id}
@@ -291,6 +319,28 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                                             : o.pickupReminderSentAt
                                                 ? `Sent ${format(new Date(o.pickupReminderSentAt), 'MMM dd, yyyy HH:mm')}`
                                                 : 'Not sent'}
+                                    </td>
+                                    <td className="px-6 py-5 text-[11px]">
+                                        {(() => {
+                                            const label = SAP_LABEL[o.sapStatus]
+                                            if (!label) return <span className="text-[var(--text-muted)]">—</span>
+                                            return (
+                                                <div className="flex flex-col gap-1" title={o.sapError || undefined}>
+                                                    <span className={`font-bold ${label.cls}`}>{label.text}</span>
+                                                    {o.sapSalesOrderNo && <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap">SO {o.sapSalesOrderNo}</span>}
+                                                    {o.sapStatus === 'failed' && (
+                                                        <button
+                                                            onClick={(e) => handleSapRetry(o, e)}
+                                                            disabled={sapRetryingId === (o.id || o._id)}
+                                                            className="inline-flex items-center gap-1.5 self-start px-2.5 py-1.5 rounded-lg border border-[var(--divider)] bg-[var(--bg-secondary)] text-[10px] font-bold text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50"
+                                                        >
+                                                            <RotateCw size={11} />
+                                                            {sapRetryingId === (o.id || o._id) ? 'Retrying…' : 'Retry'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )
+                                        })()}
                                     </td>
                                     <td className="px-6 py-5 text-right">
                                         <div className="flex flex-col items-end gap-1">

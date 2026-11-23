@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as orderController from '../controllers/orderController';
 import { requireAdmin } from '../middlewares/requireAdmin';
+import * as sapController from '../controllers/sapController';
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.get('/', requireAdmin, orderController.getOrders);
 router.patch('/:id/status', requireAdmin, orderController.updateOrderStatus);
 router.post('/:id/remind-pickup', requireAdmin, orderController.sendPickupReminder);
 router.patch('/:id/delivery', requireAdmin, orderController.updateOrderDelivery);
+router.post('/:id/sap-sync', requireAdmin, sapController.retryOrderSync);
 router.delete('/:id', requireAdmin, orderController.deleteOrder);
 
 export default router;

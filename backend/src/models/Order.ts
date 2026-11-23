@@ -4,6 +4,9 @@ export const ORDER_STATUSES = [
     'pending', 'paid', 'confirmed', 'shipped', 'delivered', 'completed', 'cancelled'
 ] as const;
 
+// not_sent → processing → synced, or failed (retried automatically while sapRetryable is true)
+export const SAP_STATUSES = ['not_sent', 'processing', 'synced', 'failed'] as const;
+
 export const FULFILLMENT_TYPES = ['delivery', 'pickup'] as const;
 export const DELIVERY_METHODS = ['pending', 'assisted', 'self'] as const;
 
@@ -53,7 +56,25 @@ const orderSchema = new Schema(
         paymentMethod: { type: String, default: '' },
         status: { type: String, enum: ORDER_STATUSES, default: 'pending' },
         statusUpdatedAt: { type: Date, default: null },
-        cancellationReason: { type: String, default: '' }
+        cancellationReason: { type: String, default: '' },
+
+        // OPay details captured when the payment is confirmed (used for the SAP payment notification)
+        opayTransactionId: { type: String, default: '' },
+        opayFee: { type: Number, default: 0, min: 0 },
+        paidAt: { type: Date, default: null },
+
+        // SAP integration — see lib/sap.ts
+        sapStatus: { type: String, enum: SAP_STATUSES, default: 'not_sent', index: true },
+        sapSalesOrderNo: { type: String, default: '' },
+        sapSalesOrderAt: { type: Date, default: null },
+        sapPaymentSentAt: { type: Date, default: null },
+        sapPaymentDocumentNo: { type: String, default: '' },
+        sapPaymentPostedAt: { type: Date, default: null },
+        sapAttempts: { type: Number, default: 0 },
+        sapLastAttemptAt: { type: Date, default: null },
+        sapLockedAt: { type: Date, default: null },
+        sapRetryable: { type: Boolean, default: true },
+        sapError: { type: String, default: '' }
     },
     {
         timestamps: { createdAt: 'date', updatedAt: 'updated_at' },
