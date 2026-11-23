@@ -124,6 +124,10 @@ export const orderApi = {
     delete: (id) => api.delete(`/orders/${id}`)
 };
 
+export const sapApi = {
+    connectionCheck: () => api.get('/sap/connection-check')
+};
+
 export const statsApi = {
     getKpis: () => api.get('/stats/kpis'),
     getSalesChart: (timeframe) => api.get(`/stats/sales-chart?timeframe=${timeframe}`),

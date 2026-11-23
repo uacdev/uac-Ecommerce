@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Download, ChevronLeft, ChevronRight, BellRing, Trash2, RotateCw } from 'lucide-react'
+import { Search, Download, ChevronLeft, ChevronRight, BellRing, Trash2, RotateCw, PlugZap } from 'lucide-react'
 
 const STATUS_COLOR = {
     pending: 'bg-amber-50 text-amber-600 border-amber-200',
@@ -12,7 +12,7 @@ const STATUS_COLOR = {
 }
 import { format } from 'date-fns'
 import { CustomDatePicker } from '../ui/shared_ui'
-import { orderApi } from '../../../api/client'
+import { orderApi, sapApi } from '../../../api/client'
 import { useStore } from '../../../context/StoreContext'
 import { getOrderStatusLabel, isPaymentFailedCancellation } from '../../../lib/orderStatus'
 
@@ -57,6 +57,7 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
     const [error, setError] = useState('')
     const [remindingId, setRemindingId] = useState(null)
     const [sapRetryingId, setSapRetryingId] = useState(null)
+    const [sapChecking, setSapChecking] = useState(false)
     const [feedback, setFeedback] = useState('')
     const [deletingId, setDeletingId] = useState(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -150,6 +151,21 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
         }
     }
 
+    const handleSapConnectionCheck = async () => {
+        setSapChecking(true)
+        setError('')
+        setFeedback('')
+        try {
+            const res = await sapApi.connectionCheck()
+            const sending = res.data?.enabled ? 'orders are being sent' : 'sending is OFF (SAP_ENABLED=false)'
+            setFeedback(`SAP connected — ${sending}`)
+        } catch (err) {
+            setError(`SAP connection failed: ${err.response?.data?.message || err.message || 'unknown error'}`)
+        } finally {
+            setSapChecking(false)
+        }
+    }
+
     const handleDeleteOrder = async (order, e) => {
         e.stopPropagation()
         setOrderToDelete(order)
@@ -196,6 +212,14 @@ const OrdersTab = ({ onSelect, selectedId, externalSearchTerm, dateRange, setDat
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleSapConnectionCheck}
+                        disabled={sapChecking}
+                        className="px-4 py-2.5 rounded-xl border border-[var(--divider)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-all bg-[var(--bg-tertiary)] shadow-sm flex items-center gap-2 text-[12px] font-bold disabled:opacity-60"
+                        title="Check that the server can reach the SAP Sales Order API"
+                    >
+                        <PlugZap size={16} className={sapChecking ? 'animate-pulse' : ''} /> {sapChecking ? 'Checking…' : 'Test SAP'}
+                    </button>
                     <button
                         onClick={() => onExport(exportRows)}
                         className="px-4 py-2.5 rounded-xl border border-[var(--divider)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] transition-all bg-[var(--bg-tertiary)] shadow-sm flex items-center gap-2 text-[12px] font-bold"
