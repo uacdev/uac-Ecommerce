@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import Preloader from '../components/Preloader'
+import ShopSection from '../components/ShopSection'
 import toast from 'react-hot-toast'
 
 const CountUp = ({ end, duration = 2 }) => {
@@ -247,12 +248,13 @@ const Home = () => {
                                     <p className={brand.descFont ? 'text-white/80 text-[17px] md:text-[18px] font-semibold leading-none tracking-[0.005em]' : 'text-white/80 text-[15px] font-semibold'} style={{ fontFamily: brandFont }}>{brand.tagline}</p>
                                     <p className={brand.descFont ? 'text-white/70 text-[12px] md:text-[13px] leading-[1.45] max-w-md tracking-[0.002em]' : 'text-white/60 text-sm leading-relaxed max-w-xs'} style={{ fontFamily: brandFont }}>{brand.desc}</p>
                                     <div className="flex flex-wrap gap-3 pt-2">
-                                        <Link
-                                            to="/products"
+                                        <a
+                                            href="#shop"
+                                            onClick={(e) => { e.preventDefault(); document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' }) }}
                                             className="inline-flex items-center gap-2 bg-white text-gray-900 px-7 py-3.5 rounded-full text-[12px] font-bold hover:bg-white/90 transition-all shadow-2xl"
                                         >
                                             Shop now <ArrowRight size={14} />
-                                        </Link>
+                                        </a>
                                         <Link
                                             to="/about"
                                             className="inline-flex items-center gap-2 border border-white/40 text-white px-7 py-3.5 rounded-full text-[12px] font-bold hover:bg-white/10 transition-all"
@@ -379,6 +381,11 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
+            {/* ══════════════════════════════════════════════════════
+                SHOP — all products with filters, add to cart inline
+            ══════════════════════════════════════════════════════ */}
+            <ShopSection />
 
             {/* ══════════════════════════════════════════════════════
                 OUR BRANDS — Card grid inspired by categories section
